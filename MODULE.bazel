@@ -1,0 +1,48 @@
+"""Bazel module: interview-cursor (TypeScript + Aspect rules_js / rules_ts + Node toolchains)."""
+
+module(
+    name = "interview_cursor",
+    version = "0.0.0",
+)
+
+bazel_dep(name = "aspect_rules_js", version = "2.3.8")
+bazel_dep(name = "aspect_rules_ts", version = "3.8.9")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+bazel_dep(name = "rules_nodejs", version = "6.7.3")
+
+npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")
+npm.npm_translate_lock(
+    name = "npm",
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+)
+use_repo(npm, "npm")
+
+pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm")
+use_repo(pnpm, "pnpm")
+
+rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext")
+rules_ts_ext.deps(ts_version_from = "//:package.json")
+use_repo(rules_ts_ext, "npm_typescript")
+
+node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
+node.toolchain()
+use_repo(node, "nodejs_toolchains")
+
+# Match rules_nodejs registration order (runtime toolchain before compile toolchain per OS).
+register_toolchains("@nodejs_toolchains//:linux_amd64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_amd64_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_arm64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_arm64_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_s390x_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_s390x_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_ppc64le_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:linux_ppc64le_toolchain")
+register_toolchains("@nodejs_toolchains//:darwin_amd64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:darwin_amd64_toolchain")
+register_toolchains("@nodejs_toolchains//:darwin_arm64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:darwin_arm64_toolchain")
+register_toolchains("@nodejs_toolchains//:windows_amd64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:windows_amd64_toolchain")
+register_toolchains("@nodejs_toolchains//:windows_arm64_runtime_toolchain")
+register_toolchains("@nodejs_toolchains//:windows_arm64_toolchain")

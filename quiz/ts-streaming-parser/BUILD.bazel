@@ -1,0 +1,27 @@
+load("@aspect_rules_js//js:defs.bzl", "js_test")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+
+package(default_visibility = ["//visibility:public"])
+
+ts_project(
+    name = "parser_ts",
+    srcs = [
+        "parser.ts",
+        "parser_test.ts",
+    ],
+    declaration = True,
+    declaration_map = True,
+    out_dir = "dist",
+    resolve_json_module = True,
+    root_dir = ".",
+    source_map = True,
+    tsconfig = "tsconfig.json",
+    deps = ["//:node_modules/@types/node"],
+)
+
+js_test(
+    name = "ndjson_test",
+    data = [":parser_ts"],
+    entry_point = "dist/parser_test.js",
+    chdir = package_name(),
+)
