@@ -1,0 +1,21 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "subset_sum",
+    srcs = ["subset_sum.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "subset_sum_test",
+    srcs = [
+        "__test__.py",
+        "subset_sum_test.py",
+    ],
+    main = "__test__.py",
+    deps = [
+        ":subset_sum",
+        requirement("pytest"),
+    ],
+)
