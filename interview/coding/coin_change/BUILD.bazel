@@ -1,0 +1,21 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "coin_change",
+    srcs = ["coin_change.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "coin_change_test",
+    srcs = [
+        "__test__.py",
+        "coin_change_test.py",
+    ],
+    main = "__test__.py",
+    deps = [
+        ":coin_change",
+        requirement("pytest"),
+    ],
+)
