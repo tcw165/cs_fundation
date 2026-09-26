@@ -1,0 +1,1 @@
+Call now_scout, then path_builder, then pricer. Return situations and edges. If outgoing probabilities do not sum to 1, call pricer again with that error. Do not invent a present, a path, or a probability yourself.
