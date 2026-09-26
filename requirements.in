@@ -1,1 +1,8 @@
 pytest
+fastapi
+uvicorn
+click
+httpx
+pydantic
+dependency-injector
+psycopg[binary]
