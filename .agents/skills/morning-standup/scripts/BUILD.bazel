@@ -1,0 +1,5 @@
+filegroup(
+    name = "scripts",
+    srcs = ["standup.sh"],
+    visibility = ["//visibility:public"],
+)
