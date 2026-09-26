@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.di.deps import get_app_container
@@ -12,6 +13,15 @@ def create_app(container: AppContainer) -> FastAPI:
     Endpoints never construct AppContainer; they take AppContainerDep.
     """
     app = FastAPI()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     # App singleton: anything that has the Request (middleware, lifespan,
     # background tasks) can read the same graph via app.state. Not used by
     # Depends() itself — that is the override below.

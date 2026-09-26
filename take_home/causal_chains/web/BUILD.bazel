@@ -1,0 +1,13 @@
+filegroup(
+    name = "web",
+    srcs = glob(
+        [
+            "**/*",
+        ],
+        exclude = [
+            "node_modules/**",
+            "dist/**",
+        ],
+    ),
+    visibility = ["//visibility:public"],
+)

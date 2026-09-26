@@ -28,5 +28,16 @@ services:
       db:
         condition: service_healthy
 
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - agents
+
 volumes:
   causal_chains_pg:
