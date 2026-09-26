@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.15.22",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
