@@ -1,0 +1,37 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "priced_edges",
+    srcs = ["priced_edges.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models/database",
+        requirement("pydantic"),
+    ],
+)
+
+py_library(
+    name = "pricer",
+    srcs = ["pricer.py"],
+    data = ["//take_home/causal_chains/agents/agents/pricer/prompts:pricer.md"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":priced_edges",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "pricer_test",
+    srcs = ["pricer_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/pricer/prompts:pricer.md"],
+    imports = ["../../../../.."],
+    deps = [
+        ":pricer",
+        requirement("openai-agents"),
+    ],
+)
