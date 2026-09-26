@@ -1,0 +1,45 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "database",
+    srcs = [
+        "leads_to.py",
+        "likelihood.py",
+        "situation.py",
+    ],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "situation_test",
+    srcs = ["situation_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":database",
+    ],
+)
+
+pytest_test(
+    name = "leads_to_test",
+    srcs = ["leads_to_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":database",
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "likelihood_test",
+    srcs = ["likelihood_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":database",
+    ],
+)
