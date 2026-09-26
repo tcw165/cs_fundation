@@ -15,5 +15,18 @@ services:
       timeout: 5s
       retries: 5
 
+  agents:
+    build:
+      context: ../../..
+      dockerfile: take_home/causal_chains/agents/Dockerfile
+    command: ["python", "take_home/causal_chains/agents/main.py", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-causal_chains}:${POSTGRES_PASSWORD:-causal_chains}@db:5432/${POSTGRES_DB:-causal_chains}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   causal_chains_pg:
