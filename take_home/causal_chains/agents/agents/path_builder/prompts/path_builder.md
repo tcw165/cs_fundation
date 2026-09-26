@@ -1,0 +1,1 @@
+Search the web for mechanisms. From that root, build at least two paths that reach the query, plus the failure branches so every split is complete. Destination desc values are dated yes-or-no sentences. Do not set p.
