@@ -1,5 +1,6 @@
 load("@pip//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "health_response",
@@ -21,30 +22,16 @@ py_library(
     ],
 )
 
-py_test(
+pytest_test(
     name = "post_message_body_test",
-    srcs = [
-        "__test__.py",
-        "post_message_body_test.py",
-    ],
+    srcs = ["post_message_body_test.py"],
     imports = ["../../../.."],
-    main = "__test__.py",
-    deps = [
-        ":post_message_body",
-        requirement("pytest"),
-    ],
+    deps = [":post_message_body"],
 )
 
-py_test(
+pytest_test(
     name = "health_response_test",
-    srcs = [
-        "__test__.py",
-        "health_response_test.py",
-    ],
+    srcs = ["health_response_test.py"],
     imports = ["../../../.."],
-    main = "__test__.py",
-    deps = [
-        ":health_response",
-        requirement("pytest"),
-    ],
+    deps = [":health_response"],
 )
