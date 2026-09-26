@@ -8,6 +8,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/di",
+        "//take_home/causal_chains/agents/endpoints:conversation",
         "//take_home/causal_chains/agents/endpoints:health",
         requirement("fastapi"),
     ],

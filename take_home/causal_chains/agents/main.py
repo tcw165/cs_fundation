@@ -1,3 +1,5 @@
+import os
+
 import click
 import uvicorn
 
@@ -14,6 +16,9 @@ def main(host: str, port: int) -> None:
         "DATABASE_URL",
         default="postgresql://causal_chains:causal_chains@db:5432/causal_chains",
     )
+    openai_api_key = os.environ.get("OPENAI_API_KEY", "")
+    container.config.openai_api_key.from_value(openai_api_key)
+    container.config.turn_runner.from_value("openai" if openai_api_key else "stub")
     container.check_dependencies()
     uvicorn.run(create_app(container), host=host, port=port)
 

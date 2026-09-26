@@ -1,0 +1,27 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
+
+py_library(
+    name = "protocol",
+    srcs = ["turn_runner.py"],
+    imports = ["../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/models",
+    ],
+)
+
+py_test(
+    name = "turn_runner_test",
+    srcs = [
+        "__test__.py",
+        "turn_runner_test.py",
+    ],
+    imports = ["../../.."],
+    main = "__test__.py",
+    deps = [
+        ":protocol",
+        "//take_home/causal_chains/models",
+        requirement("pytest"),
+    ],
+)
