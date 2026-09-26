@@ -1,0 +1,4 @@
+exports_files(
+    ["__test__.py"],
+    visibility = ["//visibility:public"],
+)
