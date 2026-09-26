@@ -11,6 +11,9 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/openai_runner",
+        "//take_home/causal_chains/agents/stub_runner",
         requirement("dependency-injector"),
         requirement("fastapi"),
         requirement("psycopg"),
