@@ -1,0 +1,27 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "now_scout",
+    srcs = ["now_scout.py"],
+    data = ["//take_home/causal_chains/agents/agents/now_scout/prompts:now_scout.md"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models/database",
+        requirement("openai-agents"),
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "now_scout_test",
+    srcs = ["now_scout_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/now_scout/prompts:now_scout.md"],
+    imports = ["../../../../.."],
+    deps = [
+        ":now_scout",
+        requirement("openai-agents"),
+    ],
+)
