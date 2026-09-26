@@ -1,0 +1,5 @@
+filegroup(
+    name = "graphite",
+    srcs = ["SKILL.md"],
+    visibility = ["//visibility:public"],
+)
