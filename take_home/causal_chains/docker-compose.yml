@@ -59,6 +59,16 @@ services:
       retries: 12
       start_period: 40s
 
+  graph_init:
+    image: neo4j:5-community
+    depends_on:
+      graph:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["cypher-shell", "-a", "bolt://graph:7687", "-u", "neo4j", "-p", "causal_chains", "-f", "/init.cypher"]
+    volumes:
+      - ./db/neo4j/init.cypher:/init.cypher:ro
+
 volumes:
   causal_chains_pg:
   causal_chains_neo4j:
