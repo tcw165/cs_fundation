@@ -1,0 +1,37 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "unpriced_chain",
+    srcs = ["unpriced_chain.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models/database",
+        requirement("pydantic"),
+    ],
+)
+
+py_library(
+    name = "path_builder",
+    srcs = ["path_builder.py"],
+    data = ["//take_home/causal_chains/agents/agents/path_builder/prompts:path_builder.md"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":unpriced_chain",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "path_builder_test",
+    srcs = ["path_builder_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/path_builder/prompts:path_builder.md"],
+    imports = ["../../../../.."],
+    deps = [
+        ":path_builder",
+        requirement("openai-agents"),
+    ],
+)
