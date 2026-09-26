@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-causal_chains}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-causal_chains}
+      POSTGRES_DB: ${POSTGRES_DB:-causal_chains}
+    ports:
+      - "5432:5432"
+    volumes:
+      - causal_chains_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-causal_chains} -d ${POSTGRES_DB:-causal_chains}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  causal_chains_pg:
