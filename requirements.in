@@ -7,3 +7,4 @@ pydantic
 dependency-injector
 psycopg[binary]
 openai-agents
+neo4j
