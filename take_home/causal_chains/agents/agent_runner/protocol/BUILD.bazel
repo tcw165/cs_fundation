@@ -13,7 +13,7 @@ py_library(
 )
 
 pytest_test(
-    name = "agent_runner_test",
+    name = "protocol_test",
     srcs = ["agent_runner_test.py"],
     imports = ["../../../../.."],
     deps = [

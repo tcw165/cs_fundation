@@ -12,7 +12,7 @@ py_library(
 )
 
 pytest_test(
-    name = "messaging_store_test",
+    name = "protocol_test",
     srcs = ["messaging_store_test.py"],
     imports = ["../../../../../.."],
     deps = [

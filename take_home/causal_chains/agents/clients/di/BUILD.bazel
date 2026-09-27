@@ -21,7 +21,7 @@ py_library(
 )
 
 pytest_test(
-    name = "container_test",
+    name = "di_test",
     srcs = ["container_test.py"],
     imports = ["../../../../.."],
     deps = [
