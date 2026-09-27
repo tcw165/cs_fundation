@@ -14,6 +14,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseEvent,
     SseTool,
 )
+from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
@@ -31,6 +32,7 @@ class ChatService:
         self._messaging_store = messaging_store
         self._turn_store = turn_store
         self._turns: dict[str, Turn] = {}
+        self._contexts: dict[str, RunContext] = {}
         self._buffers: dict[str, list[SseEvent]] = {}
         self._waiters: dict[str, list[asyncio.Queue[SseEvent | None]]] = {}
 
@@ -45,6 +47,10 @@ class ChatService:
             status=TurnStatus.queued,
         )
         self._record_turn(turn)
+        self._contexts[turn.turn_id] = RunContext(
+            conversation_id=conversation_id,
+            turn_id=turn.turn_id,
+        )
         self._buffers[turn.turn_id] = []
         self._waiters[turn.turn_id] = []
         self._messaging_store.append(
@@ -58,11 +64,19 @@ class ChatService:
         )
         return turn
 
-    async def subscribe(self, conversation_id: str, turn_id: str) -> AsyncIterator[SseEvent]:
+    async def subscribe(
+        self,
+        conversation_id: str,
+        turn_id: str,
+        run_config: RunConfig | None = None,
+    ) -> AsyncIterator[SseEvent]:
         turn = self._turns.get(turn_id)
         if turn is None or turn.conversation_id != conversation_id:
             yield SseError(message="turn not found")
             return
+        context = self._contexts.get(turn_id)
+        if context is not None and run_config is not None:
+            context.run_config = run_config
         queue: asyncio.Queue[SseEvent | None] = asyncio.Queue()
         for event in list(self._buffers[turn_id]):
             yield event
@@ -86,10 +100,7 @@ class ChatService:
         running = turn.model_copy(update={"status": TurnStatus.running})
         self._record_turn(running)
         try:
-            context = RunContext(
-                conversation_id=turn.conversation_id,
-                turn_id=turn.turn_id,
-            )
+            context = self._contexts[turn.turn_id]
             async for event in self._agent_runner.stream([text], context):
                 self._publish(turn.turn_id, event)
                 if isinstance(event, SseDone):

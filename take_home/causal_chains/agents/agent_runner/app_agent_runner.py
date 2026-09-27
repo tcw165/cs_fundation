@@ -72,7 +72,10 @@ class AppAgentRunner(AgentRunner):
                     break
             if kept_graph is not None:
                 yield SseDelta(text=kept_graph.model_dump_json())
-            yield RunTraces(text=self._memcache.flush())
+            if context.run_config.include_traces:
+                yield RunTraces(text=self._memcache.flush())
+            else:
+                self._memcache.flush()
             yield SseDone(message_id=f"m_{context.turn_id}")
         except Exception as error:
             yield SseError(message=str(error))

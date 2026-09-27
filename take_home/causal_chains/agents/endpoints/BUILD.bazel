@@ -22,6 +22,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/di",
+        "//take_home/causal_chains/agents/models:run_config",
         "//take_home/causal_chains/agents/http_models:post_message_body",
         "//take_home/causal_chains/models",
         requirement("fastapi"),
@@ -33,6 +34,7 @@ pytest_test(
     srcs = ["conversation_test.py"],
     imports = ["../../../.."],
     deps = [
+        ":conversation",
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/database/messaging_store",
         "//take_home/causal_chains/agents/database/turn_store",
