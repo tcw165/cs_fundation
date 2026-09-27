@@ -1,8 +1,10 @@
 from collections.abc import AsyncGenerator
+from typing import override
 
 from agents import Agent, Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
@@ -13,10 +15,11 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
 
-class AppAgentRunner:
+class AppAgentRunner(AgentRunner):
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
 
+    @override
     async def stream(
         self,
         inputs: list[str],
