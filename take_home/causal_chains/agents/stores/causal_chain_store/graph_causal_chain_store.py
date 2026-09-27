@@ -39,4 +39,5 @@ class GraphCausalChainStore(CausalChainStore):
             link.from_situation_id,
             link.to_situation_id,
             link.p,
+            [(item.name, item.value) for item in link.inputs],
         )

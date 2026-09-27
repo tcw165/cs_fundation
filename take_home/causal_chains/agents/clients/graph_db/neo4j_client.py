@@ -36,7 +36,7 @@ MERGE_LEADS_TO = """
 MERGE (a:Situation {situation_id: $from_situation_id})
 MERGE (b:Situation {situation_id: $to_situation_id})
 MERGE (a)-[r:LEADS_TO]->(b)
-SET r.p = $p
+SET r.p = $p, r.inputs = $inputs
 """
 
 
@@ -97,6 +97,7 @@ class Neo4jClient(GraphDb):
         from_situation_id: UUID,
         to_situation_id: UUID,
         p: Decimal,
+        inputs: list[tuple[str, Decimal]],
     ) -> None:
         with self._driver.session() as session:
             session.run(
@@ -104,4 +105,8 @@ class Neo4jClient(GraphDb):
                 from_situation_id=str(from_situation_id),
                 to_situation_id=str(to_situation_id),
                 p=float(p),
+                inputs=[
+                    {"name": name, "value": float(value)}
+                    for name, value in inputs
+                ],
             )

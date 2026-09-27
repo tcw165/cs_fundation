@@ -30,6 +30,7 @@ class _Both:
         from_situation_id: UUID,
         to_situation_id: UUID,
         p: Decimal,
+        inputs: list[tuple[str, Decimal]],
     ) -> None:
         return None
 
