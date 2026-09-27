@@ -1,8 +1,7 @@
 from collections.abc import AsyncIterator
 
-from take_home.causal_chains.models.sse_event import SseDelta, SseDone
+from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseDone, SseEvent
 from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.protocol.turn_runner import SseEvent
 
 
 class StubTurnRunner:

@@ -1,4 +1,9 @@
-from take_home.causal_chains.models.sse_event import SseDelta, SseDone, SseError, SseTool
+from take_home.causal_chains.agents.models.messaging.sse_event import (
+    SseDelta,
+    SseDone,
+    SseError,
+    SseTool,
+)
 
 
 def test_sse_delta_json():

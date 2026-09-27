@@ -20,3 +20,6 @@ class SseDone(BaseModel):
 class SseError(BaseModel):
     type: str = "error"
     message: str
+
+
+SseEvent = SseDelta | SseTool | SseDone | SseError

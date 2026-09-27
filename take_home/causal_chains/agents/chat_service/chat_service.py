@@ -3,10 +3,16 @@ import uuid
 from collections.abc import AsyncIterator
 
 from take_home.causal_chains.models.message import Message
-from take_home.causal_chains.models.sse_event import SseDelta, SseDone, SseError, SseTool
+from take_home.causal_chains.agents.models.messaging.sse_event import (
+    SseDelta,
+    SseDone,
+    SseError,
+    SseEvent,
+    SseTool,
+)
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
-from take_home.causal_chains.protocol.turn_runner import SseEvent, TurnRunner
+from take_home.causal_chains.protocol.turn_runner import TurnRunner
 
 
 class ChatService:

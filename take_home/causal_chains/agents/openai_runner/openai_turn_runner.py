@@ -3,9 +3,14 @@ from collections.abc import AsyncIterator
 from agents import Agent, Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
-from take_home.causal_chains.models.sse_event import SseDelta, SseDone, SseError, SseTool
+from take_home.causal_chains.agents.models.messaging.sse_event import (
+    SseDelta,
+    SseDone,
+    SseError,
+    SseEvent,
+    SseTool,
+)
 from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.protocol.turn_runner import SseEvent
 
 
 class OpenaiTurnRunner:
