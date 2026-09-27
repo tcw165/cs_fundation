@@ -5,10 +5,11 @@ import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
+from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
 
-def test_app_agent_runner_maps_fake_stream(monkeypatch):
+def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     class FakeDelta:
         def __init__(self, delta: str) -> None:
             self.delta = delta
@@ -17,24 +18,41 @@ def test_app_agent_runner_maps_fake_stream(monkeypatch):
         yield SimpleNamespace(type="raw_response_event", data=FakeDelta("oil "))
         yield SimpleNamespace(type="raw_response_event", data=object())
 
-    graph = ChainGraph(situations=[], edges=[], destination_ids=[])
+    rising = ChainGraph(situations=[], edges=[], destination_ids=[])
+    flat = ChainGraph.model_validate(
+        {
+            "situations": [
+                {
+                    "situation_id": "11111111-1111-4111-8111-111111111111",
+                    "desc": "later",
+                    "is_root": False,
+                }
+            ],
+            "edges": [],
+            "destination_ids": [],
+        }
+    )
+    graphs = [rising, flat]
+    prompts: list[str] = []
+    seen: list[object] = []
 
     class FakeResult:
-        final_output = graph
+        def __init__(self, graph: ChainGraph) -> None:
+            self.final_output = graph
+            self.cancelled = False
 
         def stream_events(self):
             return fake_stream()
 
         def cancel(self):
-            return None
-
-    seen: list[object] = []
+            self.cancelled = True
 
     class FakeRunner:
         @staticmethod
         def run_streamed(agent, input):
             seen.append(agent)
-            return FakeResult()
+            prompts.append(input)
+            return FakeResult(graphs[len(prompts) - 1])
 
     monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
@@ -45,10 +63,15 @@ def test_app_agent_runner_maps_fake_stream(monkeypatch):
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())
-    assert seen == [crystal_ball]
-    assert events[0].type == "delta"
-    assert events[0].text == "oil "
-    assert events[-2].type == "delta"
-    assert events[-2].text == graph.model_dump_json()
+    rising_exam = examine(rising)
+    flat_exam = examine(flat)
+    assert flat_exam.score <= rising_exam.score
+    assert seen == [crystal_ball, crystal_ball]
+    assert prompts[0] == "hormuz"
+    assert prompts[1] == f"hormuz\n{rising_exam.failures[0]}"
+    scores = [event.text for event in events if event.type == "delta" and event.text.startswith("score ")]
+    assert scores == [f"score {rising_exam.score}\n", f"score {flat_exam.score}\n"]
+    graph_deltas = [event.text for event in events if event.type == "delta" and event.text.startswith("{")]
+    assert graph_deltas == [rising.model_dump_json()]
     assert events[-1].type == "done"
     assert events[-1].message_id == "m_t_1"
