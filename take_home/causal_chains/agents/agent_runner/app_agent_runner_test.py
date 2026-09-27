@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
+from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
@@ -16,7 +17,11 @@ def test_app_agent_runner_maps_fake_stream(monkeypatch):
         yield SimpleNamespace(type="raw_response_event", data=FakeDelta("oil "))
         yield SimpleNamespace(type="raw_response_event", data=object())
 
+    graph = ChainGraph(situations=[], edges=[], destination_ids=[])
+
     class FakeResult:
+        final_output = graph
+
         def stream_events(self):
             return fake_stream()
 
@@ -43,5 +48,7 @@ def test_app_agent_runner_maps_fake_stream(monkeypatch):
     assert seen == [crystal_ball]
     assert events[0].type == "delta"
     assert events[0].text == "oil "
+    assert events[-2].type == "delta"
+    assert events[-2].text == graph.model_dump_json()
     assert events[-1].type == "done"
     assert events[-1].message_id == "m_t_1"
