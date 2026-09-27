@@ -1,10 +1,13 @@
 from collections.abc import AsyncGenerator
+from typing import override
 
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseDone, SseEvent
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
 
-class StubTurnRunner:
+class StubTurnRunner(AgentRunner):
+    @override
     async def stream(
         self,
         inputs: list[str],
