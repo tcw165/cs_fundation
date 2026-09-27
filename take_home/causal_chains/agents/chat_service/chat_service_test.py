@@ -2,7 +2,7 @@ import asyncio
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
-from take_home.causal_chains.models.sse_event import SseDelta
+from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta
 from take_home.causal_chains.models.turn_status import TurnStatus
 
 

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import take_home.causal_chains.agents.openai_runner.openai_turn_runner as openai_turn_runner_module
 from take_home.causal_chains.agents.openai_runner.openai_turn_runner import OpenaiTurnRunner
-from take_home.causal_chains.models.sse_event import SseDelta, SseDone
+from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseDone
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
 

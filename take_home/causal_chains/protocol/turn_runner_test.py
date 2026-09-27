@@ -1,7 +1,6 @@
-from take_home.causal_chains.models.sse_event import SseDelta
+from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseEvent
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
-from take_home.causal_chains.protocol.turn_runner import SseEvent
 
 
 def test_sse_event_union_accepts_delta():
