@@ -36,6 +36,7 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     graphs = [rising, flat]
     prompts: list[str] = []
     seen: list[object] = []
+    contexts: list[object] = []
     cache = InMemoryMemcache()
 
     class FakeResult:
@@ -51,8 +52,9 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
 
     class FakeRunner:
         @staticmethod
-        def run_streamed(agent, input):
+        def run_streamed(agent, input, context=None):
             seen.append(agent)
+            contexts.append(context)
             prompts.append(input)
             cache.append("span\n")
             return FakeResult(graphs[len(prompts) - 1])
@@ -60,12 +62,14 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
 
+    context = RunContext(conversation_id="1", turn_id="t_1")
+
     async def collect():
         runner = AppAgentRunner(api_key="test", memcache=cache)
-        context = RunContext(conversation_id="1", turn_id="t_1")
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())
+    assert contexts == [context, context]
     rising_exam = examine(rising)
     flat_exam = examine(flat)
     assert flat_exam.score <= rising_exam.score
