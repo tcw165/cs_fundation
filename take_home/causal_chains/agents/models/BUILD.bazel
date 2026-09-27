@@ -1,1 +1,20 @@
-# //take_home/causal_chains/agents/models
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "runner_context",
+    srcs = ["runner_context.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "runner_context_test",
+    srcs = ["runner_context_test.py"],
+    imports = ["../../../.."],
+    deps = [":runner_context"],
+)
