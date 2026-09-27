@@ -11,6 +11,7 @@ py_library(
         "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
+        "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
         "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
         "//take_home/causal_chains/agents/agents/crystal_ball:examine",
         "//take_home/causal_chains/agents/models:run_context",

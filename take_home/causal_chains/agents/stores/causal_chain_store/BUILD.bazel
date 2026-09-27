@@ -1,1 +1,24 @@
-# //take_home/causal_chains/agents/stores/causal_chain_store
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "ddb_causal_chain_store",
+    srcs = ["ddb_causal_chain_store.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
+    ],
+)
+
+pytest_test(
+    name = "ddb_causal_chain_store_test",
+    srcs = ["ddb_causal_chain_store_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":ddb_causal_chain_store",
+        "//take_home/causal_chains/agents/models/causal_chains",
+    ],
+)

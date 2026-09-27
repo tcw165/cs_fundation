@@ -3,6 +3,9 @@ from dependency_injector import containers, providers
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
+from take_home.causal_chains.agents.stores.causal_chain_store.ddb_causal_chain_store import (
+    DdbCausalChainStore,
+)
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
@@ -14,10 +17,15 @@ class AppContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
     clients = providers.Container(ClientsContainer)
     stub_turn_runner = providers.Factory(StubTurnRunner)
+    causal_chain_store = providers.Singleton(
+        DdbCausalChainStore,
+        dynamo_db=clients.dynamo_db,
+    )
     app_agent_runner = providers.Factory(
         AppAgentRunner,
         api_key=config.openai_api_key,
         memcache=clients.memcache,
+        causal_chain_store=causal_chain_store,
     )
     agent_runner = providers.Selector(
         config.agent_runner,

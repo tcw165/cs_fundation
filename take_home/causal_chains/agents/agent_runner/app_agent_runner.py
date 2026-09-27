@@ -7,6 +7,9 @@ from openai.types.responses import ResponseTextDeltaEvent
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.models.causal_chains.chain_graph import ChainGraph
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
+from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
+    CausalChainStore,
+)
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
 from take_home.causal_chains.agents.models.messaging.sse_event import (
@@ -21,9 +24,15 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 class AppAgentRunner(AgentRunner):
-    def __init__(self, api_key: str, memcache: Memcache) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        memcache: Memcache,
+        causal_chain_store: CausalChainStore,
+    ) -> None:
         self._api_key = api_key
         self._memcache = memcache
+        self._causal_chain_store = causal_chain_store
 
     @override
     async def stream(
@@ -71,6 +80,7 @@ class AppAgentRunner(AgentRunner):
                 if not critique:
                     break
             if kept_graph is not None:
+                self._causal_chain_store.put_chain(context.turn_id, kept_graph)
                 yield SseDelta(text=kept_graph.model_dump_json())
             if context.run_config.include_traces:
                 yield RunTraces(text=self._memcache.flush())

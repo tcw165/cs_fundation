@@ -39,6 +39,14 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     seen: list[object] = []
     contexts: list[object] = []
     cache = InMemoryMemcache()
+    stored: list[tuple[str, ChainGraph]] = []
+
+    class _RecordingCausalChainStore:
+        def put_chain(self, turn_id: str, chain: ChainGraph) -> None:
+            stored.append((turn_id, chain))
+
+        def get_chain(self, turn_id: str) -> ChainGraph | None:
+            return None
 
     class FakeResult:
         def __init__(self, graph: ChainGraph) -> None:
@@ -70,7 +78,11 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     )
 
     async def collect():
-        runner = AppAgentRunner(api_key="test", memcache=cache)
+        runner = AppAgentRunner(
+            api_key="test",
+            memcache=cache,
+            causal_chain_store=_RecordingCausalChainStore(),
+        )
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())
@@ -85,6 +97,7 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     assert scores == [f"score {rising_exam.score}\n", f"score {flat_exam.score}\n"]
     graph_deltas = [event.text for event in events if event.type == "delta" and event.text.startswith("{")]
     assert graph_deltas == [rising.model_dump_json()]
+    assert stored == [("t_1", rising)]
     assert events[-2].type == "run_traces"
     assert events[-2].text == "span\nspan\n"
     assert cache.flush() == ""
@@ -101,6 +114,14 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
         yield SimpleNamespace(type="raw_response_event", data=FakeDelta("oil "))
 
     cache = InMemoryMemcache()
+    stored: list[tuple[str, ChainGraph]] = []
+
+    class _RecordingCausalChainStore:
+        def put_chain(self, turn_id: str, chain: ChainGraph) -> None:
+            stored.append((turn_id, chain))
+
+        def get_chain(self, turn_id: str) -> ChainGraph | None:
+            return None
 
     class FakeResult:
         final_output = "not a graph"
@@ -121,11 +142,16 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
 
     async def collect():
-        runner = AppAgentRunner(api_key="test", memcache=cache)
+        runner = AppAgentRunner(
+            api_key="test",
+            memcache=cache,
+            causal_chain_store=_RecordingCausalChainStore(),
+        )
         context = RunContext(conversation_id="1", turn_id="t_1")
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())
+    assert stored == []
     assert all(event.type != "run_traces" for event in events)
     assert cache.flush() == ""
     assert events[-1].type == "done"
