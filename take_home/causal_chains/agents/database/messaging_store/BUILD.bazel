@@ -1,1 +1,23 @@
-# //take_home/causal_chains/agents/database/messaging_store
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "messaging_store",
+    srcs = ["messaging_store.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/database/messaging_store/protocol",
+        "//take_home/causal_chains/models",
+    ],
+)
+
+pytest_test(
+    name = "messaging_store_test",
+    srcs = ["messaging_store_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":messaging_store",
+        "//take_home/causal_chains/models",
+    ],
+)
