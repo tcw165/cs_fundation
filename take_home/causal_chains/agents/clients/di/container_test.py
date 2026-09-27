@@ -13,3 +13,14 @@ def test_graph_db_singleton_is_a_graph_db(monkeypatch):
     second = container.graph_db()
     assert isinstance(first, GraphDb)
     assert first is second
+
+
+def test_memcache_singleton_appends_and_flushes():
+    container = ClientsContainer()
+    first = container.memcache()
+    second = container.memcache()
+    assert first is second
+    first.append("span\n")
+    first.append("more\n")
+    assert first.flush() == "span\nmore\n"
+    assert second.flush() == ""

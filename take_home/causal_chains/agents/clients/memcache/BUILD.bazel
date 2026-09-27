@@ -1,0 +1,20 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "memcache",
+    srcs = ["memcache.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = ["//take_home/causal_chains/agents/clients/memcache/protocol"],
+)
+
+pytest_test(
+    name = "memcache_test",
+    srcs = ["memcache_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":memcache",
+        "//take_home/causal_chains/agents/clients/memcache/protocol",
+    ],
+)
