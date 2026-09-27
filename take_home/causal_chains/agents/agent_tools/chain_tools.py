@@ -1,5 +1,5 @@
 from decimal import Decimal
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from agents import RunContextWrapper, function_tool
 from pydantic import BaseModel
@@ -30,30 +30,45 @@ def _store(
     return store
 
 
+@function_tool
 async def add_situation(
     ctx: RunContextWrapper[RunContext],
     desc: str,
     is_root: bool,
-) -> str:
+) -> Situation:
+    """Save one situation and return it, including the id assigned here.
+
+    Args:
+        ctx: Run context. The causal chain store is on its clients.
+        desc: What is true in this situation.
+        is_root: True only for the present.
+    """
     situation = Situation(
         situation_id=uuid4(),
         desc=desc,
         is_root=is_root,
     )
     await _store(ctx).add_situation(situation)
-    return situation.model_dump_json()
+    return situation
 
 
+@function_tool
 async def link_situations(
     ctx: RunContextWrapper[RunContext],
-    from_situation_id: str,
-    to_situation_id: str,
-    from_desc: str,
-    to_desc: str,
-    from_is_root: bool,
-    to_is_root: bool,
+    from_situation: Situation,
+    to_situation: Situation,
     inputs: list[LinkInput],
-) -> str:
+) -> LeadsTo:
+    """Save both situations and the leads-to link between them.
+
+    The stored probability is the mean of the input values. Do not pass a probability.
+
+    Args:
+        ctx: Run context. The causal chain store is on its clients.
+        from_situation: The situation this link leaves.
+        to_situation: The situation this link reaches.
+        inputs: Named values between 0 and 1 that a person could move later.
+    """
     parsed = [
         InputVariable(
             name=item.name,
@@ -61,16 +76,6 @@ async def link_situations(
         )
         for item in inputs
     ]
-    from_situation = Situation(
-        situation_id=UUID(from_situation_id),
-        desc=from_desc,
-        is_root=from_is_root,
-    )
-    to_situation = Situation(
-        situation_id=UUID(to_situation_id),
-        desc=to_desc,
-        is_root=to_is_root,
-    )
     link = LeadsTo(
         from_situation_id=from_situation.situation_id,
         to_situation_id=to_situation.situation_id,
@@ -82,16 +87,4 @@ async def link_situations(
         to_situation,
         link,
     )
-    return link.model_dump_json()
-
-
-add_situation_tool = function_tool(
-    add_situation,
-    description_override="Write one situation and return it.",
-)
-link_situations_tool = function_tool(
-    link_situations,
-    description_override=(
-        "Write a leads-to link. The probability is the mean of the input values."
-    ),
-)
+    return link
