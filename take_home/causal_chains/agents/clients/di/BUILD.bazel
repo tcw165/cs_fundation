@@ -10,6 +10,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/clients/graph_db:neo4j_client",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
+        "//take_home/causal_chains/agents/clients/memcache",
         requirement("dependency-injector"),
         requirement("neo4j"),
     ],
