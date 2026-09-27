@@ -28,6 +28,7 @@ def test_post_message_and_subscribe_stub():
         service = ChatService(StubTurnRunner(), store)
         turn = service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
+        await service.run_turn(turn, "hello")
         events = [event async for event in service.subscribe("1", turn.turn_id)]
         return turn, events, store
 

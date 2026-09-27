@@ -45,7 +45,6 @@ class ChatService:
                 text=text,
             )
         )
-        asyncio.get_running_loop().create_task(self._run_turn(turn, text))
         return turn
 
     async def subscribe(self, conversation_id: str, turn_id: str) -> AsyncIterator[SseEvent]:
@@ -72,7 +71,7 @@ class ChatService:
             if queue in waiters:
                 waiters.remove(queue)
 
-    async def _run_turn(self, turn: Turn, text: str) -> None:
+    async def run_turn(self, turn: Turn, text: str) -> None:
         running = turn.model_copy(update={"status": TurnStatus.running})
         self._turns[turn.turn_id] = running
         try:

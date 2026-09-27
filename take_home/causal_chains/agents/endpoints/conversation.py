@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from fastapi.responses import StreamingResponse
 
 from take_home.causal_chains.agents.chat_service.chat_service import format_sse
@@ -14,8 +14,12 @@ async def post_message(
     conversation_id: str,
     body: PostMessageBody,
     container: AppContainerDep,
+    background_tasks: BackgroundTasks,
 ) -> Turn:
-    return container.chat_service().post_message(conversation_id, body.text)
+    service = container.chat_service()
+    turn = service.post_message(conversation_id, body.text)
+    background_tasks.add_task(service.run_turn, turn, body.text)
+    return turn
 
 
 @router.get("/conversation/{conversation_id}/turn/{turn_id}/sse")
