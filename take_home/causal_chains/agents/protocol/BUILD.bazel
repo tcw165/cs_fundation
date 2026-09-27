@@ -1,0 +1,24 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "protocol",
+    srcs = ["agent_runner.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models/messaging",
+    ],
+)
+
+pytest_test(
+    name = "agent_runner_test",
+    srcs = ["agent_runner_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":protocol",
+        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models/messaging",
+    ],
+)
