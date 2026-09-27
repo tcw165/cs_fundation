@@ -5,7 +5,9 @@ from agents import Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
-from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
+from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
+    causal_chain,
+)
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     RunTraces,
@@ -35,10 +37,13 @@ class AppAgentRunner(AgentRunner):
     ) -> AsyncGenerator[SseEvent]:
         results: list[object] = []
         try:
-            prompt = "\n".join(inputs)
+            user_ask = "\n".join(inputs)
             result = Runner.run_streamed(
-                crystal_ball,
-                input=prompt,
+                causal_chain,
+                input=(
+                    f"Future situation:\n{user_ask}\n"
+                    f"Remaining attempts: {context.run_config.attempt_quota}"
+                ),
                 context=context,
             )
             results.append(result)
