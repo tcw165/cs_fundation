@@ -3,19 +3,12 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "protocol",
-    srcs = ["protocol.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-)
-
-py_library(
     name = "neo4j_client",
     srcs = ["neo4j_client.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        ":protocol",
+        "//take_home/causal_chains/agents/clients/graph_db/protocol",
         "//take_home/causal_chains/agents/models/database",
         requirement("neo4j"),
     ],
@@ -27,6 +20,6 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":neo4j_client",
-        ":protocol",
+        "//take_home/causal_chains/agents/clients/graph_db/protocol",
     ],
 )

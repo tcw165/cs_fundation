@@ -4,7 +4,7 @@ from uuid import UUID
 
 from neo4j import Driver
 
-from take_home.causal_chains.agents.clients.graph_db.protocol import GraphDb
+from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 
 _P_SCALE = Decimal("0.0001")
 
