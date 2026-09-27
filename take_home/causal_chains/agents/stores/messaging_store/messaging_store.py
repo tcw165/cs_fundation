@@ -1,7 +1,7 @@
 from typing import override
 
 from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import DynamoDb
-from take_home.causal_chains.agents.database.messaging_store.protocol.messaging_store import (
+from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
 from take_home.causal_chains.models.message import Message

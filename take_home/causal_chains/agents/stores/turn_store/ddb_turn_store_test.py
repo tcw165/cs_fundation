@@ -1,6 +1,6 @@
 import time
 
-from take_home.causal_chains.agents.database.turn_store.ddb_turn_store import DdbTurnStore
+from take_home.causal_chains.agents.stores.turn_store.ddb_turn_store import DdbTurnStore
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
 

@@ -8,7 +8,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
-        "//take_home/causal_chains/agents/database/messaging_store/protocol",
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/models",
     ],
 )
@@ -19,7 +19,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":messaging_store",
-        "//take_home/causal_chains/agents/database/messaging_store/protocol",
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/models",
     ],
 )
