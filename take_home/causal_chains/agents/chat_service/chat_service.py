@@ -2,7 +2,6 @@ import asyncio
 import uuid
 from collections.abc import AsyncIterator
 
-from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
@@ -10,14 +9,16 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseEvent,
     SseTool,
 )
+from take_home.causal_chains.agents.models.runner_context import RunnerContext
+from take_home.causal_chains.agents.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
-from take_home.causal_chains.protocol.turn_runner import TurnRunner
 
 
 class ChatService:
-    def __init__(self, turn_runner: TurnRunner) -> None:
-        self._turn_runner = turn_runner
+    def __init__(self, agent_runner: AgentRunner) -> None:
+        self._agent_runner = agent_runner
         self._turns: dict[str, Turn] = {}
         self._messages: list[Message] = []
         self._buffers: dict[str, list[SseEvent]] = {}
@@ -72,7 +73,11 @@ class ChatService:
         running = turn.model_copy(update={"status": TurnStatus.running})
         self._turns[turn.turn_id] = running
         try:
-            async for event in self._turn_runner.run(running, text):
+            context = RunnerContext(
+                conversation_id=turn.conversation_id,
+                turn_id=turn.turn_id,
+            )
+            async for event in self._agent_runner.stream([text], context):
                 self._publish(turn.turn_id, event)
                 if isinstance(event, SseDone):
                     self._turns[turn.turn_id] = running.model_copy(

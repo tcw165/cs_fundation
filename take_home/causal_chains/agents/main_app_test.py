@@ -16,7 +16,7 @@ def test_health_uses_injected_container_db_ping():
 
 def test_post_message_and_sse_with_stub_runner():
     container = AppContainer()
-    container.config.turn_runner.from_value("stub")
+    container.config.agent_runner.from_value("stub")
     with container.db_ping.override(providers.Object(True)):
         client = TestClient(create_app(container))
         created = client.post("/conversation/1/messages", json={"text": "hello"})
