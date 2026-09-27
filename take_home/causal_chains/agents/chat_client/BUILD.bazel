@@ -1,0 +1,26 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_binary(
+    name = "chat_client",
+    srcs = ["chat_client.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("click"),
+        requirement("httpx"),
+    ],
+)
+
+pytest_test(
+    name = "chat_client_test",
+    srcs = ["chat_client_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":chat_client",
+        "//take_home/causal_chains/agents:main_app",
+        "//take_home/causal_chains/agents/di",
+        requirement("httpx"),
+    ],
+)
