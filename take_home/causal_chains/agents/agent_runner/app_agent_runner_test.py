@@ -6,6 +6,7 @@ from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgen
 from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
+from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
 
@@ -35,6 +36,7 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     graphs = [rising, flat]
     prompts: list[str] = []
     seen: list[object] = []
+    cache = InMemoryMemcache()
 
     class FakeResult:
         def __init__(self, graph: ChainGraph) -> None:
@@ -52,13 +54,14 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
         def run_streamed(agent, input):
             seen.append(agent)
             prompts.append(input)
+            cache.append("span\n")
             return FakeResult(graphs[len(prompts) - 1])
 
     monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
 
     async def collect():
-        runner = AppAgentRunner(api_key="test")
+        runner = AppAgentRunner(api_key="test", memcache=cache)
         context = RunnerContext(conversation_id="1", turn_id="t_1")
         return [event async for event in runner.stream(["hormuz"], context)]
 
@@ -73,5 +76,8 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
     assert scores == [f"score {rising_exam.score}\n", f"score {flat_exam.score}\n"]
     graph_deltas = [event.text for event in events if event.type == "delta" and event.text.startswith("{")]
     assert graph_deltas == [rising.model_dump_json()]
+    assert events[-2].type == "run_traces"
+    assert events[-2].text == "span\nspan\n"
+    assert cache.flush() == ""
     assert events[-1].type == "done"
     assert events[-1].message_id == "m_t_1"
