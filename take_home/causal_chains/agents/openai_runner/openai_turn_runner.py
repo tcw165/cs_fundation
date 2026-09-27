@@ -1,5 +1,8 @@
 from collections.abc import AsyncIterator
 
+from agents import Agent, Runner
+from openai.types.responses import ResponseTextDeltaEvent
+
 from take_home.causal_chains.models.sse_event import SseDelta, SseDone, SseError, SseTool
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.protocol.turn_runner import SseEvent
@@ -10,13 +13,6 @@ class OpenaiTurnRunner:
         self._api_key = api_key
 
     async def run(self, turn: Turn, text: str) -> AsyncIterator[SseEvent]:
-        try:
-            from agents import Agent, Runner
-            from openai.types.responses import ResponseTextDeltaEvent
-        except ImportError as error:
-            yield SseError(message=str(error))
-            return
-
         agent = Agent(
             name="causal_chains",
             instructions="You help explore financial causal chains. Be concise.",
