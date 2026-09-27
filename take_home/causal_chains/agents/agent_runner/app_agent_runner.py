@@ -7,6 +7,7 @@ from openai.types.responses import ResponseTextDeltaEvent
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
+from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
@@ -27,27 +28,48 @@ class AppAgentRunner(AgentRunner):
         inputs: list[str],
         context: RunnerContext,
     ) -> AsyncGenerator[SseEvent]:
-        result = Runner.run_streamed(crystal_ball, input="\n".join(inputs))
+        kept_graph = None
+        kept_score = -1
+        critique = ""
+        results: list[object] = []
         try:
-            async for event in result.stream_events():
-                if event.type == "raw_response_event":
-                    data = getattr(event, "data", None)
-                    if isinstance(data, ResponseTextDeltaEvent):
-                        yield SseDelta(text=data.delta)
-                    continue
-                if event.type == "run_item_stream_event":
-                    item = getattr(event, "item", None)
-                    item_type = getattr(item, "type", "")
-                    if item_type == "tool_call_item":
-                        name = getattr(getattr(item, "raw_item", None), "name", "tool")
-                        yield SseTool(name=str(name), status="called")
-            graph = getattr(result, "final_output", None)
-            if isinstance(graph, ChainGraph):
-                yield SseDelta(text=graph.model_dump_json())
+            for _ in range(3):
+                prompt = "\n".join(inputs)
+                if critique:
+                    prompt = f"{prompt}\n{critique}"
+                result = Runner.run_streamed(crystal_ball, input=prompt)
+                results.append(result)
+                async for event in result.stream_events():
+                    if event.type == "raw_response_event":
+                        data = getattr(event, "data", None)
+                        if isinstance(data, ResponseTextDeltaEvent):
+                            yield SseDelta(text=data.delta)
+                        continue
+                    if event.type == "run_item_stream_event":
+                        item = getattr(event, "item", None)
+                        item_type = getattr(item, "type", "")
+                        if item_type == "tool_call_item":
+                            name = getattr(getattr(item, "raw_item", None), "name", "tool")
+                            yield SseTool(name=str(name), status="called")
+                graph = getattr(result, "final_output", None)
+                if not isinstance(graph, ChainGraph):
+                    break
+                exam = examine(graph)
+                yield SseDelta(text=f"score {exam.score}\n")
+                if exam.score <= kept_score:
+                    break
+                kept_graph = graph
+                kept_score = exam.score
+                critique = exam.failures[0] if exam.failures else ""
+                if not critique:
+                    break
+            if kept_graph is not None:
+                yield SseDelta(text=kept_graph.model_dump_json())
             yield SseDone(message_id=f"m_{context.turn_id}")
         except Exception as error:
             yield SseError(message=str(error))
         finally:
-            cancel = getattr(result, "cancel", None)
-            if cancel is not None:
-                cancel()
+            for result in results:
+                cancel = getattr(result, "cancel", None)
+                if cancel is not None:
+                    cancel()
