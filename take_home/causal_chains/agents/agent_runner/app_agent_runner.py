@@ -1,10 +1,11 @@
 from collections.abc import AsyncGenerator
 from typing import override
 
-from agents import Agent, Runner
+from agents import Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
@@ -25,11 +26,7 @@ class AppAgentRunner(AgentRunner):
         inputs: list[str],
         context: RunnerContext,
     ) -> AsyncGenerator[SseEvent]:
-        agent = Agent(
-            name="causal_chains",
-            instructions="You help explore financial causal chains. Be concise.",
-        )
-        result = Runner.run_streamed(agent, input="\n".join(inputs))
+        result = Runner.run_streamed(crystal_ball, input="\n".join(inputs))
         try:
             async for event in result.stream_events():
                 if event.type == "raw_response_event":

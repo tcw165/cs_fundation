@@ -9,6 +9,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/agent_runner/protocol",
+        "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
         "//take_home/causal_chains/agents/models:runner_context",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("openai"),
@@ -22,6 +23,7 @@ pytest_test(
     imports = ["../../../.."],
     deps = [
         ":agent_runner",
+        "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
         "//take_home/causal_chains/agents/models:runner_context",
     ],
 )
