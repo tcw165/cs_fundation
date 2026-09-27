@@ -5,7 +5,7 @@ from agents import Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
-from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
+from take_home.causal_chains.agents.models.causal_chains.chain_graph import ChainGraph
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine

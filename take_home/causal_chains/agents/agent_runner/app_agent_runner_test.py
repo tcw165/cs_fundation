@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
-from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
+from take_home.causal_chains.agents.models.causal_chains.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
+from take_home.causal_chains.agents.models.causal_chains.chain_graph import ChainGraph
 
 _OUTGOING_SUM = "outgoing probabilities do not sum to 1"
 
