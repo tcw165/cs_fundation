@@ -1,4 +1,4 @@
-from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
 

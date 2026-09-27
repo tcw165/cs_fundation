@@ -3,10 +3,10 @@ from dependency_injector import containers, providers
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
-from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
+from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
-from take_home.causal_chains.agents.database.turn_store.ddb_turn_store import DdbTurnStore
+from take_home.causal_chains.agents.stores.turn_store.ddb_turn_store import DdbTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
