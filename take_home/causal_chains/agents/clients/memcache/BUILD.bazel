@@ -1,3 +1,4 @@
+load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
@@ -16,5 +17,26 @@ pytest_test(
     deps = [
         ":memcache",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
+    ],
+)
+
+py_library(
+    name = "span_processor",
+    srcs = ["span_processor.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/clients/memcache/protocol",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "span_processor_test",
+    srcs = ["span_processor_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":memcache",
+        ":span_processor",
     ],
 )

@@ -4,6 +4,7 @@ from neo4j import GraphDatabase
 from take_home.causal_chains.agents.clients.graph_db.neo4j_client import Neo4jClient
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
+from take_home.causal_chains.agents.clients.memcache.span_processor import MemcacheSpanProcessor
 
 
 def build_graph_db(neo4j_uri: str, neo4j_user: str, neo4j_password: str) -> GraphDb:
@@ -26,3 +27,4 @@ class ClientsContainer(containers.DeclarativeContainer):
         neo4j_password=config.neo4j_password,
     )
     memcache = providers.Singleton(InMemoryMemcache)
+    span_processor = providers.Singleton(MemcacheSpanProcessor, memcache=memcache)
