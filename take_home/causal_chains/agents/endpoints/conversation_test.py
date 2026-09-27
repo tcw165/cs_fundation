@@ -10,6 +10,10 @@ from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurn
 from take_home.causal_chains.models.turn_status import TurnStatus
 
 
+class _ChainStore:
+    pass
+
+
 class _FakeDynamoDb:
     def __init__(self) -> None:
         self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
@@ -28,7 +32,7 @@ def test_chat_service_post_returns_queued_turn():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
-        service = ChatService(StubTurnRunner(), store, turn_store)
+        service = ChatService(StubTurnRunner(), store, turn_store, _ChainStore())
         turn = await service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
         await service.run_turn(turn, "hello")
@@ -59,6 +63,7 @@ def test_turn_sse_passes_include_traces_to_subscribe():
             StubTurnRunner(),
             MessagingStoreImpl(_FakeDynamoDb()),
             InMemoryTurnStore(),
+            _ChainStore(),
         )
         turn = await service.post_message("1", "hello")
         await service.run_turn(turn, "hello")

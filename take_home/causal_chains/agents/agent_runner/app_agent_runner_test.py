@@ -5,6 +5,7 @@ import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
+from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -56,6 +57,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
         conversation_id="1",
         turn_id="t_1",
         run_config=RunConfig(include_traces=True),
+        clients=RunClients(causal_chain_store=object()),
     )
 
     async def collect():
@@ -112,7 +114,11 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
 
     async def collect():
         runner = AppAgentRunner(api_key="test", memcache=cache)
-        context = RunContext(conversation_id="1", turn_id="t_1")
+        context = RunContext(
+            conversation_id="1",
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())

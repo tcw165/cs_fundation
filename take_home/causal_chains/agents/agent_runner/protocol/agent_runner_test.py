@@ -1,5 +1,6 @@
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseEvent
+from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -21,5 +22,9 @@ def test_agent_runner_is_runtime_checkable():
 def test_agent_runner_event_and_context():
     event: SseEvent = SseDelta(text="hi")
     assert event.type == "delta"
-    context = RunContext(conversation_id="1", turn_id="t_1")
+    context = RunContext(
+        conversation_id="1",
+        turn_id="t_1",
+        clients=RunClients(causal_chain_store=object()),
+    )
     assert context.turn_id == "t_1"

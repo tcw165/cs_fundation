@@ -18,6 +18,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":protocol",
+        "//take_home/causal_chains/agents/models:run_clients",
         "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/models/messaging",
     ],
