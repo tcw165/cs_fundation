@@ -14,6 +14,7 @@ def test_chat_service_post_returns_queued_turn():
         service = ChatService(StubTurnRunner(), store)
         turn = service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
+        await service.run_turn(turn, "hello")
         events = [event async for event in service.subscribe("1", turn.turn_id)]
         return events, store
 
