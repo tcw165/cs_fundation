@@ -1,3 +1,6 @@
+import json
+from types import SimpleNamespace
+
 import take_home.causal_chains.agents.clients.di.container as container_module
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
@@ -24,3 +27,11 @@ def test_memcache_singleton_appends_and_flushes():
     first.append("more\n")
     assert first.flush() == "span\nmore\n"
     assert second.flush() == ""
+
+
+def test_span_processor_writes_to_the_memcache_singleton():
+    container = ClientsContainer()
+    processor = container.span_processor()
+    assert processor is container.span_processor()
+    processor.on_span_end(SimpleNamespace(export=lambda: {"name": "now_scout"}))
+    assert container.memcache().flush() == json.dumps({"name": "now_scout"}) + "\n"

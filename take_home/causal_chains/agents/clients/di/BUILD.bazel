@@ -11,6 +11,7 @@ py_library(
         "//take_home/causal_chains/agents/clients/graph_db:neo4j_client",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
         "//take_home/causal_chains/agents/clients/memcache",
+        "//take_home/causal_chains/agents/clients/memcache:span_processor",
         requirement("dependency-injector"),
         requirement("neo4j"),
     ],
