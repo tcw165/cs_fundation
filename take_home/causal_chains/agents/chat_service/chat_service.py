@@ -14,7 +14,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseEvent,
     SseTool,
 )
-from take_home.causal_chains.agents.models.runner_context import RunnerContext
+from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
@@ -86,7 +86,7 @@ class ChatService:
         running = turn.model_copy(update={"status": TurnStatus.running})
         self._record_turn(running)
         try:
-            context = RunnerContext(
+            context = RunContext(
                 conversation_id=turn.conversation_id,
                 turn_id=turn.turn_id,
             )

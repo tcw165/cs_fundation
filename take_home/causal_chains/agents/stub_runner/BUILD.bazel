@@ -8,7 +8,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/agent_runner/protocol",
-        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/models/messaging",
     ],
 )
@@ -20,6 +20,6 @@ pytest_test(
     deps = [
         ":stub_runner",
         "//take_home/causal_chains/agents/agent_runner/protocol",
-        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models:run_context",
     ],
 )

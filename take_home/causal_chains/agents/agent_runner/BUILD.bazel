@@ -13,7 +13,7 @@ py_library(
         "//take_home/causal_chains/agents/clients/memcache/protocol",
         "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
         "//take_home/causal_chains/agents/agents/crystal_ball:examine",
-        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("openai"),
         requirement("openai-agents"),
@@ -30,6 +30,6 @@ pytest_test(
         "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
         "//take_home/causal_chains/agents/agents/crystal_ball:examine",
-        "//take_home/causal_chains/agents/models:runner_context",
+        "//take_home/causal_chains/agents/models:run_context",
     ],
 )
