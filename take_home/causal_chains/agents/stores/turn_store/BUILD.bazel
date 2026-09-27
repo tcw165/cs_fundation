@@ -3,18 +3,10 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "turn_store",
-    srcs = ["turn_store.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//take_home/causal_chains/agents/stores/turn_store/protocol",
-        "//take_home/causal_chains/models",
+    srcs = [
+        "ddb_turn_store.py",
+        "turn_store.py",
     ],
-)
-
-py_library(
-    name = "ddb_turn_store",
-    srcs = ["ddb_turn_store.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -25,18 +17,11 @@ py_library(
 )
 
 pytest_test(
-    name = "ddb_turn_store_test",
-    srcs = ["ddb_turn_store_test.py"],
-    imports = ["../../../../.."],
-    deps = [
-        ":ddb_turn_store",
-        "//take_home/causal_chains/models",
-    ],
-)
-
-pytest_test(
     name = "turn_store_test",
-    srcs = ["turn_store_test.py"],
+    srcs = [
+        "ddb_turn_store_test.py",
+        "turn_store_test.py",
+    ],
     imports = ["../../../../.."],
     deps = [
         ":turn_store",

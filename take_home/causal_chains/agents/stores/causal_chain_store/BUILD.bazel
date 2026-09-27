@@ -4,7 +4,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "graph_causal_chain_store",
+    name = "causal_chain_store",
     srcs = ["graph_causal_chain_store.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
@@ -16,11 +16,11 @@ py_library(
 )
 
 pytest_test(
-    name = "graph_causal_chain_store_test",
+    name = "causal_chain_store_test",
     srcs = ["graph_causal_chain_store_test.py"],
     imports = ["../../../../.."],
     deps = [
-        ":graph_causal_chain_store",
+        ":causal_chain_store",
         "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
     ],
