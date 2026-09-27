@@ -6,6 +6,8 @@ _P_SCALE = Decimal("0.0001")
 
 
 class InputVariable(BaseModel):
+    """A named value between 0 and 1 that a person could move later."""
+
     name: str
     value: Decimal
 
