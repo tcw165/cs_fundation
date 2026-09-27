@@ -10,8 +10,12 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
-        "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
+        "//take_home/causal_chains/agents/agents/crystal_ball:discover",
+        "//take_home/causal_chains/agents/agents/now_scout",
+        "//take_home/causal_chains/agents/agents/path_builder",
+        "//take_home/causal_chains/agents/agents/path_builder:discovered_situations",
         "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("openai"),
         requirement("openai-agents"),
@@ -25,9 +29,12 @@ pytest_test(
     deps = [
         ":agent_runner",
         "//take_home/causal_chains/agents/clients/memcache",
-        "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
+        "//take_home/causal_chains/agents/agents/now_scout",
+        "//take_home/causal_chains/agents/agents/path_builder",
+        "//take_home/causal_chains/agents/agents/path_builder:discovered_situations",
         "//take_home/causal_chains/agents/models:run_clients",
         "//take_home/causal_chains/agents/models:run_config",
         "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models/causal_chains",
     ],
 )

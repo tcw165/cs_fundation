@@ -1,2 +1,1 @@
-Call now_scout, then path_builder, then pricer. Return situations and edges. If outgoing probabilities do not sum to 1, call pricer again with that error. Do not invent a present, a path, or a probability yourself.
-A critique in the input names the single fix for this run.
+The runner is the host. It calls now_scout once, then path_builder until a situation is the user ask, progress is closed, or attempt_quota is spent. A close result asks path_builder to close the path. Do not invent a present, a path, or a probability.
