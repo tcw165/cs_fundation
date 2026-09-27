@@ -10,7 +10,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseTool,
 )
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
-from take_home.causal_chains.agents.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
