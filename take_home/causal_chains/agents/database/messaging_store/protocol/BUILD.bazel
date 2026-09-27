@@ -1,0 +1,22 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "protocol",
+    srcs = ["messaging_store.py"],
+    imports = ["../../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/models",
+    ],
+)
+
+pytest_test(
+    name = "messaging_store_test",
+    srcs = ["messaging_store_test.py"],
+    imports = ["../../../../../.."],
+    deps = [
+        ":protocol",
+        "//take_home/causal_chains/models",
+    ],
+)
