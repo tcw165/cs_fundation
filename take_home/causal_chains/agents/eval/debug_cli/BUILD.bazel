@@ -19,7 +19,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":debug_cli",
-        "//take_home/causal_chains/agents:main_app",
+        "//take_home/causal_chains/agents",
         "//take_home/causal_chains/agents/di",
         requirement("dependency-injector"),
         requirement("httpx"),

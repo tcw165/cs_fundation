@@ -9,8 +9,8 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        "//take_home/causal_chains/agents/agent_tools:chain_tools",
-        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/agent_tools",
+        "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
         requirement("pydantic"),

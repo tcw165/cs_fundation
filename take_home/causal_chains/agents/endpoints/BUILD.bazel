@@ -3,53 +3,38 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "health",
-    srcs = ["health.py"],
-    imports = ["../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//take_home/causal_chains/agents/di",
-        "//take_home/causal_chains/agents/http_models:health_response",
-        requirement("fastapi"),
+    name = "endpoints",
+    srcs = [
+        "conversation.py",
+        "health.py",
     ],
-)
-
-py_library(
-    name = "conversation",
-    srcs = ["conversation.py"],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/di",
-        "//take_home/causal_chains/agents/models:run_config",
-        "//take_home/causal_chains/agents/http_models:post_message_body",
+        "//take_home/causal_chains/agents/http_models",
+        "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/models",
         requirement("fastapi"),
     ],
 )
 
 pytest_test(
-    name = "conversation_test",
-    srcs = ["conversation_test.py"],
+    name = "endpoints_test",
+    srcs = [
+        "conversation_test.py",
+        "health_test.py",
+    ],
     imports = ["../../../.."],
     deps = [
-        ":conversation",
+        ":endpoints",
         "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/di",
         "//take_home/causal_chains/agents/stores/messaging_store",
         "//take_home/causal_chains/agents/stores/turn_store",
         "//take_home/causal_chains/agents/stub_runner",
         "//take_home/causal_chains/models",
-    ],
-)
-
-pytest_test(
-    name = "health_test",
-    srcs = ["health_test.py"],
-    imports = ["../../../.."],
-    deps = [
-        ":health",
-        "//take_home/causal_chains/agents/di",
         requirement("dependency-injector"),
     ],
 )

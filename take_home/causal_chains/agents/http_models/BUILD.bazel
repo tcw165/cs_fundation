@@ -3,18 +3,11 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "health_response",
-    srcs = ["health_response.py"],
-    imports = ["../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        requirement("pydantic"),
+    name = "http_models",
+    srcs = [
+        "health_response.py",
+        "post_message_body.py",
     ],
-)
-
-py_library(
-    name = "post_message_body",
-    srcs = ["post_message_body.py"],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -23,15 +16,11 @@ py_library(
 )
 
 pytest_test(
-    name = "post_message_body_test",
-    srcs = ["post_message_body_test.py"],
+    name = "http_models_test",
+    srcs = [
+        "health_response_test.py",
+        "post_message_body_test.py",
+    ],
     imports = ["../../../.."],
-    deps = [":post_message_body"],
-)
-
-pytest_test(
-    name = "health_response_test",
-    srcs = ["health_response_test.py"],
-    imports = ["../../../.."],
-    deps = [":health_response"],
+    deps = [":http_models"],
 )

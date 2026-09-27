@@ -11,7 +11,7 @@ py_library(
         "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
         "//take_home/causal_chains/agents/agents/causal_chain",
-        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("openai"),
         requirement("openai-agents"),
@@ -26,8 +26,6 @@ pytest_test(
         ":agent_runner",
         "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/agents/causal_chain",
-        "//take_home/causal_chains/agents/models:run_clients",
-        "//take_home/causal_chains/agents/models:run_config",
-        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models",
     ],
 )

@@ -10,7 +10,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/models/causal_chains",
-        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models",
         requirement("openai-agents"),
     ],
 )
