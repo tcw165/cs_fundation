@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from take_home.causal_chains.agents.models.database.likelihood import Likelihood, likelihood
+from take_home.causal_chains.agents.models.causal_chains.likelihood import Likelihood, likelihood
 
 
 def test_bucket_boundaries():

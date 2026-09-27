@@ -4,7 +4,7 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from take_home.causal_chains.agents.models.database.leads_to import LeadsTo
+from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 
 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")

@@ -4,8 +4,8 @@ from uuid import UUID
 
 from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
-from take_home.causal_chains.agents.models.database.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.database.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")

@@ -9,7 +9,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
-        "//take_home/causal_chains/agents/models/database",
+        "//take_home/causal_chains/agents/models/causal_chains",
         requirement("neo4j"),
     ],
 )

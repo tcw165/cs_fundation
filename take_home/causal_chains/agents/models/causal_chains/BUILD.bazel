@@ -3,7 +3,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "database",
+    name = "causal_chains",
     srcs = [
         "leads_to.py",
         "likelihood.py",
@@ -21,7 +21,7 @@ pytest_test(
     srcs = ["situation_test.py"],
     imports = ["../../../../.."],
     deps = [
-        ":database",
+        ":causal_chains",
     ],
 )
 
@@ -30,7 +30,7 @@ pytest_test(
     srcs = ["leads_to_test.py"],
     imports = ["../../../../.."],
     deps = [
-        ":database",
+        ":causal_chains",
         requirement("pydantic"),
     ],
 )
@@ -40,6 +40,6 @@ pytest_test(
     srcs = ["likelihood_test.py"],
     imports = ["../../../../.."],
     deps = [
-        ":database",
+        ":causal_chains",
     ],
 )

@@ -2,7 +2,7 @@ from uuid import UUID
 
 import pytest
 
-from take_home.causal_chains.agents.models.database.situation import (
+from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     require_single_root,
 )
