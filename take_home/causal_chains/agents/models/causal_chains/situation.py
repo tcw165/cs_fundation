@@ -4,6 +4,12 @@ from pydantic import BaseModel
 
 
 class Situation(BaseModel):
+    """Stored Neo4j node for one situation.
+
+    This is the database row (:Situation {situation_id, desc, is_root}).
+    Agents mutate a CausalChain, not this row.
+    """
+
     situation_id: UUID
     desc: str
     is_root: bool

@@ -11,6 +11,12 @@ NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
+def test_leads_to_docstring_says_it_is_the_stored_row():
+    assert LeadsTo.__doc__ is not None
+    assert "Neo4j" in LeadsTo.__doc__
+    assert "CausalLink" in LeadsTo.__doc__
+
+
 def test_leads_to_keeps_decimal_p():
     edge = LeadsTo(from_situation_id=NOW_ID, to_situation_id=DEAL_ID, p=Decimal("0.08"))
     assert edge.p == Decimal("0.08")
