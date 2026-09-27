@@ -4,25 +4,10 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "memcache",
-    srcs = ["memcache.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-    deps = ["//take_home/causal_chains/agents/clients/memcache/protocol"],
-)
-
-pytest_test(
-    name = "memcache_test",
-    srcs = ["memcache_test.py"],
-    imports = ["../../../../.."],
-    deps = [
-        ":memcache",
-        "//take_home/causal_chains/agents/clients/memcache/protocol",
+    srcs = [
+        "memcache.py",
+        "span_processor.py",
     ],
-)
-
-py_library(
-    name = "span_processor",
-    srcs = ["span_processor.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -32,11 +17,14 @@ py_library(
 )
 
 pytest_test(
-    name = "span_processor_test",
-    srcs = ["span_processor_test.py"],
+    name = "memcache_test",
+    srcs = [
+        "memcache_test.py",
+        "span_processor_test.py",
+    ],
     imports = ["../../../../.."],
     deps = [
         ":memcache",
-        ":span_processor",
+        "//take_home/causal_chains/agents/clients/memcache/protocol",
     ],
 )

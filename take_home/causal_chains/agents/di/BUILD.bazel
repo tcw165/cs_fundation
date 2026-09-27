@@ -13,9 +13,9 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/clients/di",
-        "//take_home/causal_chains/agents/stores/causal_chain_store:graph_causal_chain_store",
+        "//take_home/causal_chains/agents/stores/causal_chain_store",
         "//take_home/causal_chains/agents/stores/messaging_store",
-        "//take_home/causal_chains/agents/stores/turn_store:ddb_turn_store",
+        "//take_home/causal_chains/agents/stores/turn_store",
         "//take_home/causal_chains/agents/agent_runner",
         "//take_home/causal_chains/agents/stub_runner",
         requirement("dependency-injector"),

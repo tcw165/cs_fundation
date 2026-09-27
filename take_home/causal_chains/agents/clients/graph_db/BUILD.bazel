@@ -3,7 +3,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "neo4j_client",
+    name = "graph_db",
     srcs = ["neo4j_client.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
@@ -15,11 +15,11 @@ py_library(
 )
 
 pytest_test(
-    name = "neo4j_client_test",
+    name = "graph_db_test",
     srcs = ["neo4j_client_test.py"],
     imports = ["../../../../.."],
     deps = [
-        ":neo4j_client",
+        ":graph_db",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
     ],
 )

@@ -3,7 +3,7 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "boto_dynamo_db",
+    name = "dynamo_db",
     srcs = ["boto_dynamo_db.py"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
@@ -14,8 +14,8 @@ py_library(
 )
 
 pytest_test(
-    name = "boto_dynamo_db_test",
+    name = "dynamo_db_test",
     srcs = ["boto_dynamo_db_test.py"],
     imports = ["../../../../.."],
-    deps = [":boto_dynamo_db"],
+    deps = [":dynamo_db"],
 )
