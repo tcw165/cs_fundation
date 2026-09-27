@@ -5,16 +5,11 @@ from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
     InMemoryMessagingStore,
 )
-from take_home.causal_chains.agents.di.ping_postgres import ping_postgres
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
 class AppContainer(containers.DeclarativeContainer):
     config = providers.Configuration()
-    db_ping = providers.Callable(
-        ping_postgres,
-        database_url=config.database_url,
-    )
     stub_turn_runner = providers.Factory(StubTurnRunner)
     app_agent_runner = providers.Factory(
         AppAgentRunner,

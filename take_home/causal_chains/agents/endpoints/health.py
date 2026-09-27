@@ -8,4 +8,4 @@ router = APIRouter()
 
 @router.get("/health", response_model=HealthResponse)
 def health(container: AppContainerDep) -> HealthResponse:
-    return HealthResponse(status="ok", db="up" if container.db_ping() else "down")
+    return HealthResponse(status="ok")

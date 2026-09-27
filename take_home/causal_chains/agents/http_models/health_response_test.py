@@ -2,9 +2,8 @@ from take_home.causal_chains.agents.http_models.health_response import HealthRes
 
 
 def test_health_response_parses():
-    report = HealthResponse(status="ok", db="up")
+    report = HealthResponse(status="ok")
     assert report.status == "ok"
-    assert report.db == "up"
 
 
 def test_health_response_requires_fields():

@@ -7,7 +7,6 @@ py_library(
     srcs = [
         "container.py",
         "deps.py",
-        "ping_postgres.py",
     ],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
@@ -18,20 +17,12 @@ py_library(
         "//take_home/causal_chains/agents/stub_runner",
         requirement("dependency-injector"),
         requirement("fastapi"),
-        requirement("psycopg"),
     ],
 )
 
 pytest_test(
     name = "deps_test",
     srcs = ["deps_test.py"],
-    imports = ["../../../.."],
-    deps = [":di"],
-)
-
-pytest_test(
-    name = "ping_postgres_test",
-    srcs = ["ping_postgres_test.py"],
     imports = ["../../../.."],
     deps = [":di"],
 )
