@@ -1,0 +1,24 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "chain_editor",
+    srcs = ["in_memory_chain_editor.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/chain_editor/protocol",
+        "//take_home/causal_chains/agents/models/causal_chain",
+    ],
+)
+
+pytest_test(
+    name = "in_memory_chain_editor_test",
+    srcs = ["in_memory_chain_editor_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":chain_editor",
+        "//take_home/causal_chains/agents/chain_editor/protocol",
+        "//take_home/causal_chains/agents/models/causal_chain",
+    ],
+)
