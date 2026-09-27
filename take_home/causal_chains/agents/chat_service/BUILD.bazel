@@ -10,6 +10,7 @@ py_library(
         "//take_home/causal_chains/agents/models:runner_context",
         "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/agent_runner/protocol",
+        "//take_home/causal_chains/agents/database/messaging_store/protocol",
         "//take_home/causal_chains/models",
     ],
 )
@@ -20,6 +21,7 @@ pytest_test(
     imports = ["../../../.."],
     deps = [
         ":chat_service",
+        "//take_home/causal_chains/agents/database/messaging_store",
         "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stub_runner",
         "//take_home/causal_chains/models",

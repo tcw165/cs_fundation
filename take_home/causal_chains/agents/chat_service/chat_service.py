@@ -2,6 +2,10 @@ import asyncio
 import uuid
 from collections.abc import AsyncIterator
 
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.database.messaging_store.protocol.messaging_store import (
+    MessagingStore,
+)
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
@@ -10,17 +14,16 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseTool,
 )
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
-from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
 
 
 class ChatService:
-    def __init__(self, agent_runner: AgentRunner) -> None:
+    def __init__(self, agent_runner: AgentRunner, messaging_store: MessagingStore) -> None:
         self._agent_runner = agent_runner
+        self._messaging_store = messaging_store
         self._turns: dict[str, Turn] = {}
-        self._messages: list[Message] = []
         self._buffers: dict[str, list[SseEvent]] = {}
         self._waiters: dict[str, list[asyncio.Queue[SseEvent | None]]] = {}
 
@@ -33,7 +36,7 @@ class ChatService:
         self._turns[turn.turn_id] = turn
         self._buffers[turn.turn_id] = []
         self._waiters[turn.turn_id] = []
-        self._messages.append(
+        self._messaging_store.append(
             Message(
                 message_id=f"m_{uuid.uuid4().hex[:8]}",
                 conversation_id=conversation_id,
