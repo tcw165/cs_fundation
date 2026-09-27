@@ -90,12 +90,19 @@ def test_merge_situation_writes_node_fields():
 def test_merge_leads_to_writes_float_p():
     driver = _Driver([])
     client = Neo4jClient(driver)
-    client.merge_leads_to(NOW_ID, CLEAR_ID, Decimal("0.5"))
+    client.merge_leads_to(
+        NOW_ID,
+        CLEAR_ID,
+        Decimal("0.5"),
+        [("deal_odds", Decimal("0.5"))],
+    )
     query, params = driver.calls[0]
     assert "MERGE (a)-[r:LEADS_TO]->(b)" in query
     assert params == {
         "from_situation_id": str(NOW_ID),
         "to_situation_id": str(CLEAR_ID),
         "p": 0.5,
+        "inputs": [{"name": "deal_odds", "value": 0.5}],
     }
     assert isinstance(params["p"], float)
+    assert isinstance(params["inputs"][0]["value"], float)

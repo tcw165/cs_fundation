@@ -2,6 +2,7 @@ import asyncio
 from decimal import Decimal
 from uuid import UUID
 
+from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
@@ -18,7 +19,7 @@ DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 class _FakeGraphDb:
     def __init__(self) -> None:
         self.situations: list[tuple[UUID, str, bool]] = []
-        self.links: list[tuple[UUID, UUID, Decimal]] = []
+        self.links: list[tuple[UUID, UUID, Decimal, list[tuple[str, Decimal]]]] = []
 
     def merge_situation(
         self,
@@ -33,8 +34,9 @@ class _FakeGraphDb:
         from_situation_id: UUID,
         to_situation_id: UUID,
         p: Decimal,
+        inputs: list[tuple[str, Decimal]],
     ) -> None:
-        self.links.append((from_situation_id, to_situation_id, p))
+        self.links.append((from_situation_id, to_situation_id, p, inputs))
 
 
 def test_graph_causal_chain_store_is_a_causal_chain_store():
@@ -54,7 +56,8 @@ def test_add_situation_and_link_situations_record_calls():
             LeadsTo(
                 from_situation_id=NOW_ID,
                 to_situation_id=DEAL_ID,
-                p=Decimal("0.08"),
+                inputs=[InputVariable(name="deal_odds", value=Decimal("0.08"))],
+                p=Decimal("0.0800"),
             ),
         )
         return graph_db
@@ -65,4 +68,6 @@ def test_add_situation_and_link_situations_record_calls():
         (NOW_ID, "now", True),
         (DEAL_ID, "deal", False),
     ]
-    assert graph_db.links == [(NOW_ID, DEAL_ID, Decimal("0.08"))]
+    assert graph_db.links == [
+        (NOW_ID, DEAL_ID, Decimal("0.0800"), [("deal_odds", Decimal("0.08"))]),
+    ]
