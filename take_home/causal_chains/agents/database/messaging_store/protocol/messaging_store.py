@@ -1,8 +1,9 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from take_home.causal_chains.models.message import Message
 
 
+@runtime_checkable
 class MessagingStore(Protocol):
     def append(self, message: Message) -> None: ...
 

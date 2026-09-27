@@ -1,7 +1,14 @@
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
     InMemoryMessagingStore,
 )
+from take_home.causal_chains.agents.database.messaging_store.protocol.messaging_store import (
+    MessagingStore,
+)
 from take_home.causal_chains.models.message import Message
+
+
+def test_in_memory_store_is_a_messaging_store():
+    assert isinstance(InMemoryMessagingStore(), MessagingStore)
 
 
 def test_append_and_list_messages_by_conversation():
