@@ -1,6 +1,7 @@
 import asyncio
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
+from take_home.causal_chains.agents.endpoints.conversation import turn_sse
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
@@ -43,3 +44,33 @@ def test_chat_service_post_returns_queued_turn():
     saved = turn_store.get_turn(turn.turn_id)
     assert saved is not None
     assert saved.status is TurnStatus.completed
+
+
+def test_turn_sse_passes_include_traces_to_subscribe():
+    class _Container:
+        def __init__(self, service: ChatService) -> None:
+            self._service = service
+
+        def chat_service(self) -> ChatService:
+            return self._service
+
+    async def exercise():
+        service = ChatService(
+            StubTurnRunner(),
+            MessagingStoreImpl(_FakeDynamoDb()),
+            InMemoryTurnStore(),
+        )
+        turn = service.post_message("1", "hello")
+        await service.run_turn(turn, "hello")
+        response = await turn_sse(
+            "1",
+            turn.turn_id,
+            _Container(service),
+            include_traces=True,
+        )
+        async for _chunk in response.body_iterator:
+            pass
+        return service._contexts[turn.turn_id]
+
+    context = asyncio.run(exercise())
+    assert context.run_config.include_traces is True

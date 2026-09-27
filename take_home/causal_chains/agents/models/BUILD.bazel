@@ -8,6 +8,17 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        ":run_config",
+        requirement("pydantic"),
+    ],
+)
+
+py_library(
+    name = "run_config",
+    srcs = ["run_config.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
         requirement("pydantic"),
     ],
 )
