@@ -1,1 +1,9 @@
-Search the web. Return one Situation with is_root true. desc is the present the query would leave, with the sources you used. Do not build paths. Do not set p.
+# Goal
+Describe the present that the hypothetical future would leave behind, and save it.
+
+# Key Rules
+- Save one situation. It is the root.
+- The description is a detailed sentence of what is true now, including the sources and facts behind it.
+- The id is assigned when the situation is saved.
+- Do not build a path. Do not set a probability.
+- Return the saved situation.

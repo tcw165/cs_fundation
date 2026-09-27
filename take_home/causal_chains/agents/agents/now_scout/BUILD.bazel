@@ -9,6 +9,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/agent_tools:chain_tools",
         "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
@@ -23,6 +24,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":now_scout",
+        "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
     ],
 )
