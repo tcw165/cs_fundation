@@ -4,6 +4,7 @@ from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
     InMemoryMessagingStore,
 )
+from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 from take_home.causal_chains.agents.models.messaging.sse_event import RunTraces, SseDelta
 from take_home.causal_chains.models.turn_status import TurnStatus
@@ -25,14 +26,15 @@ def test_format_sse_run_traces():
 def test_post_message_and_subscribe_stub():
     async def exercise():
         store = InMemoryMessagingStore()
-        service = ChatService(StubTurnRunner(), store)
+        turn_store = InMemoryTurnStore()
+        service = ChatService(StubTurnRunner(), store, turn_store)
         turn = service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
         await service.run_turn(turn, "hello")
         events = [event async for event in service.subscribe("1", turn.turn_id)]
-        return turn, events, store
+        return turn, events, store, turn_store
 
-    turn, events, store = asyncio.run(exercise())
+    turn, events, store, turn_store = asyncio.run(exercise())
     assert events[0].type == "delta"
     assert events[-1].type == "done"
     assert turn.conversation_id == "1"
@@ -41,3 +43,6 @@ def test_post_message_and_subscribe_stub():
     assert stored[0].role == "user"
     assert stored[0].text == "hello"
     assert stored[0].turn_id == turn.turn_id
+    saved = turn_store.get_turn(turn.turn_id)
+    assert saved is not None
+    assert saved.status is TurnStatus.completed

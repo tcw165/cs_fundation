@@ -35,6 +35,7 @@ pytest_test(
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/database/messaging_store",
+        "//take_home/causal_chains/agents/database/turn_store",
         "//take_home/causal_chains/agents/stub_runner",
         "//take_home/causal_chains/models",
     ],

@@ -6,6 +6,7 @@ from take_home.causal_chains.agents.clients.di.container import ClientsContainer
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
     InMemoryMessagingStore,
 )
+from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
@@ -24,8 +25,10 @@ class AppContainer(containers.DeclarativeContainer):
         openai=app_agent_runner,
     )
     messaging_store = providers.Singleton(InMemoryMessagingStore)
+    turn_store = providers.Singleton(InMemoryTurnStore)
     chat_service = providers.Singleton(
         ChatService,
         agent_runner=agent_runner,
         messaging_store=messaging_store,
+        turn_store=turn_store,
     )
