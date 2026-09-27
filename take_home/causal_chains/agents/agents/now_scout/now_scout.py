@@ -2,7 +2,7 @@ from pathlib import Path
 
 from agents import Agent, WebSearchTool
 
-from take_home.causal_chains.agents.models.database.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 

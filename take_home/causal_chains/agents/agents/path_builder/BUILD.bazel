@@ -8,7 +8,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        "//take_home/causal_chains/agents/models/database",
+        "//take_home/causal_chains/agents/models/causal_chains",
         requirement("pydantic"),
     ],
 )
