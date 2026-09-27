@@ -1,7 +1,12 @@
 import asyncio
 
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
+
+
+def test_stub_turn_runner_is_an_agent_runner():
+    assert isinstance(StubTurnRunner(), AgentRunner)
 
 
 def test_stub_turn_runner_stream_yields_delta_then_done():

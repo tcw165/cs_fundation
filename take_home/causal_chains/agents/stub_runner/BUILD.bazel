@@ -19,6 +19,7 @@ pytest_test(
     imports = ["../../../.."],
     deps = [
         ":stub_runner",
+        "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/models:runner_context",
     ],
 )
