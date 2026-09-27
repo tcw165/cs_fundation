@@ -7,6 +7,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
         "//take_home/causal_chains/agents/database/messaging_store/protocol",
         "//take_home/causal_chains/models",
     ],

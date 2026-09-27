@@ -12,6 +12,28 @@ py_library(
     ],
 )
 
+py_library(
+    name = "ddb_turn_store",
+    srcs = ["ddb_turn_store.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
+        "//take_home/causal_chains/agents/database/turn_store/protocol",
+        "//take_home/causal_chains/models",
+    ],
+)
+
+pytest_test(
+    name = "ddb_turn_store_test",
+    srcs = ["ddb_turn_store_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":ddb_turn_store",
+        "//take_home/causal_chains/models",
+    ],
+)
+
 pytest_test(
     name = "turn_store_test",
     srcs = ["turn_store_test.py"],

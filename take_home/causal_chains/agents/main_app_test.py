@@ -1,10 +1,32 @@
 import json
 from types import SimpleNamespace
 
+from dependency_injector import providers
 from fastapi.testclient import TestClient
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
+
+
+class _FakeDynamoDb:
+    def __init__(self) -> None:
+        self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
+        self.put_item("conversation", {"conversation_id": "1", "messages": []})
+
+    def put_item(self, table_name: str, item: dict[str, object]) -> None:
+        if table_name == "turn":
+            key = (("turn_id", item["turn_id"]),)
+        else:
+            key = (("conversation_id", item["conversation_id"]),)
+        self._items[(table_name, key)] = item
+
+    def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
+        stored_key = tuple(sorted(key.items()))
+        return self._items.get((table_name, stored_key))
+
+
+def _override_dynamo_db(container: AppContainer) -> None:
+    container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
 
 
 def test_health_reports_ready():
@@ -17,6 +39,7 @@ def test_health_reports_ready():
 def test_post_message_and_sse_with_stub_runner():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
+    _override_dynamo_db(container)
     client = TestClient(create_app(container))
     created = client.post("/conversation/1/messages", json={"text": "hello"})
     assert created.status_code == 200
@@ -27,6 +50,9 @@ def test_post_message_and_sse_with_stub_runner():
     assert stream.status_code == 200
     assert "event: delta" in stream.text
     assert "event: done" in stream.text
+    stored = container.messaging_store().list_messages("1")
+    assert len(stored) == 1
+    assert stored[0].text == "hello"
 
 
 def test_app_runner_and_span_processor_share_memcache():
