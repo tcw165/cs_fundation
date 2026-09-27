@@ -2,7 +2,7 @@ from dependency_injector import containers, providers
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.di.ping_postgres import ping_postgres
-from take_home.causal_chains.agents.openai_runner.openai_turn_runner import OpenaiTurnRunner
+from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
@@ -13,14 +13,14 @@ class AppContainer(containers.DeclarativeContainer):
         database_url=config.database_url,
     )
     stub_turn_runner = providers.Factory(StubTurnRunner)
-    openai_turn_runner = providers.Factory(
-        OpenaiTurnRunner,
+    app_agent_runner = providers.Factory(
+        AppAgentRunner,
         api_key=config.openai_api_key,
     )
     agent_runner = providers.Selector(
         config.agent_runner,
         stub=stub_turn_runner,
-        openai=openai_turn_runner,
+        openai=app_agent_runner,
     )
     chat_service = providers.Singleton(
         ChatService,
