@@ -9,7 +9,6 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/models:runner_context",
         "//take_home/causal_chains/agents/models/messaging",
-        "//take_home/causal_chains/models",
     ],
 )
 
@@ -20,6 +19,5 @@ pytest_test(
     deps = [
         ":stub_runner",
         "//take_home/causal_chains/agents/models:runner_context",
-        "//take_home/causal_chains/models",
     ],
 )
