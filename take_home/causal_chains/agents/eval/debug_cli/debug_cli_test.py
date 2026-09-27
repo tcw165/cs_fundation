@@ -2,7 +2,7 @@ import anyio
 import httpx
 from dependency_injector import providers
 
-from take_home.causal_chains.agents.chat_client.chat_client import post_and_read
+from take_home.causal_chains.agents.eval.debug_cli.debug_cli import post_and_read
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
 
