@@ -1,21 +1,24 @@
 # Agent control flow
 
-`crystal_ball` is the host. It must not invent a present, a path, or a probability.
+`causal_chain` is the only agent the runner calls. It must not invent a present, a path, or a probability.
 
 ```mermaid
 flowchart TD
-  inputNode["query"]
-  crystalBall["crystal_ball"]
-  nowScout["now_scout: one root Situation"]
-  pathBuilder["path_builder: UnpricedChain"]
-  pricer["pricer: PricedEdges"]
-  inputNode --> crystalBall
-  crystalBall --> nowScout
-  nowScout --> pathBuilder
-  pathBuilder --> pricer
+  runner[AppAgentRunner]
+  causal[causal_chain]
+  scout[now scout]
+  builder[path builder]
+  pricerNode[pricer]
+  linkTool[save link]
+  runner --> causal
+  causal --> scout
+  causal --> builder
+  builder --> pricerNode
+  pricerNode --> linkTool
 ```
 
-- `now_scout` searches the web and returns one root `Situation`. No paths, no `p`.
-- `path_builder` searches the web and returns at least two paths to the query, plus the failure branch on every split. Destinations are dated yes-or-no sentences. No `p`.
-- `pricer` searches the web for base rates and sets `p` on the edges it was given. Outgoing edges from one situation sum to 1. It does not add or delete a situation.
-- `crystal_ball` calls those three tools in one run. It does not return a `ChainGraph`.
+- The runner passes the future and the remaining attempts. It does not call the store.
+- Now scout saves the present and returns that situation. The id is assigned when it is saved. The description includes the sources behind it.
+- Path builder saves the next situations from the current description plus thoughts about how many attempts remain, and returns those situations.
+- For every next situation, the pricer names the input variables on that one link, and the link tool saves the link between the two saved situations. The stored probability is the mean of those inputs.
+- The agent returns the stored root situation.

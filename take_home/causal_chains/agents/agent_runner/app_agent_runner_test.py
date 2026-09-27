@@ -3,7 +3,9 @@ from types import SimpleNamespace
 
 import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
-from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
+from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
+    causal_chain,
+)
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
@@ -56,7 +58,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     context = RunContext(
         conversation_id="1",
         turn_id="t_1",
-        run_config=RunConfig(include_traces=True),
+        run_config=RunConfig(include_traces=True, attempt_quota=2),
         clients=RunClients(causal_chain_store=object()),
     )
 
@@ -66,8 +68,8 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
 
     events = asyncio.run(collect())
     assert contexts == [context]
-    assert seen == [crystal_ball]
-    assert prompts == ["hormuz"]
+    assert seen == [causal_chain]
+    assert prompts == ["Future situation:\nhormuz\nRemaining attempts: 2"]
     deltas = [event.text for event in events if event.type == "delta"]
     assert deltas == ["oil "]
     assert events[-2].type == "run_traces"

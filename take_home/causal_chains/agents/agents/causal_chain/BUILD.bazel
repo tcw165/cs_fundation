@@ -1,0 +1,32 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "causal_chain",
+    srcs = ["causal_chain.py"],
+    data = ["//take_home/causal_chains/agents/agents/causal_chain/prompts:causal_chain.md"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/agent_tools:chain_tools",
+        "//take_home/causal_chains/agents/agents/now_scout",
+        "//take_home/causal_chains/agents/agents/path_builder",
+        "//take_home/causal_chains/agents/agents/pricer",
+        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "causal_chain_test",
+    srcs = ["causal_chain_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/causal_chain/prompts:causal_chain.md"],
+    imports = ["../../../../.."],
+    deps = [
+        ":causal_chain",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai-agents"),
+    ],
+)
