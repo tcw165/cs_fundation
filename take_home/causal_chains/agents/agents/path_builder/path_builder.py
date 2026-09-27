@@ -2,7 +2,13 @@ from pathlib import Path
 
 from agents import Agent, WebSearchTool
 
-from take_home.causal_chains.agents.agents.path_builder.unpriced_chain import UnpricedChain
+from take_home.causal_chains.agents.agent_tools.chain_tools import (
+    add_situation_tool,
+    link_situations_tool,
+)
+from take_home.causal_chains.agents.agents.path_builder.discovered_situations import (
+    DiscoveredSituations,
+)
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -14,6 +20,10 @@ path_builder = Agent[RunContext](
     name="path_builder",
     instructions=_read_prompt("path_builder.md"),
     model="gpt-5.6-luna",
-    tools=[WebSearchTool()],
-    output_type=UnpricedChain,
+    tools=[
+        WebSearchTool(),
+        add_situation_tool,
+        link_situations_tool,
+    ],
+    output_type=DiscoveredSituations,
 )
