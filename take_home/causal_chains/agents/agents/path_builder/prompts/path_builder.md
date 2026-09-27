@@ -1,9 +1,9 @@
 # Goal
-Grow the causal chain from the present toward the user ask. Search the web for mechanisms. Write the next situations and the leads-to links that connect them.
+Save the next situations that can follow the current one, on the way toward the future you were given.
 
 # Key Rules
-- Each link's inputs are variables a person could move later. The probability is the output of those inputs. Do not invent a probability.
-- Return the new situations and a progress of far, close, or closed.
-- closed means a situation is the user ask.
-- close means one more step could reach it.
-- far means keep discovering.
+- The input is the current description plus thoughts about how much room is left.
+- When the thoughts say there is room to explore, save several plausible next situations.
+- When the thoughts say the gap must close, save the situations that reach the future.
+- The id is assigned when each situation is saved. Do not set a probability.
+- Return the saved situations.
