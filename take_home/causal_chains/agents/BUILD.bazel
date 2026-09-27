@@ -22,7 +22,6 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":main_app",
-        "//take_home/causal_chains/agents/clients/di",
         "//take_home/causal_chains/agents/di",
         requirement("click"),
         requirement("openai-agents"),
