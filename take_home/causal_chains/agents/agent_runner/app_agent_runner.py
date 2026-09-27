@@ -17,7 +17,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseEvent,
     SseTool,
 )
-from take_home.causal_chains.agents.models.runner_context import RunnerContext
+from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 class AppAgentRunner(AgentRunner):
@@ -29,7 +29,7 @@ class AppAgentRunner(AgentRunner):
     async def stream(
         self,
         inputs: list[str],
-        context: RunnerContext,
+        context: RunContext,
     ) -> AsyncGenerator[SseEvent]:
         kept_graph = None
         kept_score = -1

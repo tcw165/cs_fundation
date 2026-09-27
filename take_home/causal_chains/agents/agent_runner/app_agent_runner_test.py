@@ -7,7 +7,7 @@ from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import Chain
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.agents.crystal_ball.examine import examine
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
-from take_home.causal_chains.agents.models.runner_context import RunnerContext
+from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
@@ -62,7 +62,7 @@ def test_app_agent_runner_keeps_a_graph_only_when_the_score_rises(monkeypatch):
 
     async def collect():
         runner = AppAgentRunner(api_key="test", memcache=cache)
-        context = RunnerContext(conversation_id="1", turn_id="t_1")
+        context = RunContext(conversation_id="1", turn_id="t_1")
         return [event async for event in runner.stream(["hormuz"], context)]
 
     events = asyncio.run(collect())

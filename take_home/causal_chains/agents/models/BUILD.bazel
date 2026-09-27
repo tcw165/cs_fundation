@@ -3,8 +3,8 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "runner_context",
-    srcs = ["runner_context.py"],
+    name = "run_context",
+    srcs = ["run_context.py"],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -13,8 +13,8 @@ py_library(
 )
 
 pytest_test(
-    name = "runner_context_test",
-    srcs = ["runner_context_test.py"],
+    name = "run_context_test",
+    srcs = ["run_context_test.py"],
     imports = ["../../../.."],
-    deps = [":runner_context"],
+    deps = [":run_context"],
 )
