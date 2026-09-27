@@ -42,21 +42,21 @@ def test_post_message_and_subscribe_stub():
         store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
         service = ChatService(StubTurnRunner(), store, turn_store)
-        turn = service.post_message("1", "hello")
+        turn = await service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
         await service.run_turn(turn, "hello")
         events = [event async for event in service.subscribe("1", turn.turn_id)]
-        return turn, events, store, turn_store
+        stored = await store.list_messages("1")
+        saved = await turn_store.get_turn(turn.turn_id)
+        return turn, events, stored, saved
 
-    turn, events, store, turn_store = asyncio.run(exercise())
+    turn, events, stored, saved = asyncio.run(exercise())
     assert events[0].type == "delta"
     assert events[-1].type == "done"
     assert turn.conversation_id == "1"
-    stored = store.list_messages("1")
     assert len(stored) == 1
     assert stored[0].role == "user"
     assert stored[0].text == "hello"
     assert stored[0].turn_id == turn.turn_id
-    saved = turn_store.get_turn(turn.turn_id)
     assert saved is not None
     assert saved.status is TurnStatus.completed

@@ -1,4 +1,5 @@
 import anyio
+import asyncio
 import httpx
 from dependency_injector import providers
 
@@ -51,6 +52,6 @@ def test_post_and_read_stub_prints_delta_and_done():
         body = post_and_read("http://test", "1", "hello", client)
     assert "event: delta" in body
     assert "event: done" in body
-    stored = container.messaging_store().list_messages("1")
+    stored = asyncio.run(container.messaging_store().list_messages("1"))
     assert len(stored) == 1
     assert stored[0].text == "hello"

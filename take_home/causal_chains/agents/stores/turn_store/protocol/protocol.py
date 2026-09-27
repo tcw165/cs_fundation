@@ -5,6 +5,12 @@ from take_home.causal_chains.models.turn import Turn
 
 @runtime_checkable
 class TurnStore(Protocol):
-    def put_turn(self, turn: Turn) -> None: ...
+    async def put_turn(
+        self,
+        turn: Turn,
+    ) -> None: ...
 
-    def get_turn(self, turn_id: str) -> Turn | None: ...
+    async def get_turn(
+        self,
+        turn_id: str,
+    ) -> Turn | None: ...

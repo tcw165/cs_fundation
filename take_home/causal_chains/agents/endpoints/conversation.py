@@ -20,7 +20,7 @@ async def post_message(
     background_tasks: BackgroundTasks,
 ) -> Turn:
     service = container.chat_service()
-    turn = service.post_message(conversation_id, body.text)
+    turn = await service.post_message(conversation_id, body.text)
     background_tasks.add_task(service.run_turn, turn, body.text)
     return turn
 

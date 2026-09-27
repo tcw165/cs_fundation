@@ -1,3 +1,4 @@
+import asyncio
 import json
 from types import SimpleNamespace
 
@@ -50,7 +51,7 @@ def test_post_message_and_sse_with_stub_runner():
     assert stream.status_code == 200
     assert "event: delta" in stream.text
     assert "event: done" in stream.text
-    stored = container.messaging_store().list_messages("1")
+    stored = asyncio.run(container.messaging_store().list_messages("1"))
     assert len(stored) == 1
     assert stored[0].text == "hello"
 

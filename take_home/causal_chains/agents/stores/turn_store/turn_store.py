@@ -9,9 +9,15 @@ class InMemoryTurnStore(TurnStore):
         self._turns: dict[str, Turn] = {}
 
     @override
-    def put_turn(self, turn: Turn) -> None:
+    async def put_turn(
+        self,
+        turn: Turn,
+    ) -> None:
         self._turns[turn.turn_id] = turn
 
     @override
-    def get_turn(self, turn_id: str) -> Turn | None:
+    async def get_turn(
+        self,
+        turn_id: str,
+    ) -> Turn | None:
         return self._turns.get(turn_id)
