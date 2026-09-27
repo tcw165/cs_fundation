@@ -22,4 +22,9 @@ class SseError(BaseModel):
     message: str
 
 
-SseEvent = SseDelta | SseTool | SseDone | SseError
+class RunTraces(BaseModel):
+    type: str = "run_traces"
+    text: str
+
+
+SseEvent = SseDelta | SseTool | SseDone | SseError | RunTraces

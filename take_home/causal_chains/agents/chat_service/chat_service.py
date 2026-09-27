@@ -109,6 +109,6 @@ class ChatService:
             queue.put_nowait(event)
 
 
-def format_sse(event: SseDelta | SseTool | SseDone | SseError) -> str:
+def format_sse(event: SseEvent) -> str:
     payload = event.model_dump_json(exclude={"type"})
     return f"event: {event.type}\ndata: {payload}\n\n"

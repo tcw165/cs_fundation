@@ -5,7 +5,7 @@ from take_home.causal_chains.agents.database.messaging_store.messaging_store imp
     InMemoryMessagingStore,
 )
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
-from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta
+from take_home.causal_chains.agents.models.messaging.sse_event import RunTraces, SseDelta
 from take_home.causal_chains.models.turn_status import TurnStatus
 
 
@@ -14,6 +14,12 @@ def test_format_sse_excludes_type_from_data():
     assert line.startswith("event: delta\n")
     assert '"type"' not in line.split("data:", 1)[1]
     assert "oil" in line
+
+
+def test_format_sse_run_traces():
+    line = format_sse(RunTraces(text="span\n"))
+    assert line.startswith("event: run_traces\n")
+    assert "span" in line
 
 
 def test_post_message_and_subscribe_stub():
