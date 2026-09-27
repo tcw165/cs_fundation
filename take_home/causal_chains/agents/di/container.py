@@ -17,12 +17,12 @@ class AppContainer(containers.DeclarativeContainer):
         OpenaiTurnRunner,
         api_key=config.openai_api_key,
     )
-    turn_runner = providers.Selector(
-        config.turn_runner,
+    agent_runner = providers.Selector(
+        config.agent_runner,
         stub=stub_turn_runner,
         openai=openai_turn_runner,
     )
     chat_service = providers.Singleton(
         ChatService,
-        turn_runner=turn_runner,
+        agent_runner=agent_runner,
     )
