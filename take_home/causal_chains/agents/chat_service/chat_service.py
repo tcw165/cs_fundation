@@ -3,10 +3,10 @@ import uuid
 from collections.abc import AsyncIterator
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
-from take_home.causal_chains.agents.database.messaging_store.protocol.messaging_store import (
+from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
-from take_home.causal_chains.agents.database.turn_store.protocol.protocol import TurnStore
+from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,

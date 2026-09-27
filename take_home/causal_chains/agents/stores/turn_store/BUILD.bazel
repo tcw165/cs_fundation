@@ -7,7 +7,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        "//take_home/causal_chains/agents/database/turn_store/protocol",
+        "//take_home/causal_chains/agents/stores/turn_store/protocol",
         "//take_home/causal_chains/models",
     ],
 )
@@ -19,7 +19,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
-        "//take_home/causal_chains/agents/database/turn_store/protocol",
+        "//take_home/causal_chains/agents/stores/turn_store/protocol",
         "//take_home/causal_chains/models",
     ],
 )

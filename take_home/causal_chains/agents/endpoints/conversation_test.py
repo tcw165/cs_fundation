@@ -2,10 +2,10 @@ import asyncio
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import turn_sse
-from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
+from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
-from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 from take_home.causal_chains.models.turn_status import TurnStatus
 

@@ -2,7 +2,7 @@ import time
 from typing import override
 
 from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import DynamoDb
-from take_home.causal_chains.agents.database.turn_store.protocol.protocol import TurnStore
+from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.models.turn import Turn
 
 _TURN_TTL_SECONDS = 600
