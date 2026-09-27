@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import override
 from uuid import UUID
 
 from neo4j import Driver
@@ -35,6 +36,7 @@ class Neo4jClient(GraphDb):
     def __init__(self, driver: Driver) -> None:
         self._driver = driver
 
+    @override
     def p_query(self, destination_ids: list[UUID]) -> Decimal:
         with self._driver.session() as session:
             record = session.run(
@@ -45,6 +47,7 @@ class Neo4jClient(GraphDb):
             return Decimal("0.0000")
         return _decimal(record["p_query"])
 
+    @override
     def root_count(self) -> int:
         with self._driver.session() as session:
             record = session.run(ROOT_COUNT).single()
@@ -52,6 +55,7 @@ class Neo4jClient(GraphDb):
             return 0
         return int(record["root_count"])
 
+    @override
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]:
         with self._driver.session() as session:
             records = list(session.run(BROKEN_OUTGOING_SUMS))
