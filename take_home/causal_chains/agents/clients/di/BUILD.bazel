@@ -8,10 +8,13 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/clients/dynamo_db:boto_dynamo_db",
+        "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
         "//take_home/causal_chains/agents/clients/graph_db:neo4j_client",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
         "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/clients/memcache:span_processor",
+        requirement("boto3"),
         requirement("dependency-injector"),
         requirement("neo4j"),
     ],
@@ -23,6 +26,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":di",
+        "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
     ],
 )
