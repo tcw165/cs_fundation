@@ -13,7 +13,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
 
 
-class OpenaiTurnRunner:
+class AppAgentRunner:
     def __init__(self, api_key: str) -> None:
         self._api_key = api_key
 

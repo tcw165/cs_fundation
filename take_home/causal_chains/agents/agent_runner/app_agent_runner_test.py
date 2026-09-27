@@ -1,12 +1,12 @@
 import asyncio
 from types import SimpleNamespace
 
-import take_home.causal_chains.agents.openai_runner.openai_turn_runner as openai_turn_runner_module
+import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
+from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.models.runner_context import RunnerContext
-from take_home.causal_chains.agents.openai_runner.openai_turn_runner import OpenaiTurnRunner
 
 
-def test_openai_turn_runner_maps_fake_stream(monkeypatch):
+def test_app_agent_runner_maps_fake_stream(monkeypatch):
     class FakeDelta:
         def __init__(self, delta: str) -> None:
             self.delta = delta
@@ -27,12 +27,12 @@ def test_openai_turn_runner_maps_fake_stream(monkeypatch):
         def run_streamed(agent, input):
             return FakeResult()
 
-    monkeypatch.setattr(openai_turn_runner_module, "ResponseTextDeltaEvent", FakeDelta)
-    monkeypatch.setattr(openai_turn_runner_module, "Agent", lambda **kwargs: object())
-    monkeypatch.setattr(openai_turn_runner_module, "Runner", FakeRunner)
+    monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(app_agent_runner_module, "Agent", lambda **kwargs: object())
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
 
     async def collect():
-        runner = OpenaiTurnRunner(api_key="test")
+        runner = AppAgentRunner(api_key="test")
         context = RunnerContext(conversation_id="1", turn_id="t_1")
         return [event async for event in runner.stream(["hormuz"], context)]
 
