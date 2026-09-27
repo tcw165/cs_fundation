@@ -14,8 +14,12 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseEvent,
     SseTool,
 )
+from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
+from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
+    CausalChainStore,
+)
 from take_home.causal_chains.models.message import Message
 from take_home.causal_chains.models.turn import Turn
 from take_home.causal_chains.models.turn_status import TurnStatus
@@ -27,10 +31,12 @@ class ChatService:
         agent_runner: AgentRunner,
         messaging_store: MessagingStore,
         turn_store: TurnStore,
+        causal_chain_store: CausalChainStore,
     ) -> None:
         self._agent_runner = agent_runner
         self._messaging_store = messaging_store
         self._turn_store = turn_store
+        self._causal_chain_store = causal_chain_store
         self._turns: dict[str, Turn] = {}
         self._contexts: dict[str, RunContext] = {}
         self._buffers: dict[str, list[SseEvent]] = {}
@@ -57,6 +63,9 @@ class ChatService:
         self._contexts[turn.turn_id] = RunContext(
             conversation_id=conversation_id,
             turn_id=turn.turn_id,
+            clients=RunClients(
+                causal_chain_store=self._causal_chain_store,
+            ),
         )
         self._buffers[turn.turn_id] = []
         self._waiters[turn.turn_id] = []

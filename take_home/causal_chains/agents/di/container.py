@@ -44,4 +44,5 @@ class AppContainer(containers.DeclarativeContainer):
         agent_runner=agent_runner,
         messaging_store=messaging_store,
         turn_store=turn_store,
+        causal_chain_store=causal_chain_store,
     )
