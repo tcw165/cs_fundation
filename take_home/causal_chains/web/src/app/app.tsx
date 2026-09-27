@@ -6,12 +6,12 @@ import type { HealthPort } from "../health/health_port";
 import "./app.css";
 
 export function App({ health_port }: { health_port: HealthPort }) {
-  const [db, set_db] = useState("loading");
+  const [server, set_server] = useState("loading");
   useEffect(() => {
     health_port
       .get_health()
-      .then((report) => set_db(report.db))
-      .catch(() => set_db("down"));
+      .then((report) => set_server(report.status))
+      .catch(() => set_server("down"));
   }, [health_port]);
   return (
     <main className="app">
@@ -19,7 +19,7 @@ export function App({ health_port }: { health_port: HealthPort }) {
         <h1>causal_chains</h1>
       </header>
       <Thread />
-      <footer className="app-footer">db: {db}</footer>
+      <footer className="app-footer">server: {server}</footer>
     </main>
   );
 }
