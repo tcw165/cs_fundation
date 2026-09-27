@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import take_home.causal_chains.agents.clients.di.container as container_module
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
+from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import DynamoDb
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 
 
@@ -15,6 +16,19 @@ def test_graph_db_singleton_is_a_graph_db(monkeypatch):
     first = container.graph_db()
     second = container.graph_db()
     assert isinstance(first, GraphDb)
+    assert first is second
+
+
+def test_dynamo_db_singleton_is_a_dynamo_db(monkeypatch):
+    def fake_client(service_name: str, **kwargs: object) -> object:
+        assert service_name == "dynamodb"
+        return object()
+
+    monkeypatch.setattr(container_module.boto3, "client", fake_client)
+    container = ClientsContainer()
+    first = container.dynamo_db()
+    second = container.dynamo_db()
+    assert isinstance(first, DynamoDb)
     assert first is second
 
 
