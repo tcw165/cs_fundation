@@ -8,6 +8,7 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/models:runner_context",
         "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/models",
         requirement("openai"),
@@ -21,7 +22,6 @@ pytest_test(
     imports = ["../../../.."],
     deps = [
         ":openai_runner",
-        "//take_home/causal_chains/agents/models/messaging",
-        "//take_home/causal_chains/models",
+        "//take_home/causal_chains/agents/models:runner_context",
     ],
 )

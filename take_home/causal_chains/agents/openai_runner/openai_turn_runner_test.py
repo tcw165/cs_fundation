@@ -2,10 +2,8 @@ import asyncio
 from types import SimpleNamespace
 
 import take_home.causal_chains.agents.openai_runner.openai_turn_runner as openai_turn_runner_module
+from take_home.causal_chains.agents.models.runner_context import RunnerContext
 from take_home.causal_chains.agents.openai_runner.openai_turn_runner import OpenaiTurnRunner
-from take_home.causal_chains.agents.models.messaging.sse_event import SseDelta, SseDone
-from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.models.turn_status import TurnStatus
 
 
 def test_openai_turn_runner_maps_fake_stream(monkeypatch):
@@ -29,30 +27,17 @@ def test_openai_turn_runner_maps_fake_stream(monkeypatch):
         def run_streamed(agent, input):
             return FakeResult()
 
-    monkeypatch.setattr(
-        "take_home.causal_chains.agents.openai_runner.openai_turn_runner.ResponseTextDeltaEvent",
-        FakeDelta,
-        raising=False,
-    )
+    monkeypatch.setattr(openai_turn_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(openai_turn_runner_module, "Agent", lambda **kwargs: object())
+    monkeypatch.setattr(openai_turn_runner_module, "Runner", FakeRunner)
 
-    monkeypatch.setattr(openai_turn_runner_module, "Agent", lambda **kwargs: object(), raising=False)
-
-    async def run_with_patched_import():
+    async def collect():
         runner = OpenaiTurnRunner(api_key="test")
+        context = RunnerContext(conversation_id="1", turn_id="t_1")
+        return [event async for event in runner.stream(["hormuz"], context)]
 
-        async def patched_run(turn, text):
-            result = FakeResult()
-
-            async for event in result.stream_events():
-                if event.type == "raw_response_event" and isinstance(event.data, FakeDelta):
-                    yield SseDelta(text=event.data.delta)
-            yield SseDone(message_id=f"m_{turn.turn_id}")
-
-        runner.run = patched_run  # type: ignore[method-assign]
-        turn = Turn(turn_id="t_1", conversation_id="1", status=TurnStatus.queued)
-        return [event async for event in runner.run(turn, "hormuz")]
-
-    events = asyncio.run(run_with_patched_import())
+    events = asyncio.run(collect())
     assert events[0].type == "delta"
     assert events[0].text == "oil "
     assert events[-1].type == "done"
+    assert events[-1].message_id == "m_t_1"
