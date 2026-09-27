@@ -5,6 +5,7 @@ from agents import Runner
 from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.crystal_ball.crystal_ball import crystal_ball
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
@@ -40,6 +41,9 @@ class AppAgentRunner(AgentRunner):
                     if item_type == "tool_call_item":
                         name = getattr(getattr(item, "raw_item", None), "name", "tool")
                         yield SseTool(name=str(name), status="called")
+            graph = getattr(result, "final_output", None)
+            if isinstance(graph, ChainGraph):
+                yield SseDelta(text=graph.model_dump_json())
             yield SseDone(message_id=f"m_{context.turn_id}")
         except Exception as error:
             yield SseError(message=str(error))
