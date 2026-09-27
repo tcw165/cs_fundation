@@ -1,0 +1,30 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "chain_tools",
+    srcs = ["chain_tools.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
+        requirement("openai-agents"),
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "chain_tools_test",
+    srcs = ["chain_tools_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":chain_tools",
+        "//take_home/causal_chains/agents/models:run_clients",
+        "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai-agents"),
+    ],
+)
