@@ -5,15 +5,24 @@ from take_home.causal_chains.models.message import Message
 
 
 class _Both:
-    def append(self, message: Message) -> None:
+    async def append(
+        self,
+        message: Message,
+    ) -> None:
         return None
 
-    def list_messages(self, conversation_id: str) -> list[Message]:
+    async def list_messages(
+        self,
+        conversation_id: str,
+    ) -> list[Message]:
         return []
 
 
 class _AppendOnly:
-    def append(self, message: Message) -> None:
+    async def append(
+        self,
+        message: Message,
+    ) -> None:
         return None
 
 

@@ -36,24 +36,31 @@ class ChatService:
         self._buffers: dict[str, list[SseEvent]] = {}
         self._waiters: dict[str, list[asyncio.Queue[SseEvent | None]]] = {}
 
-    def _record_turn(self, turn: Turn) -> None:
+    async def _record_turn(
+        self,
+        turn: Turn,
+    ) -> None:
         self._turns[turn.turn_id] = turn
-        self._turn_store.put_turn(turn)
+        await self._turn_store.put_turn(turn)
 
-    def post_message(self, conversation_id: str, text: str) -> Turn:
+    async def post_message(
+        self,
+        conversation_id: str,
+        text: str,
+    ) -> Turn:
         turn = Turn(
             turn_id=f"t_{uuid.uuid4().hex[:8]}",
             conversation_id=conversation_id,
             status=TurnStatus.queued,
         )
-        self._record_turn(turn)
+        await self._record_turn(turn)
         self._contexts[turn.turn_id] = RunContext(
             conversation_id=conversation_id,
             turn_id=turn.turn_id,
         )
         self._buffers[turn.turn_id] = []
         self._waiters[turn.turn_id] = []
-        self._messaging_store.append(
+        await self._messaging_store.append(
             Message(
                 message_id=f"m_{uuid.uuid4().hex[:8]}",
                 conversation_id=conversation_id,
@@ -96,29 +103,33 @@ class ChatService:
             if queue in waiters:
                 waiters.remove(queue)
 
-    async def run_turn(self, turn: Turn, text: str) -> None:
+    async def run_turn(
+        self,
+        turn: Turn,
+        text: str,
+    ) -> None:
         running = turn.model_copy(update={"status": TurnStatus.running})
-        self._record_turn(running)
+        await self._record_turn(running)
         try:
             context = self._contexts[turn.turn_id]
             async for event in self._agent_runner.stream([text], context):
                 self._publish(turn.turn_id, event)
                 if isinstance(event, SseDone):
-                    self._record_turn(
+                    await self._record_turn(
                         running.model_copy(update={"status": TurnStatus.completed})
                     )
                     return
                 if isinstance(event, SseError):
-                    self._record_turn(
+                    await self._record_turn(
                         running.model_copy(update={"status": TurnStatus.failed})
                     )
                     return
             done = SseDone(message_id=f"m_{turn.turn_id}")
             self._publish(turn.turn_id, done)
-            self._record_turn(running.model_copy(update={"status": TurnStatus.completed}))
+            await self._record_turn(running.model_copy(update={"status": TurnStatus.completed}))
         except Exception as error:
             self._publish(turn.turn_id, SseError(message=str(error)))
-            self._record_turn(running.model_copy(update={"status": TurnStatus.failed}))
+            await self._record_turn(running.model_copy(update={"status": TurnStatus.failed}))
 
     def _publish(self, turn_id: str, event: SseEvent) -> None:
         self._buffers[turn_id].append(event)

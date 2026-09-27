@@ -29,19 +29,19 @@ def test_chat_service_post_returns_queued_turn():
         store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
         service = ChatService(StubTurnRunner(), store, turn_store)
-        turn = service.post_message("1", "hello")
+        turn = await service.post_message("1", "hello")
         assert turn.status is TurnStatus.queued
         await service.run_turn(turn, "hello")
         events = [event async for event in service.subscribe("1", turn.turn_id)]
-        return turn, events, store, turn_store
+        stored = await store.list_messages("1")
+        saved = await turn_store.get_turn(turn.turn_id)
+        return turn, events, stored, saved
 
-    turn, events, store, turn_store = asyncio.run(exercise())
+    turn, events, stored, saved = asyncio.run(exercise())
     assert any(event.type == "delta" for event in events)
     assert events[-1].type == "done"
-    stored = store.list_messages("1")
     assert len(stored) == 1
     assert stored[0].text == "hello"
-    saved = turn_store.get_turn(turn.turn_id)
     assert saved is not None
     assert saved.status is TurnStatus.completed
 
@@ -60,7 +60,7 @@ def test_turn_sse_passes_include_traces_to_subscribe():
             MessagingStoreImpl(_FakeDynamoDb()),
             InMemoryTurnStore(),
         )
-        turn = service.post_message("1", "hello")
+        turn = await service.post_message("1", "hello")
         await service.run_turn(turn, "hello")
         response = await turn_sse(
             "1",

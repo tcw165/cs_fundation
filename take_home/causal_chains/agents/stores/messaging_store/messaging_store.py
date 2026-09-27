@@ -8,11 +8,17 @@ from take_home.causal_chains.models.message import Message
 
 
 class MessagingStoreImpl(MessagingStore):
-    def __init__(self, dynamo_db: DynamoDb) -> None:
+    def __init__(
+        self,
+        dynamo_db: DynamoDb,
+    ) -> None:
         self._dynamo_db = dynamo_db
 
     @override
-    def append(self, message: Message) -> None:
+    async def append(
+        self,
+        message: Message,
+    ) -> None:
         current = self._dynamo_db.get_item(
             "conversation",
             {"conversation_id": message.conversation_id},
@@ -28,7 +34,10 @@ class MessagingStoreImpl(MessagingStore):
         )
 
     @override
-    def list_messages(self, conversation_id: str) -> list[Message]:
+    async def list_messages(
+        self,
+        conversation_id: str,
+    ) -> list[Message]:
         current = self._dynamo_db.get_item(
             "conversation",
             {"conversation_id": conversation_id},
