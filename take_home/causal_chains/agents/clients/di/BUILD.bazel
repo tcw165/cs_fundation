@@ -1,0 +1,26 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "di",
+    srcs = ["container.py"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/clients/graph_db:neo4j_client",
+        "//take_home/causal_chains/agents/clients/graph_db/protocol",
+        requirement("dependency-injector"),
+        requirement("neo4j"),
+    ],
+)
+
+pytest_test(
+    name = "container_test",
+    srcs = ["container_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":di",
+        "//take_home/causal_chains/agents/clients/graph_db/protocol",
+    ],
+)
