@@ -3,52 +3,17 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "chain_graph",
-    srcs = ["chain_graph.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//take_home/causal_chains/agents/models/causal_chains",
-        requirement("pydantic"),
-    ],
-)
-
-py_library(
     name = "crystal_ball",
     srcs = ["crystal_ball.py"],
     data = ["//take_home/causal_chains/agents/agents/crystal_ball/prompts:crystal_ball.md"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        ":chain_graph",
         "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/agents/now_scout",
         "//take_home/causal_chains/agents/agents/path_builder",
         "//take_home/causal_chains/agents/agents/pricer",
         requirement("openai-agents"),
-    ],
-)
-
-py_library(
-    name = "examine",
-    srcs = ["examine.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":chain_graph",
-        requirement("pydantic"),
-    ],
-)
-
-pytest_test(
-    name = "examine_test",
-    srcs = ["examine_test.py"],
-    data = ["//take_home/causal_chains/.agents/hill-climb:SKILL.md"],
-    imports = ["../../../../.."],
-    deps = [
-        ":chain_graph",
-        ":examine",
-        "//take_home/causal_chains/agents/models/causal_chains",
     ],
 )
 

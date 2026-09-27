@@ -2,7 +2,6 @@ from pathlib import Path
 
 from agents import Agent
 
-from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import ChainGraph
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
 from take_home.causal_chains.agents.agents.pricer.pricer import pricer
@@ -31,5 +30,4 @@ crystal_ball = Agent[RunContext](
             tool_description="Set a probability on every edge.",
         ),
     ],
-    output_type=ChainGraph,
 )

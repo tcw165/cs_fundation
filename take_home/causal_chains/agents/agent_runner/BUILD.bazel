@@ -9,10 +9,8 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/agent_runner/protocol",
-        "//take_home/causal_chains/agents/agents/crystal_ball:chain_graph",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
         "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
-        "//take_home/causal_chains/agents/agents/crystal_ball:examine",
         "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("openai"),
@@ -26,10 +24,8 @@ pytest_test(
     imports = ["../../../.."],
     deps = [
         ":agent_runner",
-        "//take_home/causal_chains/agents/agents/crystal_ball:chain_graph",
         "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/agents/crystal_ball:crystal_ball",
-        "//take_home/causal_chains/agents/agents/crystal_ball:examine",
         "//take_home/causal_chains/agents/models:run_config",
         "//take_home/causal_chains/agents/models:run_context",
     ],
