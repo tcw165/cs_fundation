@@ -40,7 +40,11 @@ class AppAgentRunner(AgentRunner):
                 prompt = "\n".join(inputs)
                 if critique:
                     prompt = f"{prompt}\n{critique}"
-                result = Runner.run_streamed(crystal_ball, input=prompt)
+                result = Runner.run_streamed(
+                    crystal_ball,
+                    input=prompt,
+                    context=context,
+                )
                 results.append(result)
                 async for event in result.stream_events():
                     if event.type == "raw_response_event":

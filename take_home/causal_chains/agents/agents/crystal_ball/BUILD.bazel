@@ -21,6 +21,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":chain_graph",
+        "//take_home/causal_chains/agents/models:run_context",
         "//take_home/causal_chains/agents/agents/now_scout",
         "//take_home/causal_chains/agents/agents/path_builder",
         "//take_home/causal_chains/agents/agents/pricer",

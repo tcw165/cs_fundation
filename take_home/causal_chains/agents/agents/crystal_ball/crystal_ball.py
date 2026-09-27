@@ -6,13 +6,14 @@ from take_home.causal_chains.agents.agents.crystal_ball.chain_graph import Chain
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
 from take_home.causal_chains.agents.agents.pricer.pricer import pricer
+from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 def _read_prompt(name: str) -> str:
     return (Path(__file__).parent / "prompts" / name).read_text()
 
 
-crystal_ball = Agent(
+crystal_ball = Agent[RunContext](
     name="crystal_ball",
     instructions=_read_prompt("crystal_ball.md"),
     model="gpt-5.6-luna",

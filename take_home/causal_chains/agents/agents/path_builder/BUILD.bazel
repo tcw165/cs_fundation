@@ -21,6 +21,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":unpriced_chain",
+        "//take_home/causal_chains/agents/models:run_context",
         requirement("openai-agents"),
     ],
 )
