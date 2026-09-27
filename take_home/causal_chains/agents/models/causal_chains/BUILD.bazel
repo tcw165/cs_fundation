@@ -19,38 +19,16 @@ py_library(
 )
 
 pytest_test(
-    name = "situation_test",
-    srcs = ["situation_test.py"],
-    imports = ["../../../../.."],
-    deps = [
-        ":causal_chains",
+    name = "causal_chains_test",
+    srcs = [
+        "leads_to_test.py",
+        "likelihood_test.py",
+        "link_inputs_test.py",
+        "situation_test.py",
     ],
-)
-
-pytest_test(
-    name = "leads_to_test",
-    srcs = ["leads_to_test.py"],
     imports = ["../../../../.."],
     deps = [
         ":causal_chains",
         requirement("pydantic"),
-    ],
-)
-
-pytest_test(
-    name = "link_inputs_test",
-    srcs = ["link_inputs_test.py"],
-    imports = ["../../../../.."],
-    deps = [
-        ":causal_chains",
-    ],
-)
-
-pytest_test(
-    name = "likelihood_test",
-    srcs = ["likelihood_test.py"],
-    imports = ["../../../../.."],
-    deps = [
-        ":causal_chains",
     ],
 )

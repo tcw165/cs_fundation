@@ -18,32 +18,16 @@ py_library(
 )
 
 pytest_test(
-    name = "turn_status_test",
-    srcs = ["turn_status_test.py"],
+    name = "models_test",
+    srcs = [
+        "conversation_test.py",
+        "message_test.py",
+        "turn_status_test.py",
+        "turn_test.py",
+    ],
     imports = ["../../.."],
     deps = [
         ":models",
         requirement("pydantic"),
     ],
-)
-
-pytest_test(
-    name = "turn_test",
-    srcs = ["turn_test.py"],
-    imports = ["../../.."],
-    deps = [":models"],
-)
-
-pytest_test(
-    name = "conversation_test",
-    srcs = ["conversation_test.py"],
-    imports = ["../../.."],
-    deps = [":models"],
-)
-
-pytest_test(
-    name = "message_test",
-    srcs = ["message_test.py"],
-    imports = ["../../.."],
-    deps = [":models"],
 )

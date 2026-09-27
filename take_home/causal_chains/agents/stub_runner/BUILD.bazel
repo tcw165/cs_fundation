@@ -14,7 +14,7 @@ py_library(
 )
 
 pytest_test(
-    name = "stub_turn_runner_test",
+    name = "stub_runner_test",
     srcs = ["stub_turn_runner_test.py"],
     imports = ["../../../.."],
     deps = [

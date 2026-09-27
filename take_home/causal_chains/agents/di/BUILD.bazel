@@ -24,7 +24,7 @@ py_library(
 )
 
 pytest_test(
-    name = "deps_test",
+    name = "di_test",
     srcs = ["deps_test.py"],
     imports = ["../../../.."],
     deps = [
