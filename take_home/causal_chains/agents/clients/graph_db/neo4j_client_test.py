@@ -23,8 +23,13 @@ class _Result:
 
 
 class _Session:
-    def __init__(self, records: list[dict[str, object]]) -> None:
+    def __init__(
+        self,
+        records: list[dict[str, object]],
+        calls: list[tuple[str, dict[str, object]]],
+    ) -> None:
         self._records = records
+        self._calls = calls
 
     def __enter__(self) -> "_Session":
         return self
@@ -32,16 +37,22 @@ class _Session:
     def __exit__(self, *args: object) -> bool:
         return False
 
-    def run(self, query: str, **params: object) -> _Result:
+    def run(
+        self,
+        query: str,
+        **params: object,
+    ) -> _Result:
+        self._calls.append((query, params))
         return _Result(self._records)
 
 
 class _Driver:
     def __init__(self, records: list[dict[str, object]]) -> None:
         self._records = records
+        self.calls: list[tuple[str, dict[str, object]]] = []
 
     def session(self) -> _Session:
-        return _Session(self._records)
+        return _Session(self._records, self.calls)
 
 
 def test_neo4j_client_subclasses_graph_db():
@@ -61,3 +72,30 @@ def test_root_count_reads_fake_count():
 def test_broken_outgoing_sums_reads_fake_rows():
     client = Neo4jClient(_Driver([{"situation_id": str(NOW_ID), "total": Decimal("0.9000")}]))
     assert client.broken_outgoing_sums() == [(NOW_ID, Decimal("0.9000"))]
+
+
+def test_merge_situation_writes_node_fields():
+    driver = _Driver([])
+    client = Neo4jClient(driver)
+    client.merge_situation(NOW_ID, "now", True)
+    query, params = driver.calls[0]
+    assert "MERGE (s:Situation {situation_id: $situation_id})" in query
+    assert params == {
+        "situation_id": str(NOW_ID),
+        "desc": "now",
+        "is_root": True,
+    }
+
+
+def test_merge_leads_to_writes_float_p():
+    driver = _Driver([])
+    client = Neo4jClient(driver)
+    client.merge_leads_to(NOW_ID, CLEAR_ID, Decimal("0.5"))
+    query, params = driver.calls[0]
+    assert "MERGE (a)-[r:LEADS_TO]->(b)" in query
+    assert params == {
+        "from_situation_id": str(NOW_ID),
+        "to_situation_id": str(CLEAR_ID),
+        "p": 0.5,
+    }
+    assert isinstance(params["p"], float)
