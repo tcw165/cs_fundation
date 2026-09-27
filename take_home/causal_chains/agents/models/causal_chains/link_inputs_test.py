@@ -1,0 +1,14 @@
+from decimal import Decimal
+
+from take_home.causal_chains.agents.models.causal_chains.input_variable import (
+    InputVariable,
+)
+from take_home.causal_chains.agents.models.causal_chains.link_inputs import LinkInputs
+
+
+def test_link_inputs_hold_values_and_not_a_probability():
+    quoted = LinkInputs(
+        inputs=[InputVariable(name="deal_odds", value=Decimal("0.08"))]
+    )
+    assert "p" not in LinkInputs.model_fields
+    assert quoted.inputs[0].value == Decimal("0.08")

@@ -10,6 +10,8 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
 
 
 class LeadsTo(BaseModel):
+    """A stored link. p is the probability of inputs when inputs are present."""
+
     from_situation_id: UUID
     to_situation_id: UUID
     p: Decimal

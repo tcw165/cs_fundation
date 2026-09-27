@@ -11,7 +11,7 @@ def test_run_context_round_trip():
     assert context.model_dump() == {
         "conversation_id": "1",
         "turn_id": "t_1",
-        "run_config": {"include_traces": False},
+        "run_config": {"include_traces": False, "attempt_quota": 20},
     }
 
 

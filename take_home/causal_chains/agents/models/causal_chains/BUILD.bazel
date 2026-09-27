@@ -8,6 +8,7 @@ py_library(
         "input_variable.py",
         "leads_to.py",
         "likelihood.py",
+        "link_inputs.py",
         "situation.py",
     ],
     imports = ["../../../../.."],
@@ -33,6 +34,15 @@ pytest_test(
     deps = [
         ":causal_chains",
         requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "link_inputs_test",
+    srcs = ["link_inputs_test.py"],
+    imports = ["../../../../.."],
+    deps = [
+        ":causal_chains",
     ],
 )
 
