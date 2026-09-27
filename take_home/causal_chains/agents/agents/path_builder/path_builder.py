@@ -3,8 +3,8 @@ from pathlib import Path
 from agents import Agent, WebSearchTool
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
-    add_situation_tool,
-    link_situations_tool,
+    add_situation,
+    link_situations,
 )
 from take_home.causal_chains.agents.agents.path_builder.discovered_situations import (
     DiscoveredSituations,
@@ -22,8 +22,8 @@ path_builder = Agent[RunContext](
     model="gpt-5.6-luna",
     tools=[
         WebSearchTool(),
-        add_situation_tool,
-        link_situations_tool,
+        add_situation,
+        link_situations,
     ],
     output_type=DiscoveredSituations,
 )
