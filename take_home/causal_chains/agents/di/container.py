@@ -3,6 +3,9 @@ from dependency_injector import containers, providers
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
+from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
+    GraphCausalChainStore,
+)
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
@@ -31,6 +34,10 @@ class AppContainer(containers.DeclarativeContainer):
     turn_store = providers.Singleton(
         DdbTurnStore,
         dynamo_db=clients.dynamo_db,
+    )
+    causal_chain_store = providers.Singleton(
+        GraphCausalChainStore,
+        graph_db=clients.graph_db,
     )
     chat_service = providers.Singleton(
         ChatService,
