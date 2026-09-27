@@ -5,6 +5,7 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 py_library(
     name = "causal_chains",
     srcs = [
+        "input_variable.py",
         "leads_to.py",
         "likelihood.py",
         "situation.py",
