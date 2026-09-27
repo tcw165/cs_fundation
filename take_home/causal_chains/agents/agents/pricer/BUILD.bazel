@@ -3,25 +3,16 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "priced_edges",
-    srcs = ["priced_edges.py"],
-    imports = ["../../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//take_home/causal_chains/agents/models/causal_chains",
-        requirement("pydantic"),
-    ],
-)
-
-py_library(
     name = "pricer",
     srcs = ["pricer.py"],
     data = ["//take_home/causal_chains/agents/agents/pricer/prompts:pricer.md"],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        ":priced_edges",
+        "//take_home/causal_chains/agents/chain_editor:sdk_tools",
+        "//take_home/causal_chains/agents/chain_editor/protocol",
         "//take_home/causal_chains/agents/models:run_context",
+        "//take_home/causal_chains/agents/models:tool_ack",
         requirement("openai-agents"),
     ],
 )
@@ -33,6 +24,8 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":pricer",
+        "//take_home/causal_chains/agents/chain_editor",
+        "//take_home/causal_chains/agents/models:tool_ack",
         requirement("openai-agents"),
     ],
 )

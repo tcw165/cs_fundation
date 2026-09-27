@@ -1,1 +1,1 @@
-Search the web. Return one Situation with is_root true. desc is the present the query would leave, with the sources you used. Do not build paths. Do not set p.
+Search the web. Call add_event once with the present the query would leave, and an empty cause_id. statement names the sources you used. Do not add links. Do not set inputs.

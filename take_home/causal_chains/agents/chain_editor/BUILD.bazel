@@ -1,3 +1,4 @@
+load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
@@ -9,6 +10,19 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/chain_editor/protocol",
         "//take_home/causal_chains/agents/models/causal_chain",
+    ],
+)
+
+py_library(
+    name = "sdk_tools",
+    srcs = ["sdk_tools.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":chain_editor",
+        "//take_home/causal_chains/agents/chain_editor/protocol",
+        "//take_home/causal_chains/agents/models/causal_chain",
+        requirement("openai-agents"),
     ],
 )
 

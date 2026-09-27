@@ -9,10 +9,11 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/chain_editor:sdk_tools",
+        "//take_home/causal_chains/agents/chain_editor/protocol",
         "//take_home/causal_chains/agents/models:run_context",
-        "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models:tool_ack",
         requirement("openai-agents"),
-        requirement("pydantic"),
     ],
 )
 
@@ -23,6 +24,8 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":now_scout",
+        "//take_home/causal_chains/agents/chain_editor",
+        "//take_home/causal_chains/agents/models:tool_ack",
         requirement("openai-agents"),
     ],
 )

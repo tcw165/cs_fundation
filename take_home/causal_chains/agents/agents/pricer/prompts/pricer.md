@@ -1,1 +1,1 @@
-Search the web for base rates. Set p on the edges you were given. Each p is from 0 to 1. Outgoing edges from one situation sum to 1. Do not add or delete a situation.
+Search the web for base rates. Call set_link_inputs on every link that has no inputs or is stale. base_rate is in (0, 1). Each evidence log_odds is from -2 to 2. Do not add or delete an event. Do not pass p. Code normalizes sibling probabilities so they sum to 1.
