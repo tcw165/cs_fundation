@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from take_home.causal_chains.agents.clients.graph_db.neo4j_client import Neo4jClient
-from take_home.causal_chains.agents.clients.graph_db.protocol import GraphDb
+from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 
 CLEAR_ID = UUID("44444444-4444-4444-8444-444444444444")
 RESUMES_ID = UUID("66666666-6666-4666-8666-666666666666")
