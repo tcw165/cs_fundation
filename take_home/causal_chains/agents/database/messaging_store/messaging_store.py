@@ -1,23 +1,38 @@
 from typing import override
 
+from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import DynamoDb
 from take_home.causal_chains.agents.database.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
 from take_home.causal_chains.models.message import Message
 
 
-class InMemoryMessagingStore(MessagingStore):
-    def __init__(self) -> None:
-        self._messages: list[Message] = []
+class MessagingStoreImpl(MessagingStore):
+    def __init__(self, dynamo_db: DynamoDb) -> None:
+        self._dynamo_db = dynamo_db
 
     @override
     def append(self, message: Message) -> None:
-        self._messages.append(message)
+        current = self._dynamo_db.get_item(
+            "conversation",
+            {"conversation_id": message.conversation_id},
+        )
+        messages = [] if current is None else list(current["messages"])
+        messages.append(message.model_dump())
+        self._dynamo_db.put_item(
+            "conversation",
+            {
+                "conversation_id": message.conversation_id,
+                "messages": messages,
+            },
+        )
 
     @override
     def list_messages(self, conversation_id: str) -> list[Message]:
-        return [
-            message
-            for message in self._messages
-            if message.conversation_id == conversation_id
-        ]
+        current = self._dynamo_db.get_item(
+            "conversation",
+            {"conversation_id": conversation_id},
+        )
+        if current is None:
+            return []
+        return [Message.model_validate(item) for item in current["messages"]]

@@ -1,9 +1,27 @@
 import anyio
 import httpx
+from dependency_injector import providers
 
 from take_home.causal_chains.agents.chat_client.chat_client import post_and_read
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
+
+
+class _FakeDynamoDb:
+    def __init__(self) -> None:
+        self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
+        self.put_item("conversation", {"conversation_id": "1", "messages": []})
+
+    def put_item(self, table_name: str, item: dict[str, object]) -> None:
+        if table_name == "turn":
+            key = (("turn_id", item["turn_id"]),)
+        else:
+            key = (("conversation_id", item["conversation_id"]),)
+        self._items[(table_name, key)] = item
+
+    def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
+        stored_key = tuple(sorted(key.items()))
+        return self._items.get((table_name, stored_key))
 
 
 class _SyncAsgiTransport(httpx.BaseTransport):
@@ -27,8 +45,12 @@ class _SyncAsgiTransport(httpx.BaseTransport):
 def test_post_and_read_stub_prints_delta_and_done():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
+    container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
     transport = _SyncAsgiTransport(create_app(container))
     with httpx.Client(transport=transport, base_url="http://test") as client:
         body = post_and_read("http://test", "1", "hello", client)
     assert "event: delta" in body
     assert "event: done" in body
+    stored = container.messaging_store().list_messages("1")
+    assert len(stored) == 1
+    assert stored[0].text == "hello"

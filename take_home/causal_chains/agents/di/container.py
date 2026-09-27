@@ -4,9 +4,9 @@ from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgen
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.clients.di.container import ClientsContainer
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
-    InMemoryMessagingStore,
+    MessagingStoreImpl,
 )
-from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.database.turn_store.ddb_turn_store import DdbTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
@@ -24,8 +24,14 @@ class AppContainer(containers.DeclarativeContainer):
         stub=stub_turn_runner,
         openai=app_agent_runner,
     )
-    messaging_store = providers.Singleton(InMemoryMessagingStore)
-    turn_store = providers.Singleton(InMemoryTurnStore)
+    messaging_store = providers.Singleton(
+        MessagingStoreImpl,
+        dynamo_db=clients.dynamo_db,
+    )
+    turn_store = providers.Singleton(
+        DdbTurnStore,
+        dynamo_db=clients.dynamo_db,
+    )
     chat_service = providers.Singleton(
         ChatService,
         agent_runner=agent_runner,

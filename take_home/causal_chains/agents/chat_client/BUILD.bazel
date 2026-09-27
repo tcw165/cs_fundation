@@ -21,6 +21,7 @@ pytest_test(
         ":chat_client",
         "//take_home/causal_chains/agents:main_app",
         "//take_home/causal_chains/agents/di",
+        requirement("dependency-injector"),
         requirement("httpx"),
     ],
 )

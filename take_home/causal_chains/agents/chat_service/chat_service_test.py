@@ -2,7 +2,7 @@ import asyncio
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
 from take_home.causal_chains.agents.database.messaging_store.messaging_store import (
-    InMemoryMessagingStore,
+    MessagingStoreImpl,
 )
 from take_home.causal_chains.agents.database.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
@@ -23,9 +23,23 @@ def test_format_sse_run_traces():
     assert "span" in line
 
 
+class _FakeDynamoDb:
+    def __init__(self) -> None:
+        self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
+        self.put_item("conversation", {"conversation_id": "1", "messages": []})
+
+    def put_item(self, table_name: str, item: dict[str, object]) -> None:
+        key = (("conversation_id", item["conversation_id"]),)
+        self._items[(table_name, key)] = item
+
+    def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
+        stored_key = tuple(sorted(key.items()))
+        return self._items.get((table_name, stored_key))
+
+
 def test_post_message_and_subscribe_stub():
     async def exercise():
-        store = InMemoryMessagingStore()
+        store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
         service = ChatService(StubTurnRunner(), store, turn_store)
         turn = service.post_message("1", "hello")

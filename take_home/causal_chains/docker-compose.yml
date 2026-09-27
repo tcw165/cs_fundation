@@ -21,8 +21,13 @@ services:
       context: ../../..
       dockerfile: take_home/causal_chains/agents/Dockerfile
     command: ["python", "take_home/causal_chains/agents/main.py", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DYNAMODB_ENDPOINT_URL: http://dynamodb:8000
     ports:
       - "8000:8000"
+    depends_on:
+      dynamodb_init:
+        condition: service_completed_successfully
 
   web:
     build:
