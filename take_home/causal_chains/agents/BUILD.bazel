@@ -3,38 +3,29 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "main_app",
-    srcs = ["main_app.py"],
-    imports = ["../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//take_home/causal_chains/agents/di",
-        "//take_home/causal_chains/agents/endpoints:conversation",
-        "//take_home/causal_chains/agents/endpoints:health",
-        requirement("fastapi"),
+    name = "agents",
+    srcs = [
+        "main.py",
+        "main_app.py",
     ],
-)
-
-py_library(
-    name = "main",
-    srcs = ["main.py"],
     imports = ["../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        ":main_app",
         "//take_home/causal_chains/agents/di",
+        "//take_home/causal_chains/agents/endpoints",
         requirement("click"),
+        requirement("fastapi"),
         requirement("openai-agents"),
         requirement("uvicorn"),
     ],
 )
 
 pytest_test(
-    name = "main_app_test",
+    name = "agents_test",
     srcs = ["main_app_test.py"],
     imports = ["../../.."],
     deps = [
-        ":main_app",
+        ":agents",
         "//take_home/causal_chains/agents/di",
         requirement("dependency-injector"),
         requirement("fastapi"),

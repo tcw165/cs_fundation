@@ -3,43 +3,25 @@ load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
-    name = "run_clients",
-    srcs = ["run_clients.py"],
+    name = "models",
+    srcs = [
+        "run_clients.py",
+        "run_config.py",
+        "run_context.py",
+    ],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
-    ],
-)
-
-py_library(
-    name = "run_context",
-    srcs = ["run_context.py"],
-    imports = ["../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":run_clients",
-        ":run_config",
-        requirement("pydantic"),
-    ],
-)
-
-py_library(
-    name = "run_config",
-    srcs = ["run_config.py"],
-    imports = ["../../../.."],
-    visibility = ["//visibility:public"],
-    deps = [
         requirement("pydantic"),
     ],
 )
 
 pytest_test(
-    name = "run_context_test",
+    name = "models_test",
     srcs = ["run_context_test.py"],
     imports = ["../../../.."],
     deps = [
-        ":run_clients",
-        ":run_context",
+        ":models",
     ],
 )
