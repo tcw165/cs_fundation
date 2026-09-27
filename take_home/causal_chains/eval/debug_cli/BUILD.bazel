@@ -1,0 +1,28 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_binary(
+    name = "debug_cli",
+    srcs = ["debug_cli.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        requirement("click"),
+        requirement("httpx"),
+    ],
+)
+
+pytest_test(
+    name = "debug_cli_test",
+    srcs = ["debug_cli_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":debug_cli",
+        "//take_home/causal_chains/agents:main_app",
+        "//take_home/causal_chains/agents/di",
+        requirement("click"),
+        requirement("dependency-injector"),
+        requirement("httpx"),
+    ],
+)
