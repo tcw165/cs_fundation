@@ -2,28 +2,39 @@ import click
 import httpx
 
 
-def post_and_read(base_url: str, conversation_id: str, text: str, client: httpx.Client) -> str:
+def post_and_read(
+    base_url: str,
+    conversation_id: str,
+    query: str,
+    client: httpx.Client,
+) -> None:
     created = client.post(
         f"{base_url}/conversation/{conversation_id}/messages",
-        json={"text": text},
+        json={"text": query},
     )
     created.raise_for_status()
     turn_id = created.json()["turn_id"]
     with client.stream(
         "GET",
         f"{base_url}/conversation/{conversation_id}/turn/{turn_id}/sse",
+        params={"include_traces": True},
     ) as response:
         response.raise_for_status()
-        return response.read().decode()
+        for chunk in response.iter_text():
+            click.echo(chunk, nl=False)
 
 
 @click.command()
 @click.option("--base-url", default="http://127.0.0.1:8000")
 @click.option("--conversation-id", default="1")
-@click.option("--text", required=True)
-def main(base_url: str, conversation_id: str, text: str) -> None:
-    with httpx.Client() as client:
-        click.echo(post_and_read(base_url, conversation_id, text, client), nl=False)
+@click.option("--query", required=True)
+def main(
+    base_url: str,
+    conversation_id: str,
+    query: str
+) -> None:
+    with httpx.Client(timeout=httpx.Timeout(300.0)) as client:
+        post_and_read(base_url, conversation_id, query, client)
 
 
 if __name__ == "__main__":
