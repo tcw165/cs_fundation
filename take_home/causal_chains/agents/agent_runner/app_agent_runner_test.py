@@ -1,5 +1,6 @@
 import asyncio
 from types import SimpleNamespace
+from uuid import UUID
 
 import anyio
 
@@ -9,6 +10,8 @@ from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
 )
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+from take_home.causal_chains.agents.models.messaging.sse_event import DeeplinkWidget
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
@@ -179,3 +182,75 @@ def test_app_agent_runner_emits_heartbeat_while_the_model_is_slow(monkeypatch):
     assert "heartbeat" in types
     assert types.index("heartbeat") < types.index("done")
     assert types[-1] == "done"
+
+
+def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
+    now_id = UUID("11111111-1111-4111-8111-111111111111")
+    card = DeeplinkCard(title="now", root_situation_id=now_id, root_version=1)
+
+    async def fake_stream():
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_item",
+                raw_item=SimpleNamespace(name="make_deeplink_widget", call_id="call_1"),
+            ),
+        )
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_output_item",
+                raw_item={"call_id": "call_1"},
+                output=card,
+            ),
+        )
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_item",
+                raw_item=SimpleNamespace(name="add_situation", call_id="call_2"),
+            ),
+        )
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_output_item",
+                raw_item={"call_id": "call_2"},
+                output="saved",
+            ),
+        )
+
+    class FakeResult:
+        def stream_events(self):
+            return fake_stream()
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(
+            agent,
+            input,
+            context=None,
+        ):
+            return FakeResult()
+
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def collect():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        return [event async for event in runner.stream(["hormuz"], context)]
+
+    events = asyncio.run(collect())
+    widgets = [event for event in events if isinstance(event, DeeplinkWidget)]
+    assert widgets == [DeeplinkWidget(card=card)]
+    assert [event.name for event in events if event.type == "tool"] == [
+        "make_deeplink_widget",
+        "add_situation",
+    ]

@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+
 
 class SseDelta(BaseModel):
     type: str = "delta"
@@ -31,4 +33,19 @@ class SseHeartbeat(BaseModel):
     type: str = "heartbeat"
 
 
-SseEvent = SseDelta | SseTool | SseDone | SseError | RunTraces | SseHeartbeat
+class DeeplinkWidget(BaseModel):
+    """A chat message that renders one deeplink card."""
+
+    type: str = "deeplink_widget"
+    card: DeeplinkCard
+
+
+SseEvent = (
+    SseDelta
+    | SseTool
+    | SseDone
+    | SseError
+    | RunTraces
+    | SseHeartbeat
+    | DeeplinkWidget
+)
