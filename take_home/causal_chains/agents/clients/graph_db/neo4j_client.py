@@ -52,6 +52,11 @@ RETURN s.situation_id AS situation_id,
     s.is_root AS is_root
 """
 
+CLEAR = """
+MATCH (s:Situation)
+DETACH DELETE s
+"""
+
 LIST_LEADS_TO = """
 MATCH ()-[r:LEADS_TO]->()
 RETURN r.from_situation_id AS from_situation_id,
@@ -189,3 +194,8 @@ class Neo4jClient(GraphDb):
                 )
             )
         return rows
+
+    @override
+    def clear(self) -> None:
+        with self._driver.session() as session:
+            session.run(CLEAR)
