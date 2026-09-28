@@ -59,7 +59,7 @@ def _trace_processors(memcache: Memcache) -> list[TracingProcessor]:
     return processors
 
 
-def _use_graph_store(container: EvalContainer) -> None:
+def _use_graph_store(container: EvalContainer, clean_graph: bool) -> None:
     neo4j_uri = os.environ.get("NEO4J_URI", "")
     if not neo4j_uri:
         return
@@ -68,6 +68,8 @@ def _use_graph_store(container: EvalContainer) -> None:
         os.environ.get("NEO4J_USER", "neo4j"),
         os.environ.get("NEO4J_PASSWORD", "causal_chains"),
     )
+    if clean_graph:
+        graph_db.clear()
     container.causal_chain_store.override(
         providers.Object(GraphCausalChainStore(graph_db))
     )
@@ -75,9 +77,10 @@ def _use_graph_store(container: EvalContainer) -> None:
 
 async def run_offline(
     query: str,
+    clean_graph: bool = True,
 ) -> tuple[ChatService, list[Message]]:
     container = EvalContainer()
-    _use_graph_store(container)
+    _use_graph_store(container, clean_graph)
     message_store = container.messaging_store()
     turn_store = container.turn_store()
     api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -112,10 +115,12 @@ async def run_offline(
 
 @click.command()
 @click.option("--query", required=True)
+@click.option("--clean-graph/--no-clean-graph", default=True)
 def main(
     query: str,
+    clean_graph: bool,
 ) -> None:
-    _service, messages = asyncio.run(run_offline(query))
+    _service, messages = asyncio.run(run_offline(query, clean_graph=clean_graph))
     for message in messages:
         click.echo(format_sse(message), nl=False)
 
