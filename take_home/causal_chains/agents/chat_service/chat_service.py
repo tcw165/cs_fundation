@@ -1,10 +1,14 @@
 from collections.abc import AsyncIterator
 
 from agents import flush_traces, trace
-from pydantic import BaseModel
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    DeeplinkCardMessage,
+    HeartbeatMessage,
+    MarkdownMessage,
+    Message,
+)
 from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_clients import RunClients
@@ -69,6 +73,8 @@ class ChatService:
             flush_traces()
 
 
-def format_sse(event: BaseModel) -> str:
+def format_sse(
+    event: MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage,
+) -> str:
     payload = event.model_dump_json(exclude={"type"})
     return f"event: {event.type}\ndata: {payload}\n\n"
