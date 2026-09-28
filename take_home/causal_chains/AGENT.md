@@ -26,8 +26,9 @@ Keep models, protocols, and implementations apart.
 
 ## Offline eval
 
-Use this when you need to quickly validate the causal chain core functionality:
+Use this when you need to quickly validate the causal chain core functionality. It starts Neo4j and saves the chain there. Open `http://localhost:7474` to read the graph.
 
 ```bash
-bazel run //take_home/causal_chains/agents/eval/offline:offline -- --query "The Strait of Hormuz is going to open next week."
+cd take_home/causal_chains
+just eval-offline 'Republicans win the House but Democrats take the senate during the Midterm.'
 ```
