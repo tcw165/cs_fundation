@@ -7,6 +7,7 @@ from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgen
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.eval.offline.di import container as container_module
 from take_home.causal_chains.agents.eval.offline.di.container import EvalContainer
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
@@ -42,6 +43,7 @@ def test_eval_container_wires_the_real_runner_to_store_mocks() -> None:
 
 def test_rehearsed_stores_return_what_they_saved() -> None:
     container = EvalContainer()
+    case = Case(case_id=uuid4())
     root = StartSituation(
         situation_id=uuid4(),
         version=1,
@@ -80,8 +82,9 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         await messaging_store.append("1", message)
         await messaging_store.append("2", other)
         await turn_store.put_turn(turn)
-        await causal_chain_store.add_situation(root)
-        await causal_chain_store.link_situations(root, later, link)
+        await causal_chain_store.add_case(case)
+        await causal_chain_store.add_situation(case, root)
+        await causal_chain_store.link_situations(case, root, later, link)
         listed = await messaging_store.list_messages("1")
         missing = await turn_store.get_turn("missing")
         stored_turn = await turn_store.get_turn("t_1")

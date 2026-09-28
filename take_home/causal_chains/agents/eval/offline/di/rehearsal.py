@@ -4,6 +4,7 @@ from uuid import UUID
 
 from decoy import Decoy, matchers
 
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
@@ -38,8 +39,9 @@ def rehearse_persistence(
 ) -> None:
     messages: list[tuple[str, Message]] = []
     turns: dict[str, Turn] = {}
-    situations: dict[UUID, Situation] = {}
-    links: list[LeadsTo] = []
+    cases: dict[UUID, Case] = {}
+    situations: dict[UUID, tuple[Case, Situation]] = {}
+    links: list[tuple[Case, LeadsTo]] = []
 
     def remember_message(
         conversation_id: str,
@@ -66,33 +68,64 @@ def rehearse_persistence(
     ) -> Turn | None:
         return turns.get(turn_id)
 
+    def remember_case(
+        case: Case,
+    ) -> None:
+        cases[case.case_id] = case
+
+    def load_case(
+        case_id: UUID,
+    ) -> Case:
+        case = cases.get(case_id)
+        if case is None:
+            raise ValueError("case is missing")
+        return case
+
     def remember_situation(
+        case: Case,
         situation: Situation,
     ) -> None:
-        situations[situation.situation_id] = situation
+        situations[situation.situation_id] = (case, situation)
 
     def remember_link(
+        case: Case,
         from_situation: Situation,
         to_situation: Situation,
         link: LeadsTo,
     ) -> None:
-        remember_situation(from_situation)
-        remember_situation(to_situation)
-        links.append(link)
+        remember_situation(case, from_situation)
+        remember_situation(case, to_situation)
+        links.append((case, link))
+
+    def load_leaves(
+        case: Case,
+        start: StartSituation,
+    ) -> list[Situation]:
+        return []
 
     def load_chains() -> list[CausalChain]:
-        stored = list(situations.values())
-        start_count = sum(
-            1 for situation in stored if isinstance(situation, StartSituation)
-        )
-        if start_count != 1:
-            return []
-        return [
-            CausalChain(
-                situations=stored,
-                links=list(links),
+        grouped: dict[UUID, list[Situation]] = {}
+        for case, situation in situations.values():
+            grouped.setdefault(case.case_id, []).append(situation)
+        chains: list[CausalChain] = []
+        for case_id, stored in grouped.items():
+            start_count = sum(
+                1 for situation in stored if isinstance(situation, StartSituation)
             )
-        ]
+            if start_count != 1:
+                continue
+            case_links = [
+                link
+                for case, link in links
+                if case.case_id == case_id
+            ]
+            chains.append(
+                CausalChain(
+                    situations=stored,
+                    links=case_links,
+                )
+            )
+        return chains
 
     decoy.when(
         _drive(
@@ -116,7 +149,20 @@ def rehearse_persistence(
         ignore_extra_args=True,
     ).then_do(load_turn)
     decoy.when(
-        _drive(causal_chain_store.add_situation(matchers.Anything())),
+        _drive(causal_chain_store.add_case(matchers.Anything())),
+        ignore_extra_args=True,
+    ).then_do(remember_case)
+    decoy.when(
+        _drive(causal_chain_store.get_case(matchers.Anything())),
+        ignore_extra_args=True,
+    ).then_do(load_case)
+    decoy.when(
+        _drive(
+            causal_chain_store.add_situation(
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
         ignore_extra_args=True,
     ).then_do(remember_situation)
     decoy.when(
@@ -125,10 +171,20 @@ def rehearse_persistence(
                 matchers.Anything(),
                 matchers.Anything(),
                 matchers.Anything(),
+                matchers.Anything(),
             )
         ),
         ignore_extra_args=True,
     ).then_do(remember_link)
+    decoy.when(
+        _drive(
+            causal_chain_store.lookup_leaf_situations(
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
+        ignore_extra_args=True,
+    ).then_do(load_leaves)
     decoy.when(
         _drive(causal_chain_store.get_chains()),
     ).then_do(load_chains)
