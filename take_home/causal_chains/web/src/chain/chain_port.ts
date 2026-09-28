@@ -8,7 +8,8 @@ export type ChainSituation = {
   situation_id: string;
   version: number;
   desc: string;
-  is_root: boolean;
+  potential_factors?: string[];
+  original_ask?: string;
 };
 
 export type ChainInput = {
