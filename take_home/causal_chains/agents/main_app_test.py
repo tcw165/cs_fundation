@@ -82,6 +82,81 @@ def test_get_causal_chains_returns_the_stored_chains():
     assert response.json() == [chain.model_dump(mode="json")]
 
 
+def _invoke_main(monkeypatch) -> tuple[list[dict[str, object]], list[list[object]]]:
+    import take_home.causal_chains.agents.main as main_module
+
+    inits: list[dict[str, object]] = []
+    processor_lists: list[list[object]] = []
+
+    def fake_init_logger(**kwargs: object) -> object:
+        inits.append(kwargs)
+        return object()
+
+    monkeypatch.setattr(main_module, "init_logger", fake_init_logger)
+    monkeypatch.setattr(
+        main_module,
+        "BraintrustTracingProcessor",
+        lambda logger: ("braintrust", logger),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "set_trace_processors",
+        processor_lists.append,
+    )
+    monkeypatch.setattr(main_module.uvicorn, "run", lambda *args, **kwargs: None)
+    main_module.main.callback("127.0.0.1", 8000)
+    return inits, processor_lists
+
+
+def test_omits_braintrust_when_either_env_var_is_missing(monkeypatch):
+    monkeypatch.delenv("BRAINTRUST_ORGANIZATION_NAME", raising=False)
+    for api_key, project_id in (("", ""), ("sk-test", ""), ("", "proj_123")):
+        monkeypatch.setenv("BRAINTRUST_API_KEY", api_key)
+        monkeypatch.setenv("BRAINTRUST_PROJECT_ID", project_id)
+        inits, processor_lists = _invoke_main(monkeypatch)
+        assert inits == []
+        assert len(processor_lists) == 1
+        assert len(processor_lists[0]) == 1
+        inits.clear()
+        processor_lists.clear()
+
+
+def test_registers_braintrust_when_key_and_project_id_are_set(monkeypatch):
+    monkeypatch.setenv("BRAINTRUST_API_KEY", "sk-test")
+    monkeypatch.setenv("BRAINTRUST_PROJECT_ID", "proj_123")
+    monkeypatch.setenv("BRAINTRUST_ORGANIZATION_NAME", "")
+    inits, processor_lists = _invoke_main(monkeypatch)
+    assert inits == [
+        {
+            "project": "causal_chains",
+            "project_id": "proj_123",
+            "api_key": "sk-test",
+            "org_name": None,
+        }
+    ]
+    assert len(processor_lists) == 1
+    processors = processor_lists[0]
+    assert len(processors) == 2
+    assert processors[1][0] == "braintrust"
+
+
+def test_passes_braintrust_organization_name(monkeypatch):
+    monkeypatch.setenv("BRAINTRUST_API_KEY", "sk-test")
+    monkeypatch.setenv("BRAINTRUST_PROJECT_ID", "proj_123")
+    monkeypatch.setenv("BRAINTRUST_ORGANIZATION_NAME", "acme")
+    inits, processor_lists = _invoke_main(monkeypatch)
+    assert inits == [
+        {
+            "project": "causal_chains",
+            "project_id": "proj_123",
+            "api_key": "sk-test",
+            "org_name": "acme",
+        }
+    ]
+    assert len(processor_lists) == 1
+    assert len(processor_lists[0]) == 2
+
+
 def test_app_runner_and_span_processor_share_memcache():
     container = AppContainer()
     container.config.openai_api_key.from_value("test")
