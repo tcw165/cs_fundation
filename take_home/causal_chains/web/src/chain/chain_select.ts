@@ -5,11 +5,13 @@ export function chain_for_card(
   card: DeeplinkCard,
 ): CausalChain | null {
   for (const chain of chains) {
-    const root = chain.situations.find((situation) => situation.is_root);
+    const start = chain.situations.find(
+      (situation) => situation.potential_factors !== undefined,
+    );
     if (
-      root !== undefined &&
-      root.situation_id === card.root_situation_id &&
-      root.version === card.root_version
+      start !== undefined &&
+      start.situation_id === card.root_situation_id &&
+      start.version === card.root_version
     ) {
       return chain;
     }

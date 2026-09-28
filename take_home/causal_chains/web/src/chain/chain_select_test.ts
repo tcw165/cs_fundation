@@ -13,7 +13,7 @@ function chain(root_id: string, desc: string): CausalChain {
         situation_id: root_id,
         version: 1,
         desc,
-        is_root: true,
+        potential_factors: ["blockade"],
       },
     ],
     links: [],
@@ -21,7 +21,7 @@ function chain(root_id: string, desc: string): CausalChain {
 }
 
 describe("chain_for_card", () => {
-  it("returns the chain whose root matches the card", () => {
+  it("returns the chain whose start matches the card", () => {
     const card: DeeplinkCard = {
       title: "now",
       root_situation_id: now_id,

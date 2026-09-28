@@ -10,7 +10,7 @@ describe("create_chain_http", () => {
           situation_id: "11111111-1111-4111-8111-111111111111",
           version: 1,
           desc: "now",
-          is_root: true,
+          potential_factors: ["blockade"],
         },
       ],
       links: [],

@@ -48,7 +48,7 @@ describe("chain canvas", () => {
             situation_id: card.root_situation_id,
             version: 1,
             desc: "strait shut",
-            is_root: true,
+            potential_factors: ["blockade"],
           },
         ],
         links: [
