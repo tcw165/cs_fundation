@@ -1,0 +1,20 @@
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    user: root
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/home/dynamodblocal/data"]
+    environment:
+      # Latest DynamoDB Local binds IPv6-only, so host clients time out on 127.0.0.1.
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true"
+    ports:
+      - "8002:8000"
+    volumes:
+      - anrok_tax_rates:/home/dynamodblocal/data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/8000'"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  anrok_tax_rates:

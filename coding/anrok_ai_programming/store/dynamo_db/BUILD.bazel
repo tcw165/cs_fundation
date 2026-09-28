@@ -1,0 +1,27 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "dynamo_db",
+    srcs = ["dynamo_db.py"],
+    data = ["//coding/anrok_ai_programming:docker-compose.yml"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//coding/anrok_ai_programming/models",
+        requirement("boto3"),
+    ],
+)
+
+pytest_test(
+    name = "dynamo_db_test",
+    srcs = ["dynamo_db_test.py"],
+    data = ["//coding/anrok_ai_programming:docker-compose.yml"],
+    imports = ["../../../.."],
+    local = True,
+    deps = [
+        ":dynamo_db",
+        "//coding/anrok_ai_programming/models",
+    ],
+)
