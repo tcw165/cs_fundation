@@ -254,3 +254,66 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
         "make_deeplink_widget",
         "add_situation",
     ]
+
+
+def test_app_agent_runner_traces_the_model_run(monkeypatch):
+    opened: list[tuple[str, str | None, dict[str, str] | None]] = []
+    active = {"value": False}
+    ran_inside: list[bool] = []
+
+    class _Trace:
+        def __init__(
+            self,
+            name: str,
+            group_id: str | None = None,
+            metadata: dict[str, str] | None = None,
+        ) -> None:
+            self._name = name
+            self._group_id = group_id
+            self._metadata = metadata
+
+        def __enter__(self) -> "_Trace":
+            active["value"] = True
+            opened.append((self._name, self._group_id, self._metadata))
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            active["value"] = False
+
+    class FakeResult:
+        def stream_events(self):
+            async def empty():
+                if False:
+                    yield None
+
+            return empty()
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(
+            agent,
+            input,
+            context=None,
+        ):
+            ran_inside.append(active["value"])
+            return FakeResult()
+
+    monkeypatch.setattr(app_agent_runner_module, "trace", _Trace)
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def collect():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        return [event async for event in runner.stream(["hormuz"], context)]
+
+    events = asyncio.run(collect())
+    assert ran_inside == [True]
+    assert opened == [("app_agent_runner", "1", {"turn_id": "t_1"})]
+    assert events[-1].type == "done"

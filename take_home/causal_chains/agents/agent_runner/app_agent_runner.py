@@ -3,7 +3,7 @@ from functools import partial
 from typing import override
 
 import anyio
-from agents import Runner
+from agents import Runner, trace
 from anyio.streams.memory import MemoryObjectSendStream
 from openai.types.responses import ResponseTextDeltaEvent
 
@@ -143,43 +143,48 @@ class AppAgentRunner(AgentRunner):
     ) -> None:
         try:
             try:
-                user_ask = "\n".join(inputs)
-                result = Runner.run_streamed(
-                    causal_chain,
-                    input=(
-                        f"Future situation:\n{user_ask}\n"
-                        f"Remaining attempts: {context.run_config.attempt_quota}"
-                    ),
-                    context=context,
-                )
-                results.append(result)
-                tool_names: dict[str, str] = {}
-                async for event in result.stream_events():
-                    mapped = _map_model_event(event)
-                    if mapped is not None:
-                        if mapped.type == "tool":
-                            item = getattr(event, "item", None)
+                with trace(
+                    "app_agent_runner",
+                    group_id=context.conversation_id,
+                    metadata={"turn_id": context.turn_id},
+                ):
+                    user_ask = "\n".join(inputs)
+                    result = Runner.run_streamed(
+                        causal_chain,
+                        input=(
+                            f"Future situation:\n{user_ask}\n"
+                            f"Remaining attempts: {context.run_config.attempt_quota}"
+                        ),
+                        context=context,
+                    )
+                    results.append(result)
+                    tool_names: dict[str, str] = {}
+                    async for event in result.stream_events():
+                        mapped = _map_model_event(event)
+                        if mapped is not None:
+                            if mapped.type == "tool":
+                                item = getattr(event, "item", None)
+                                call_id = _raw_field(item, "call_id")
+                                if isinstance(call_id, str):
+                                    tool_names[call_id] = mapped.name
+                            await send.send(mapped)
+                            continue
+                        item = getattr(event, "item", None)
+                        if (
+                            getattr(event, "type", "") == "run_item_stream_event"
+                            and getattr(item, "type", "") == "tool_call_output_item"
+                        ):
                             call_id = _raw_field(item, "call_id")
-                            if isinstance(call_id, str):
-                                tool_names[call_id] = mapped.name
-                        await send.send(mapped)
-                        continue
-                    item = getattr(event, "item", None)
-                    if (
-                        getattr(event, "type", "") == "run_item_stream_event"
-                        and getattr(item, "type", "") == "tool_call_output_item"
-                    ):
-                        call_id = _raw_field(item, "call_id")
-                        if tool_names.get(str(call_id)) == "make_deeplink_widget":
-                            await send.send(
-                                _deeplink_widget(getattr(item, "output", None)),
-                            )
-                if context.run_config.include_traces:
-                    await send.send(RunTraces(text=self._memcache.flush()))
-                else:
-                    self._memcache.flush()
-                stop.set()
-                await send.send(SseDone(message_id=f"m_{context.turn_id}"))
+                            if tool_names.get(str(call_id)) == "make_deeplink_widget":
+                                await send.send(
+                                    _deeplink_widget(getattr(item, "output", None)),
+                                )
+                    if context.run_config.include_traces:
+                        await send.send(RunTraces(text=self._memcache.flush()))
+                    else:
+                        self._memcache.flush()
+                    stop.set()
+                    await send.send(SseDone(message_id=f"m_{context.turn_id}"))
             except Exception as error:
                 stop.set()
                 await send.send(SseError(message=str(error)))
