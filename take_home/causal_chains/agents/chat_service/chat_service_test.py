@@ -67,7 +67,7 @@ def test_post_message_and_subscribe_stub():
         return turn, events, stored, saved
 
     turn, events, stored, saved = asyncio.run(exercise())
-    assert events[0].type == "delta"
+    assert events[0].type == "markdown"
     assert events[-1].type == "done"
     assert turn.conversation_id == "1"
     assert len(stored) == 1

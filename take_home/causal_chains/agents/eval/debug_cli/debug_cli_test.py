@@ -46,7 +46,7 @@ class _SyncAsgiTransport(httpx.BaseTransport):
         return anyio.run(send)
 
 
-def test_query_hello_prints_delta_and_done(monkeypatch):
+def test_query_hello_prints_markdown_and_done(monkeypatch):
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
@@ -65,7 +65,7 @@ def test_query_hello_prints_delta_and_done(monkeypatch):
         ["--query", "hello"],
     )
     assert result.exit_code == 0
-    assert "event: delta" in result.output
+    assert "event: markdown" in result.output
     assert "event: done" in result.output
     sse_requests = [
         request
