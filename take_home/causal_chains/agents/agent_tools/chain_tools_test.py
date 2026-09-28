@@ -7,8 +7,10 @@ from agents.tool_context import ToolContext
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_situation,
     link_situations,
+    make_deeplink_widget,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.models.run_clients import RunClients
@@ -95,3 +97,13 @@ def test_tools_write_a_situation_and_a_link_through_run_clients():
     assert store.situations == [now, deal]
     assert link.p == Decimal("0.0800")
     assert store.links == [(now, deal, link)]
+    card = _invoke(
+        make_deeplink_widget,
+        context,
+        {"root": now.model_dump(mode="json")},
+    )
+    assert isinstance(card, DeeplinkCard)
+    assert card.title == now.desc
+    assert card.root_situation_id == now.situation_id
+    assert card.root_version == now.version
+    assert "deeplink card" in make_deeplink_widget.description

@@ -18,3 +18,4 @@ You are given a hypothetical future. Find the present in detail, then connect th
     - The stored probability is the output of those inputs. Do not invent a probability.
   - After a step, the current situation is one you just linked. Prefer the one that moves toward the future when attempts are low.
 - Return the root situation, including its id.
+- When the chain is saved, show a deeplink card for the root so the reader can open it.

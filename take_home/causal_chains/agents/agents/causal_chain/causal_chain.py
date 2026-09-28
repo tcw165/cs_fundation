@@ -5,6 +5,7 @@ from agents import Agent
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_situation,
     link_situations,
+    make_deeplink_widget,
 )
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
@@ -44,6 +45,7 @@ causal_chain = Agent[RunContext](
         ),
         add_situation,
         link_situations,
+        make_deeplink_widget,
     ],
     output_type=Situation,
 )

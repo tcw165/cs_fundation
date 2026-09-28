@@ -6,6 +6,7 @@ py_library(
     name = "messaging",
     srcs = [
         "causal_chain.py",
+        "deeplink_card.py",
         "sse_event.py",
     ],
     imports = ["../../../../../"],
@@ -20,6 +21,7 @@ pytest_test(
     name = "messaging_test",
     srcs = [
         "causal_chain_test.py",
+        "deeplink_card_test.py",
         "sse_event_test.py",
     ],
     imports = ["../../../../../"],

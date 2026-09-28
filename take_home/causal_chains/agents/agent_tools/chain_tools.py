@@ -10,6 +10,7 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
 )
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -91,3 +92,22 @@ async def link_situations(
         link,
     )
     return link
+
+
+@function_tool
+async def make_deeplink_widget(
+    ctx: RunContextWrapper[RunContext],
+    root: Situation,
+) -> DeeplinkCard:
+    """Show a deeplink card for one saved root situation.
+
+    Args:
+        ctx: Run context.
+        root: The stored root, including its id and version.
+    """
+    _require_store(ctx)
+    return DeeplinkCard(
+        title=root.desc,
+        root_situation_id=root.situation_id,
+        root_version=root.version,
+    )
