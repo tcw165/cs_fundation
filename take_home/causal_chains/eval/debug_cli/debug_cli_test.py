@@ -72,3 +72,55 @@ def test_query_hello_prints_delta_and_done(monkeypatch):
         if request.url.path.endswith("/sse")
     ]
     assert sse_requests[-1].url.params["include_traces"] == "true"
+
+
+def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
+    chunks = [
+        "event: delta\ndata: {\"text\":\"oil\"}\n\n",
+        "event: done\ndata: {\"message_id\":\"m_1\"}\n\n",
+    ]
+    echoed: list[str] = []
+
+    class _Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"turn_id": "t_1"}
+
+        def iter_text(self):
+            for index, chunk in enumerate(chunks):
+                assert echoed == chunks[:index]
+                yield chunk
+
+    class _Stream:
+        def __enter__(self) -> _Response:
+            return _Response()
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+    class _Client:
+        def __enter__(self) -> "_Client":
+            return self
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+        def post(self, *args: object, **kwargs: object) -> _Response:
+            return _Response()
+
+        def stream(self, *args: object, **kwargs: object) -> _Stream:
+            return _Stream()
+
+    monkeypatch.setattr(
+        "take_home.causal_chains.eval.debug_cli.debug_cli.httpx.Client",
+        lambda *args, **kwargs: _Client(),
+    )
+    monkeypatch.setattr(
+        "take_home.causal_chains.eval.debug_cli.debug_cli.click.echo",
+        lambda text, nl=True: echoed.append(text),
+    )
+    result = CliRunner().invoke(main, ["--query", "hello"])
+    assert result.exit_code == 0
+    assert echoed == chunks
