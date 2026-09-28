@@ -1,9 +1,19 @@
 load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary")
+load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_binary(
     name = "anrok_ai_programming",
     srcs = ["anrok_ai_programming.py"],
     imports = ["."],
     deps = [requirement("click")],
+)
+
+pytest_test(
+    name = "anrok_ai_programming_test",
+    srcs = ["anrok_ai_programming_test.py"],
+    deps = [
+        ":anrok_ai_programming",
+        requirement("click"),
+    ],
 )
