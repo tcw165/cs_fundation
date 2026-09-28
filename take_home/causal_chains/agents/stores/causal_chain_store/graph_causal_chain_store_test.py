@@ -47,15 +47,17 @@ def test_add_situation_and_link_situations_record_calls():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        now = Situation(situation_id=NOW_ID, desc="now", is_root=True)
-        deal = Situation(situation_id=DEAL_ID, desc="deal", is_root=False)
+        now = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False)
         await store.add_situation(now)
         await store.link_situations(
             now,
             deal,
             LeadsTo(
                 from_situation_id=NOW_ID,
+                from_version=1,
                 to_situation_id=DEAL_ID,
+                to_version=1,
                 inputs=[InputVariable(name="deal_odds", value=Decimal("0.08"))],
                 p=Decimal("0.0800"),
             ),

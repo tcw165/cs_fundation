@@ -45,6 +45,7 @@ async def add_situation(
     """
     situation = Situation(
         situation_id=uuid4(),
+        version=1,
         desc=desc,
         is_root=is_root,
     )
@@ -78,7 +79,9 @@ async def link_situations(
     ]
     link = LeadsTo(
         from_situation_id=from_situation.situation_id,
+        from_version=from_situation.version,
         to_situation_id=to_situation.situation_id,
+        to_version=to_situation.version,
         inputs=parsed,
         p=probability(parsed),
     )

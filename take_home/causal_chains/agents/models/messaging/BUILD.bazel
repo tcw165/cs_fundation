@@ -4,17 +4,27 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "messaging",
-    srcs = ["sse_event.py"],
+    srcs = [
+        "causal_chain.py",
+        "sse_event.py",
+    ],
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/models/causal_chains",
         requirement("pydantic"),
     ],
 )
 
 pytest_test(
     name = "messaging_test",
-    srcs = ["sse_event_test.py"],
+    srcs = [
+        "causal_chain_test.py",
+        "sse_event_test.py",
+    ],
     imports = ["../../../../../"],
-    deps = [":messaging"],
+    deps = [
+        ":messaging",
+        "//take_home/causal_chains/agents/models/causal_chains",
+    ],
 )

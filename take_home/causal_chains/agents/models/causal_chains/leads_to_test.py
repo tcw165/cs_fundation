@@ -16,20 +16,44 @@ DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
 def test_leads_to_keeps_decimal_p():
-    edge = LeadsTo(from_situation_id=NOW_ID, to_situation_id=DEAL_ID, p=Decimal("0.08"))
+    edge = LeadsTo(
+        from_situation_id=NOW_ID,
+        from_version=1,
+        to_situation_id=DEAL_ID,
+        to_version=1,
+        p=Decimal("0.08"),
+    )
     assert edge.p == Decimal("0.08")
 
 
 def test_p_outside_zero_to_one_rejected():
     with pytest.raises(ValidationError):
-        LeadsTo(from_situation_id=NOW_ID, to_situation_id=DEAL_ID, p=Decimal("1.01"))
+        LeadsTo(
+            from_situation_id=NOW_ID,
+            from_version=1,
+            to_situation_id=DEAL_ID,
+            to_version=1,
+            p=Decimal("1.01"),
+        )
     with pytest.raises(ValidationError):
-        LeadsTo(from_situation_id=NOW_ID, to_situation_id=DEAL_ID, p=Decimal("-0.01"))
+        LeadsTo(
+            from_situation_id=NOW_ID,
+            from_version=1,
+            to_situation_id=DEAL_ID,
+            to_version=1,
+            p=Decimal("-0.01"),
+        )
 
 
 def test_self_edge_rejected():
     with pytest.raises(ValidationError, match="self-edge"):
-        LeadsTo(from_situation_id=NOW_ID, to_situation_id=NOW_ID, p=Decimal("1"))
+        LeadsTo(
+            from_situation_id=NOW_ID,
+            from_version=1,
+            to_situation_id=NOW_ID,
+            to_version=1,
+            p=Decimal("1"),
+        )
 
 
 def test_p_is_the_mean_of_the_inputs():
@@ -40,7 +64,9 @@ def test_p_is_the_mean_of_the_inputs():
     assert probability(inputs) == Decimal("0.0800")
     edge = LeadsTo(
         from_situation_id=NOW_ID,
+        from_version=1,
         to_situation_id=DEAL_ID,
+        to_version=1,
         inputs=inputs,
         p=Decimal("0.0800"),
     )
@@ -51,7 +77,9 @@ def test_p_that_disagrees_with_inputs_rejected():
     with pytest.raises(ValidationError, match="probability of the inputs"):
         LeadsTo(
             from_situation_id=NOW_ID,
+            from_version=1,
             to_situation_id=DEAL_ID,
+            to_version=1,
             inputs=[InputVariable(name="deal_odds", value=Decimal("0.10"))],
             p=Decimal("0.08"),
         )

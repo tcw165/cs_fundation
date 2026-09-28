@@ -4,9 +4,10 @@ from pydantic import BaseModel
 
 
 class Situation(BaseModel):
-    """A stored situation. situation_id is assigned when it is saved."""
+    """A stored situation. situation_id is assigned when it is saved. version starts at 1."""
 
     situation_id: UUID
+    version: int
     desc: str
     is_root: bool
 

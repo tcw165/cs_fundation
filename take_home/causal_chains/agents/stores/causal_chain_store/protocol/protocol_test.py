@@ -48,11 +48,13 @@ def test_causal_chain_store_requires_add_and_link():
 def test_fake_records_a_situation_and_a_link():
     async def exercise():
         store = _Both()
-        now = Situation(situation_id=NOW_ID, desc="now", is_root=True)
-        deal = Situation(situation_id=DEAL_ID, desc="deal", is_root=False)
+        now = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False)
         link = LeadsTo(
             from_situation_id=NOW_ID,
+            from_version=1,
             to_situation_id=DEAL_ID,
+            to_version=1,
             p=Decimal("0.08"),
         )
         await store.add_situation(now)
