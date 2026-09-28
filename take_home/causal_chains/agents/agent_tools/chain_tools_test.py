@@ -6,8 +6,13 @@ from uuid import UUID
 from agents.tool_context import ToolContext
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
+    add_case,
     add_situation,
+    add_start_situation,
+    add_terminal_situation,
+    get_case,
     link_situations,
+    lookup_leaf_situations,
     make_deeplink_widget,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
@@ -17,6 +22,7 @@ from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     StartSituation,
+    TerminalSituation,
 )
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
@@ -24,11 +30,13 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 
 class _Store:
     def __init__(self) -> None:
+        self.cases: list[Case] = []
         self.situations: list[tuple[Case, Situation]] = []
         self.links: list[tuple[Case, Situation, Situation, LeadsTo]] = []
+        self.leaves: list[Situation] = []
 
     async def add_case(self, case: Case) -> None:
-        return None
+        self.cases.append(case)
 
     async def get_case(self, case_id: UUID) -> Case:
         return Case(case_id=case_id)
@@ -54,7 +62,7 @@ class _Store:
         case: Case,
         start: StartSituation,
     ) -> list[Situation]:
-        return []
+        return list(self.leaves)
 
     async def get_chains(
         self,
@@ -83,29 +91,46 @@ def _invoke(
     return asyncio.run(exercise())
 
 
-def test_tools_write_a_situation_and_a_link_through_run_clients():
+def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     store = _Store()
     context = RunContext(
         conversation_id="1",
         turn_id="t_1",
         clients=RunClients(causal_chain_store=store),
     )
-    case = {"case_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"}
+    case = _invoke(add_case, context, {})
+    assert isinstance(case, Case)
+    loaded = _invoke(get_case, context, {"case_id": str(case.case_id)})
+    assert loaded == case
+    case_payload = case.model_dump(mode="json")
     now = _invoke(
-        add_situation,
+        add_start_situation,
         context,
-        {"case": case, "desc": "strait shut", "is_root": True},
+        {
+            "case": case_payload,
+            "desc": "strait shut",
+            "potential_factors": ["blockade"],
+        },
     )
     deal = _invoke(
         add_situation,
         context,
-        {"case": case, "desc": "a deal this week", "is_root": False},
+        {"case": case_payload, "desc": "a deal this week"},
+    )
+    terminal = _invoke(
+        add_terminal_situation,
+        context,
+        {
+            "case": case_payload,
+            "desc": "ships clear",
+            "original_ask": "the strait opens",
+        },
     )
     link = _invoke(
         link_situations,
         context,
         {
-            "case": case,
+            "case": case_payload,
             "from_situation": now.model_dump(
                 mode="json",
                 include={"situation_id", "version", "desc"},
@@ -114,24 +139,36 @@ def test_tools_write_a_situation_and_a_link_through_run_clients():
             "inputs": [{"name": "deal_odds", "value": "0.08"}],
         },
     )
-    assert isinstance(now, Situation)
-    assert isinstance(deal, Situation)
+    leaf = Situation(situation_id=UUID(int=1), version=1, desc="leaf")
+    store.leaves = [leaf]
+    leaves = _invoke(
+        lookup_leaf_situations,
+        context,
+        {"case": case_payload, "start": now.model_dump(mode="json")},
+    )
+    assert isinstance(now, StartSituation)
+    assert now.potential_factors == ["blockade"]
+    assert type(deal) is Situation
+    assert isinstance(terminal, TerminalSituation)
+    assert terminal.original_ask == "the strait opens"
     assert isinstance(link, LeadsTo)
-    assert "Save one situation" in add_situation.description
+    assert "Save the present" in add_start_situation.description
+    assert "Save one mid-chain situation" in add_situation.description
     assert "mean of the input values" in link_situations.description
     linked_now = Situation(
         situation_id=now.situation_id,
         version=now.version,
         desc=now.desc,
     )
-    stored_case = Case(case_id=UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"))
-    assert store.situations == [(stored_case, now), (stored_case, deal)]
+    assert store.cases == [case]
+    assert store.situations == [(case, now), (case, deal), (case, terminal)]
     assert link.p == Decimal("0.0800")
-    assert store.links == [(stored_case, linked_now, deal, link)]
+    assert store.links == [(case, linked_now, deal, link)]
+    assert leaves == [leaf]
     card = _invoke(
         make_deeplink_widget,
         context,
-        {"root": now.model_dump(mode="json")},
+        {"start": now.model_dump(mode="json")},
     )
     assert isinstance(card, DeeplinkCard)
     assert card.title == now.desc
