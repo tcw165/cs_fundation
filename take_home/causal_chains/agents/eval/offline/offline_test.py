@@ -8,6 +8,57 @@ from take_home.causal_chains.agents.clients.memcache.span_processor import (
 )
 from take_home.causal_chains.agents.eval.offline.offline import run_offline
 from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage
+from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
+    GraphCausalChainStore,
+)
+
+
+def _silence_runner(monkeypatch) -> None:
+    monkeypatch.setattr(
+        app_agent_runner_module.Runner,
+        "run_streamed",
+        lambda agent, input, context=None, max_turns=None: _fake_result(),
+    )
+
+
+def test_offline_uses_the_graph_store_when_neo4j_uri_is_set(monkeypatch) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_build_graph_db(uri: str, user: str, password: str) -> object:
+        seen["uri"] = uri
+        seen["user"] = user
+        seen["password"] = password
+        return "graph-db"
+
+    monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+    monkeypatch.setenv("NEO4J_USER", "neo4j")
+    monkeypatch.setenv("NEO4J_PASSWORD", "causal_chains")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_PROJECT_ID", raising=False)
+    monkeypatch.setattr(offline_module, "build_graph_db", fake_build_graph_db)
+    _silence_runner(monkeypatch)
+
+    service, _events = asyncio.run(run_offline("hormuz"))
+    store = service._causal_chain_store
+    assert isinstance(store, GraphCausalChainStore)
+    assert store._graph_db == "graph-db"
+    assert seen == {
+        "uri": "bolt://localhost:7687",
+        "user": "neo4j",
+        "password": "causal_chains",
+    }
+
+
+def test_offline_keeps_the_decoy_store_without_neo4j_uri(monkeypatch) -> None:
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_PROJECT_ID", raising=False)
+    _silence_runner(monkeypatch)
+
+    service, _events = asyncio.run(run_offline("hormuz"))
+    assert not isinstance(service._causal_chain_store, GraphCausalChainStore)
 
 
 def test_offline_turn_saves_the_user_message_and_prints_runner_messages(

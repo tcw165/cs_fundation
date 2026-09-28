@@ -7,7 +7,13 @@ from agents import set_default_openai_client, set_trace_processors
 from agents.tracing import TracingProcessor
 from braintrust import init_logger
 from braintrust.integrations.openai_agents import BraintrustTracingProcessor
+from dependency_injector import providers
 from openai import AsyncOpenAI
+
+from take_home.causal_chains.agents.clients.di.container import build_graph_db
+from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
+    GraphCausalChainStore,
+)
 
 from take_home.causal_chains.agents.chat_service.chat_service import (
     ChatService,
@@ -53,10 +59,25 @@ def _trace_processors(memcache: Memcache) -> list[TracingProcessor]:
     return processors
 
 
+def _use_graph_store(container: EvalContainer) -> None:
+    neo4j_uri = os.environ.get("NEO4J_URI", "")
+    if not neo4j_uri:
+        return
+    graph_db = build_graph_db(
+        neo4j_uri,
+        os.environ.get("NEO4J_USER", "neo4j"),
+        os.environ.get("NEO4J_PASSWORD", "causal_chains"),
+    )
+    container.causal_chain_store.override(
+        providers.Object(GraphCausalChainStore(graph_db))
+    )
+
+
 async def run_offline(
     query: str,
 ) -> tuple[ChatService, list[Message]]:
     container = EvalContainer()
+    _use_graph_store(container)
     message_store = container.messaging_store()
     turn_store = container.turn_store()
     api_key = os.environ.get("OPENAI_API_KEY", "")
