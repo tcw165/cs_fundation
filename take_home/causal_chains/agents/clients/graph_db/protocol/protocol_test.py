@@ -47,6 +47,9 @@ class _Both:
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
         return []
 
+    def clear(self) -> None:
+        return None
+
 
 class _ReadsOnly:
     def p_query(

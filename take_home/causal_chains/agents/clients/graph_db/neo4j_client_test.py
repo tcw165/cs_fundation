@@ -1,7 +1,10 @@
 from decimal import Decimal
 from uuid import UUID
 
-from take_home.causal_chains.agents.clients.graph_db.neo4j_client import Neo4jClient
+from take_home.causal_chains.agents.clients.graph_db.neo4j_client import (
+    CLEAR,
+    Neo4jClient,
+)
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 
 CLEAR_ID = UUID("44444444-4444-4444-8444-444444444444")
@@ -158,3 +161,13 @@ def test_list_leads_to_reads_versioned_rows():
         ),
     ]
     assert "MATCH ()-[r:LEADS_TO]->()" in client._driver.calls[0][0]
+
+
+def test_clear_deletes_situations():
+    driver = _Driver([])
+    client = Neo4jClient(driver)
+    client.clear()
+    query, params = driver.calls[0]
+    assert query == CLEAR
+    assert "DETACH DELETE s" in query
+    assert params == {}
