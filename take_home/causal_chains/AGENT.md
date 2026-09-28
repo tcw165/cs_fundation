@@ -23,3 +23,11 @@ Keep models, protocols, and implementations apart.
 - A system prompt starts with `# Goal`, then `# Key Rules`. The causal chain agent uses `# Iterative Process` instead, with nested steps for the loop. Do not add an `# Examples` section.
 - Write the prompt in natural language. Do not quote tool or function names.
 - Every agent tool has a docstring for the function and for each argument.
+
+## Offline eval
+
+Use this when you need to quickly validate the causal chain core functionality:
+
+```bash
+bazel run //take_home/causal_chains/agents/eval/offline:offline -- --query "The Strait of Hormuz is going to open next week."
+```
