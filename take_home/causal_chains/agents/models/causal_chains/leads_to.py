@@ -13,7 +13,9 @@ class LeadsTo(BaseModel):
     """A stored link. p is the probability of inputs when inputs are present."""
 
     from_situation_id: UUID
+    from_version: int
     to_situation_id: UUID
+    to_version: int
     p: Decimal
     inputs: list[InputVariable] = Field(default_factory=list)
 
