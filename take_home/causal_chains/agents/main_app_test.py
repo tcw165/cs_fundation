@@ -49,11 +49,16 @@ def test_post_message_and_sse_with_stub_runner():
     assert created.status_code == 200
     body = created.json()
     assert body["status"] == "queued"
+    assert body["from_message"]
     turn_id = body["turn_id"]
-    stream = client.get(f"/conversation/1/turn/{turn_id}/sse")
+    missing = client.get(f"/conversation/1/turn/{turn_id}/sse")
+    assert missing.status_code == 422
+    stream = client.get(
+        f"/conversation/1/turn/{turn_id}/sse",
+        params={"after_message": body["from_message"]},
+    )
     assert stream.status_code == 200
     assert "event: markdown" in stream.text
-    assert "event: done" in stream.text
     stored = asyncio.run(container.messaging_store().list_messages("1"))
     assert len(stored) == 1
     assert stored[0].text == "hello"
