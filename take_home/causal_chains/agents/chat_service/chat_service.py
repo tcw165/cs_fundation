@@ -20,9 +20,9 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
-from take_home.causal_chains.models.message import Message
-from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.models.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
 
 class ChatService:

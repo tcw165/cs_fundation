@@ -1,4 +1,4 @@
-from take_home.causal_chains.models.message import Message
+from take_home.causal_chains.agents.models.messaging.message import Message
 
 
 def test_message_parses():

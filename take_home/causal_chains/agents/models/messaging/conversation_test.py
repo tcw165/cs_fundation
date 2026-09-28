@@ -1,4 +1,4 @@
-from take_home.causal_chains.models.conversation import Conversation
+from take_home.causal_chains.agents.models.messaging.conversation import Conversation
 
 
 def test_conversation_parses():

@@ -7,7 +7,7 @@ from take_home.causal_chains.agents.chat_service.chat_service import format_sse
 from take_home.causal_chains.agents.di.deps import AppContainerDep
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.models.run_config import RunConfig
-from take_home.causal_chains.models.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn import Turn
 
 router = APIRouter()
 

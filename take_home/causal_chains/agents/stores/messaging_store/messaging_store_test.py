@@ -6,7 +6,7 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
-from take_home.causal_chains.models.message import Message
+from take_home.causal_chains.agents.models.messaging.message import Message
 
 
 class _FakeDynamoDb:

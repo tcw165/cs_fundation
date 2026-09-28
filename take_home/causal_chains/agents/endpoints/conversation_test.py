@@ -7,7 +7,7 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 )
 from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
-from take_home.causal_chains.models.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
 
 class _ChainStore:
