@@ -11,7 +11,7 @@ def test_run_context_round_trip():
     assert context.model_dump() == {
         "conversation_id": "1",
         "turn_id": "t_1",
-        "run_config": {"include_traces": False, "causal_chain_max_steps": 20},
+        "run_config": {"include_traces": False, "causal_chain_max_steps": 50},
     }
 
 
