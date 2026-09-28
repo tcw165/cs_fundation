@@ -1,15 +1,24 @@
 from decimal import Decimal
+from typing import Annotated
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, WithJsonSchema, model_validator
 
 _P_SCALE = Decimal("0.0001")
+# Pydantic's Decimal schema uses a regex lookahead. OpenAI structured outputs reject it.
+_VALUE_SCHEMA = WithJsonSchema(
+    {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1,
+    }
+)
 
 
 class InputVariable(BaseModel):
     """A named value between 0 and 1 that a person could move later."""
 
     name: str
-    value: Decimal
+    value: Annotated[Decimal, _VALUE_SCHEMA]
 
     @model_validator(mode="after")
     def name_and_value_are_usable(
