@@ -3,7 +3,10 @@ from pathlib import Path
 from agents import Agent, WebSearchTool
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import add_situation
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    TerminalSituation,
+)
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -19,5 +22,5 @@ path_builder = Agent[RunContext](
         WebSearchTool(),
         add_situation,
     ],
-    output_type=list[Situation],
+    output_type=list[Situation] | TerminalSituation,
 )

@@ -10,7 +10,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
 from take_home.causal_chains.agents.agents.pricer.pricer import pricer
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import TerminalSituation
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -32,8 +32,9 @@ causal_chain = Agent[RunContext](
         path_builder.as_tool(
             tool_name="path_builder",
             tool_description=(
-                "Save the next situations from the current description "
-                "and the thoughts about remaining attempts, and return them."
+                "Save the next situations from the current description, "
+                "the user's ask, and the thoughts about remaining attempts. "
+                "Return those situations, or the terminal situation when one states the ask."
             ),
         ),
         pricer.as_tool(
@@ -47,5 +48,5 @@ causal_chain = Agent[RunContext](
         link_situations,
         make_deeplink_widget,
     ],
-    output_type=Situation,
+    output_type=TerminalSituation,
 )

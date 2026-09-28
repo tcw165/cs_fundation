@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import causal_chain
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import TerminalSituation
 
 
 def test_causal_chain_prompt_and_tools():
@@ -9,7 +9,9 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.instructions == prompt
     assert causal_chain.name == "causal_chain"
     assert causal_chain.model == "gpt-5.6-luna"
-    assert causal_chain.output_type is Situation
+    assert causal_chain.output_type is TerminalSituation
+    assert "Return the terminal situation." in prompt
+    assert "return that same terminal situation" in prompt
     assert "# Goal" in prompt
     assert "# Iterative Process" in prompt
     assert "# Communication" in prompt
