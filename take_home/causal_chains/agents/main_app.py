@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.di.deps import get_app_container
-from take_home.causal_chains.agents.endpoints import conversation, health
+from take_home.causal_chains.agents.endpoints import causal_chains, conversation, health
 
 
 def create_app(container: AppContainer) -> FastAPI:
@@ -32,4 +32,5 @@ def create_app(container: AppContainer) -> FastAPI:
     app.dependency_overrides[get_app_container] = lambda: container
     app.include_router(health.router)
     app.include_router(conversation.router)
+    app.include_router(causal_chains.router)
     return app
