@@ -1,12 +1,15 @@
 import asyncio
 import json
 from types import SimpleNamespace
+from uuid import UUID
 
 from dependency_injector import providers
 from fastapi.testclient import TestClient
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
+from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 
 class _FakeDynamoDb:
@@ -54,6 +57,29 @@ def test_post_message_and_sse_with_stub_runner():
     stored = asyncio.run(container.messaging_store().list_messages("1"))
     assert len(stored) == 1
     assert stored[0].text == "hello"
+
+
+def test_get_causal_chains_returns_the_stored_chains():
+    root = Situation(
+        situation_id=UUID("11111111-1111-4111-8111-111111111111"),
+        version=1,
+        desc="now",
+        is_root=True,
+    )
+    chain = CausalChain(situations=[root], links=[])
+
+    class _Chains:
+        async def get_chains(
+            self,
+        ) -> list[CausalChain]:
+            return [chain]
+
+    container = AppContainer()
+    container.causal_chain_store.override(providers.Object(_Chains()))
+    client = TestClient(create_app(container))
+    response = client.get("/causal_chains")
+    assert response.status_code == 200
+    assert response.json() == [chain.model_dump(mode="json")]
 
 
 def test_app_runner_and_span_processor_share_memcache():
