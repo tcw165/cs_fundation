@@ -15,7 +15,7 @@ function sse_stream(chunks: string[]): ReadableStream<Uint8Array> {
 }
 
 describe("create_chat_http", () => {
-  it("posts a message then subscribes to turn sse", async () => {
+  it("posts a message then subscribes with after_message", async () => {
     const fetch_mock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -24,13 +24,13 @@ describe("create_chat_http", () => {
           turn_id: "t_8f3a",
           conversation_id: "1",
           status: "queued",
+          from_message: "m_user",
         }),
       })
       .mockResolvedValueOnce({
         ok: true,
         body: sse_stream([
-          'event: delta\ndata: {"text":"oil "}\n\n',
-          'event: done\ndata: {"message_id":"m_1"}\n\n',
+          'event: markdown\ndata: {"message_id":"m_1","role":"agent","text":"oil "}\n\n',
         ]),
       });
     vi.stubGlobal("fetch", fetch_mock);
@@ -45,6 +45,7 @@ describe("create_chat_http", () => {
       turn_id: "t_8f3a",
       conversation_id: "1",
       status: "queued",
+      from_message: "m_user",
     });
     expect(fetch_mock).toHaveBeenCalledWith(
       "http://agents:8000/conversation/1/messages",
@@ -59,16 +60,16 @@ describe("create_chat_http", () => {
     for await (const event of chat_port.subscribe_turn({
       conversation_id: "1",
       turn_id: turn.turn_id,
+      after_message: turn.from_message,
       abort_signal,
     })) {
       events.push(event);
     }
     expect(events).toEqual([
-      { type: "delta", text: "oil " },
-      { type: "done", message_id: "m_1" },
+      { type: "markdown", message_id: "m_1", role: "agent", text: "oil " },
     ]);
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/turn/t_8f3a/sse",
+      "http://agents:8000/conversation/1/turn/t_8f3a/sse?after_message=m_user",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();
@@ -79,31 +80,48 @@ describe("parse_sse_stream", () => {
   it("reassembles events split across chunks", async () => {
     const events = [];
     for await (const event of parse_sse_stream(
-      sse_stream(['event: del', 'ta\ndata: {"text":"oil "}\n\n']),
+      sse_stream([
+        'event: mark',
+        'down\ndata: {"message_id":"m_1","role":"agent","text":"oil "}\n\n',
+      ]),
     )) {
       events.push(event);
     }
-    expect(events).toEqual([{ type: "delta", text: "oil " }]);
+    expect(events).toEqual([
+      { type: "markdown", message_id: "m_1", role: "agent", text: "oil " },
+    ]);
   });
 
-  it("decodes a deeplink widget", async () => {
+  it("decodes a deeplink message", async () => {
     const events = [];
     for await (const event of parse_sse_stream(
       sse_stream([
-        'event: deeplink_widget\ndata: {"card":{"title":"now","root_situation_id":"11111111-1111-4111-8111-111111111111","root_version":1}}\n\n',
+        'event: deeplink\ndata: {"message_id":"m_card","role":"other","link":"/chain/11111111-1111-4111-8111-111111111111/1?title=now"}\n\n',
       ]),
     )) {
       events.push(event);
     }
     expect(events).toEqual([
       {
-        type: "deeplink_widget",
-        card: {
-          title: "now",
-          root_situation_id: "11111111-1111-4111-8111-111111111111",
-          root_version: 1,
-        },
+        type: "deeplink",
+        message_id: "m_card",
+        role: "other",
+        link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
       },
+    ]);
+  });
+
+  it("decodes a heartbeat the page does not render", async () => {
+    const events = [];
+    for await (const event of parse_sse_stream(
+      sse_stream([
+        'event: heartbeat\ndata: {"message_id":"m_beat","role":"meta"}\n\n',
+      ]),
+    )) {
+      events.push(event);
+    }
+    expect(events).toEqual([
+      { type: "heartbeat", message_id: "m_beat", role: "meta" },
     ]);
   });
 });

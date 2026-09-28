@@ -14,37 +14,47 @@ export function create_chat_model_adapter(
         text: last_user_text(messages),
         abort_signal: abortSignal,
       });
-      let text = "";
+      const paragraphs: string[] = [];
       const cards: DeeplinkCard[] = [];
       for await (const event of chat_port.subscribe_turn({
         conversation_id,
         turn_id: turn.turn_id,
+        after_message: turn.from_message,
         abort_signal: abortSignal,
       })) {
-        if (event.type === "delta") {
-          text += event.text;
-          yield assistant_snapshot(text, cards);
+        if (event.type === "heartbeat") {
+          continue;
         }
-        if (event.type === "deeplink_widget") {
-          cards.push(event.card);
-          yield assistant_snapshot(text, cards);
+        if (event.type === "markdown" && event.role === "agent") {
+          paragraphs.push(event.text);
+          yield assistant_snapshot(paragraphs, cards);
         }
-        if (event.type === "done") {
-          return;
-        }
-        if (event.type === "error") {
-          throw new Error(event.message);
+        if (event.type === "deeplink") {
+          cards.push(card_from_link(event.link));
+          yield assistant_snapshot(paragraphs, cards);
         }
       }
     },
   };
 }
 
-function assistant_snapshot(text: string, cards: DeeplinkCard[]) {
+export function card_from_link(link: string): DeeplinkCard {
+  const url = new URL(link, "http://local");
+  const parts = url.pathname.split("/").filter((part) => part !== "");
+  const root_version = Number(parts[2] ?? "0");
+  return {
+    title: url.searchParams.get("title") ?? "",
+    root_situation_id: parts[1] ?? "",
+    root_version: Number.isFinite(root_version) ? root_version : 0,
+  };
+}
+
+function assistant_snapshot(paragraphs: string[], cards: DeeplinkCard[]) {
   const content: (
     | { type: "text"; text: string }
     | { type: "data"; name: "deeplink_widget"; data: DeeplinkCard }
   )[] = [];
+  const text = paragraphs.join("\n\n");
   if (text !== "") {
     content.push({ type: "text", text });
   }

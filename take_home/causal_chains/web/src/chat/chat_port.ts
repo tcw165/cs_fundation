@@ -1,17 +1,33 @@
-import type { DeeplinkCard } from "../chain/chain_port";
+export type Role = "user" | "agent" | "other" | "meta";
 
 export type Turn = {
   turn_id: string;
   conversation_id: string;
   status: string;
+  from_message: string;
 };
 
-export type SseDelta = { type: "delta"; text: string };
-export type SseTool = { type: "tool"; name: string; status: string };
-export type SseDone = { type: "done"; message_id: string };
-export type SseError = { type: "error"; message: string };
-export type SseDeeplinkWidget = { type: "deeplink_widget"; card: DeeplinkCard };
-export type SseEvent = SseDelta | SseTool | SseDone | SseError | SseDeeplinkWidget;
+export type MarkdownMessage = {
+  type: "markdown";
+  message_id: string;
+  role: Role;
+  text: string;
+};
+
+export type DeeplinkCardMessage = {
+  type: "deeplink";
+  message_id: string;
+  role: Role;
+  link: string;
+};
+
+export type HeartbeatMessage = {
+  type: "heartbeat";
+  message_id: string;
+  role: "meta";
+};
+
+export type Message = MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage;
 
 export type PostMessageReq = {
   conversation_id: string;
@@ -22,10 +38,11 @@ export type PostMessageReq = {
 export type SubscribeReq = {
   conversation_id: string;
   turn_id: string;
+  after_message: string;
   abort_signal?: AbortSignal;
 };
 
 export type ChatPort = {
   post_message: (req: PostMessageReq) => Promise<Turn>;
-  subscribe_turn: (req: SubscribeReq) => AsyncIterable<SseEvent>;
+  subscribe_turn: (req: SubscribeReq) => AsyncIterable<Message>;
 };
