@@ -12,6 +12,7 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.output_type is Situation
     assert "# Goal" in prompt
     assert "# Iterative Process" in prompt
+    assert "# Communication" in prompt
     assert "# Key Rules" not in prompt
     assert "# Examples" not in prompt
     for tool_name in (

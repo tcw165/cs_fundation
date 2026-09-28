@@ -52,7 +52,7 @@ def test_post_message_and_sse_with_stub_runner():
     turn_id = body["turn_id"]
     stream = client.get(f"/conversation/1/turn/{turn_id}/sse")
     assert stream.status_code == 200
-    assert "event: delta" in stream.text
+    assert "event: markdown" in stream.text
     assert "event: done" in stream.text
     stored = asyncio.run(container.messaging_store().list_messages("1"))
     assert len(stored) == 1

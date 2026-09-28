@@ -42,7 +42,7 @@ def test_chat_service_post_returns_queued_turn():
         return turn, events, stored, saved
 
     turn, events, stored, saved = asyncio.run(exercise())
-    assert any(event.type == "delta" for event in events)
+    assert any(event.type == "markdown" for event in events)
     assert events[-1].type == "done"
     assert len(stored) == 1
     assert stored[0].text == "hello"

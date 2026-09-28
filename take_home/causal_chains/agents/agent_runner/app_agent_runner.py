@@ -1,6 +1,8 @@
+import uuid
 from collections.abc import AsyncGenerator
 from functools import partial
 from typing import override
+from urllib.parse import quote
 
 import anyio
 from agents import Runner, trace
@@ -13,15 +15,12 @@ from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
 )
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
-from take_home.causal_chains.agents.models.messaging.sse_event import (
-    DeeplinkWidget,
-    RunTraces,
-    SseDelta,
-    SseDone,
-    SseError,
-    SseEvent,
-    SseHeartbeat,
-    SseTool,
+from take_home.causal_chains.agents.models.messaging.message import (
+    DeeplinkCardMessage,
+    HeartbeatMessage,
+    MarkdownMessage,
+    Message,
+    Role,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -36,35 +35,50 @@ def _raw_field(
     return getattr(raw_item, field_name, None)
 
 
-def _map_model_event(
-    event: object,
-) -> SseEvent | None:
-    event_type = getattr(event, "type", "")
-    if event_type == "raw_response_event":
-        data = getattr(event, "data", None)
-        if isinstance(data, ResponseTextDeltaEvent):
-            return SseDelta(text=data.delta)
-        return None
-    if event_type == "run_item_stream_event":
-        item = getattr(event, "item", None)
-        if getattr(item, "type", "") == "tool_call_item":
-            name = _raw_field(item, "name")
-            return SseTool(name=str(name or "tool"), status="called")
-    return None
+_HEARTBEAT_INTERVAL_S = 3.0
 
 
-def _deeplink_widget(
-    output: object,
-) -> DeeplinkWidget:
+def _heartbeat() -> HeartbeatMessage:
+    return HeartbeatMessage(message_id=str(uuid.uuid4()))
+
+
+def _markdown(text: str) -> MarkdownMessage:
+    return MarkdownMessage(
+        message_id=str(uuid.uuid4()),
+        role=Role.agent,
+        text=text,
+    )
+
+
+def _deeplink_link(card: DeeplinkCard) -> str:
+    title = quote(card.title, safe="")
+    return f"/chain/{card.root_situation_id}/{card.root_version}?title={title}"
+
+
+def _deeplink_message(output: object) -> DeeplinkCardMessage:
     if isinstance(output, DeeplinkCard):
-        return DeeplinkWidget(card=output)
-    if isinstance(output, str):
-        return DeeplinkWidget(card=DeeplinkCard.model_validate_json(output))
-    return DeeplinkWidget(card=DeeplinkCard.model_validate(output))
+        card = output
+    elif isinstance(output, str):
+        card = DeeplinkCard.model_validate_json(output)
+    else:
+        card = DeeplinkCard.model_validate(output)
+    return DeeplinkCardMessage(
+        message_id=str(uuid.uuid4()),
+        role=Role.other,
+        link=_deeplink_link(card),
+    )
+
+
+def _ready_paragraphs(buffer: str) -> tuple[list[str], str]:
+    if "\n\n" not in buffer:
+        return [], buffer
+    parts = buffer.split("\n\n")
+    ready = [part for part in parts[:-1] if part.strip()]
+    return ready, parts[-1]
 
 
 async def stream_heartbeat(
-    send: MemoryObjectSendStream[SseEvent],
+    send: MemoryObjectSendStream[Message],
     stop: anyio.Event,
     interval_s: float,
 ) -> None:
@@ -75,7 +89,7 @@ async def stream_heartbeat(
             if stop.is_set():
                 return
             try:
-                await send.send(SseHeartbeat())
+                await send.send(_heartbeat())
             except (anyio.BrokenResourceError, anyio.ClosedResourceError):
                 return
     finally:
@@ -96,10 +110,10 @@ class AppAgentRunner(AgentRunner):
         self,
         inputs: list[str],
         context: RunContext,
-        interval_s: float = 5.0,
-    ) -> AsyncGenerator[SseEvent]:
+        interval_s: float = _HEARTBEAT_INTERVAL_S,
+    ) -> AsyncGenerator[Message]:
         results: list[object] = []
-        send, receive = anyio.create_memory_object_stream[SseEvent]()
+        send, receive = anyio.create_memory_object_stream[Message]()
         stop = anyio.Event()
         try:
             async with anyio.create_task_group() as group:
@@ -123,10 +137,8 @@ class AppAgentRunner(AgentRunner):
                 )
                 await send.aclose()
                 async with receive:
-                    async for event in receive:
-                        yield event
-                        if event.type in {"done", "error"}:
-                            break
+                    async for message in receive:
+                        yield message
         finally:
             for result in results:
                 cancel = getattr(result, "cancel", None)
@@ -137,57 +149,67 @@ class AppAgentRunner(AgentRunner):
         self,
         inputs: list[str],
         context: RunContext,
-        send: MemoryObjectSendStream[SseEvent],
+        send: MemoryObjectSendStream[Message],
         stop: anyio.Event,
         results: list[object],
     ) -> None:
         try:
-            try:
-                with trace(
-                    "app_agent_runner",
-                    group_id=context.conversation_id,
-                    metadata={"turn_id": context.turn_id},
-                ):
-                    user_ask = "\n".join(inputs)
-                    result = Runner.run_streamed(
-                        causal_chain,
-                        input=(
-                            f"Future situation:\n{user_ask}\n"
-                            f"Remaining attempts: {context.run_config.attempt_quota}"
-                        ),
-                        context=context,
-                    )
-                    results.append(result)
-                    tool_names: dict[str, str] = {}
-                    async for event in result.stream_events():
-                        mapped = _map_model_event(event)
-                        if mapped is not None:
-                            if mapped.type == "tool":
-                                item = getattr(event, "item", None)
-                                call_id = _raw_field(item, "call_id")
-                                if isinstance(call_id, str):
-                                    tool_names[call_id] = mapped.name
-                            await send.send(mapped)
+            with trace(
+                "app_agent_runner",
+                group_id=context.conversation_id,
+                metadata={"turn_id": context.turn_id},
+            ):
+                user_ask = "\n".join(inputs)
+                result = Runner.run_streamed(
+                    causal_chain,
+                    input=(
+                        f"Future situation:\n{user_ask}\n"
+                        f"Remaining attempts: {context.run_config.attempt_quota}"
+                    ),
+                    context=context,
+                )
+                results.append(result)
+                tool_names: dict[str, str] = {}
+                buffer = ""
+                async for event in result.stream_events():
+                    event_type = getattr(event, "type", "")
+                    if event_type == "raw_response_event":
+                        data = getattr(event, "data", None)
+                        if isinstance(data, ResponseTextDeltaEvent):
+                            buffer += data.delta
+                            ready, buffer = _ready_paragraphs(buffer)
+                            for paragraph in ready:
+                                await send.send(_markdown(paragraph))
+                        continue
+                    item = getattr(event, "item", None)
+                    if (
+                        event_type == "run_item_stream_event"
+                        and getattr(item, "type", "") == "tool_call_item"
+                    ):
+                        name = _raw_field(item, "name")
+                        call_id = _raw_field(item, "call_id")
+                        if isinstance(call_id, str):
+                            tool_names[call_id] = str(name or "tool")
+                        continue
+                    if (
+                        event_type == "run_item_stream_event"
+                        and getattr(item, "type", "") == "tool_call_output_item"
+                    ):
+                        call_id = _raw_field(item, "call_id")
+                        if tool_names.get(str(call_id)) != "make_deeplink_widget":
                             continue
-                        item = getattr(event, "item", None)
-                        if (
-                            getattr(event, "type", "") == "run_item_stream_event"
-                            and getattr(item, "type", "") == "tool_call_output_item"
-                        ):
-                            call_id = _raw_field(item, "call_id")
-                            if tool_names.get(str(call_id)) == "make_deeplink_widget":
-                                await send.send(
-                                    _deeplink_widget(getattr(item, "output", None)),
-                                )
-                    if context.run_config.include_traces:
-                        await send.send(RunTraces(text=self._memcache.flush()))
-                    else:
-                        self._memcache.flush()
-                    stop.set()
-                    await send.send(SseDone(message_id=f"m_{context.turn_id}"))
-            except Exception as error:
-                stop.set()
-                await send.send(SseError(message=str(error)))
+                        ready, buffer = _ready_paragraphs(buffer)
+                        for paragraph in ready:
+                            await send.send(_markdown(paragraph))
+                        if buffer.strip():
+                            await send.send(_markdown(buffer))
+                            buffer = ""
+                        await send.send(
+                            _deeplink_message(getattr(item, "output", None)),
+                        )
+                if buffer.strip():
+                    await send.send(_markdown(buffer))
+                self._memcache.flush()
         finally:
             stop.set()
             await send.aclose()

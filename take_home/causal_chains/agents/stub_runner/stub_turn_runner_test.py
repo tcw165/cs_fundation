@@ -1,6 +1,7 @@
 import asyncio
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage, Role
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
@@ -10,7 +11,7 @@ def test_stub_turn_runner_is_an_agent_runner():
     assert isinstance(StubTurnRunner(), AgentRunner)
 
 
-def test_stub_turn_runner_stream_yields_delta_then_done():
+def test_stub_turn_runner_stream_yields_one_markdown_message():
     async def collect():
         runner = StubTurnRunner()
         context = RunContext(
@@ -21,7 +22,8 @@ def test_stub_turn_runner_stream_yields_delta_then_done():
         return [event async for event in runner.stream(["hello"], context)]
 
     events = asyncio.run(collect())
-    assert events[0].type == "delta"
-    assert events[0].text == "echo: hello"
-    assert events[-1].type == "done"
-    assert events[-1].message_id == "m_t_1"
+    assert len(events) == 1
+    message = events[0]
+    assert isinstance(message, MarkdownMessage)
+    assert message.role is Role.agent
+    assert message.text == "echo: hello"

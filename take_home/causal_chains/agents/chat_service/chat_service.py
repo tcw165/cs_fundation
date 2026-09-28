@@ -59,7 +59,7 @@ class ChatService:
         conversation_id: str,
         text: str,
     ) -> Turn:
-        message_id = f"m_{uuid.uuid4().hex[:8]}"
+        message_id = str(uuid.uuid4())
         turn = Turn(
             turn_id=f"t_{uuid.uuid4().hex[:8]}",
             conversation_id=conversation_id,
