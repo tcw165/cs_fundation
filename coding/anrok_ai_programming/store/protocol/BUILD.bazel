@@ -1,0 +1,20 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "protocol",
+    srcs = ["protocol.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = ["//coding/anrok_ai_programming/models"],
+)
+
+pytest_test(
+    name = "protocol_test",
+    srcs = ["protocol_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":protocol",
+        "//coding/anrok_ai_programming/models",
+    ],
+)
