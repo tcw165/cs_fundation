@@ -4,7 +4,10 @@ from uuid import UUID
 
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    StartSituation,
+)
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
@@ -54,8 +57,13 @@ def test_causal_chain_store_requires_add_and_link():
 def test_fake_records_a_situation_and_a_link():
     async def exercise():
         store = _Both()
-        now = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False)
+        now = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=[],
+        )
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
         link = LeadsTo(
             from_situation_id=NOW_ID,
             from_version=1,

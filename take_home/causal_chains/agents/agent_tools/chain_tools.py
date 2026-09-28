@@ -9,7 +9,10 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
     probability,
 )
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    StartSituation,
+)
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
@@ -44,12 +47,19 @@ async def add_situation(
         desc: What is true in this situation.
         is_root: True only for the present.
     """
-    situation = Situation(
-        situation_id=uuid4(),
-        version=1,
-        desc=desc,
-        is_root=is_root,
-    )
+    if is_root:
+        situation: Situation = StartSituation(
+            situation_id=uuid4(),
+            version=1,
+            desc=desc,
+            potential_factors=[],
+        )
+    else:
+        situation = Situation(
+            situation_id=uuid4(),
+            version=1,
+            desc=desc,
+        )
     await _require_store(ctx).add_situation(situation)
     return situation
 
@@ -97,7 +107,7 @@ async def link_situations(
 @function_tool
 async def make_deeplink_widget(
     ctx: RunContextWrapper[RunContext],
-    root: Situation,
+    root: StartSituation | Situation,
 ) -> DeeplinkCard:
     """Show a deeplink card for one saved root situation.
 
