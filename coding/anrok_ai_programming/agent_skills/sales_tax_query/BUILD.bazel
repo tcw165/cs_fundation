@@ -1,0 +1,32 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_binary(
+    name = "query",
+    srcs = ["query.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//coding/anrok_ai_programming/models",
+        "//coding/anrok_ai_programming/store/dynamo_db",
+        requirement("click"),
+    ],
+)
+
+filegroup(
+    name = "sales_tax_query",
+    srcs = ["SKILL.md"],
+    visibility = ["//visibility:public"],
+)
+
+pytest_test(
+    name = "query_test",
+    srcs = ["query_test.py"],
+    imports = ["../../../.."],
+    deps = [
+        ":query",
+        "//coding/anrok_ai_programming/models",
+        requirement("click"),
+    ],
+)
