@@ -3,13 +3,10 @@ import asyncio
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
 from take_home.causal_chains.agents.models.messaging.message import (
+    DeeplinkCardMessage,
+    HeartbeatMessage,
     MarkdownMessage,
     Role,
-)
-from take_home.causal_chains.agents.models.messaging.sse_event import (
-    RunTraces,
-    SseDelta,
-    SseHeartbeat,
 )
 from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
@@ -23,21 +20,30 @@ from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurn
 
 
 def test_format_sse_excludes_type_from_data():
-    line = format_sse(SseDelta(text="oil "))
-    assert line.startswith("event: delta\n")
+    line = format_sse(
+        MarkdownMessage(message_id="m_1", role=Role.agent, text="oil "),
+    )
+    assert line.startswith("event: markdown\n")
     assert '"type"' not in line.split("data:", 1)[1]
     assert "oil" in line
 
 
-def test_format_sse_run_traces():
-    line = format_sse(RunTraces(text="span\n"))
-    assert line.startswith("event: run_traces\n")
-    assert "span" in line
+def test_format_sse_deeplink():
+    line = format_sse(
+        DeeplinkCardMessage(
+            message_id="m_2",
+            role=Role.other,
+            link="/chain/now/1?title=now",
+        ),
+    )
+    assert line.startswith("event: deeplink\n")
+    assert "/chain/now/1" in line
 
 
 def test_format_sse_heartbeat():
-    line = format_sse(SseHeartbeat())
+    line = format_sse(HeartbeatMessage(message_id="m_3"))
     assert line.startswith("event: heartbeat\n")
+    assert "meta" in line
 
 
 class _ChainStore:
