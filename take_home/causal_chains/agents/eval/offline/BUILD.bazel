@@ -10,9 +10,11 @@ py_binary(
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/clients/memcache",
+        "//take_home/causal_chains/agents/clients/memcache/protocol",
         "//take_home/causal_chains/agents/eval/offline/di",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
+        requirement("braintrust"),
         requirement("click"),
         requirement("openai"),
         requirement("openai-agents"),
