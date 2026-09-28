@@ -4,6 +4,8 @@ import {
   ThreadPrimitive,
 } from "@assistant-ui/react";
 
+import { DeeplinkCardPart } from "../chain/deeplink_card";
+
 import "./thread.css";
 
 function UserMessage() {
@@ -17,7 +19,15 @@ function UserMessage() {
 function AssistantMessage() {
   return (
     <MessagePrimitive.Root className="message message-assistant">
-      <MessagePrimitive.Parts />
+      <MessagePrimitive.Parts
+        components={{
+          data: {
+            by_name: {
+              deeplink_widget: DeeplinkCardPart,
+            },
+          },
+        }}
+      />
     </MessagePrimitive.Root>
   );
 }

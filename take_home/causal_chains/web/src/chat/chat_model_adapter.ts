@@ -1,5 +1,6 @@
 import type { ChatModelAdapter, ThreadMessage } from "@assistant-ui/react";
 
+import type { DeeplinkCard } from "../chain/chain_port";
 import type { ChatPort } from "./chat_port";
 
 export function create_chat_model_adapter(
@@ -14,6 +15,7 @@ export function create_chat_model_adapter(
         abort_signal: abortSignal,
       });
       let text = "";
+      const cards: DeeplinkCard[] = [];
       for await (const event of chat_port.subscribe_turn({
         conversation_id,
         turn_id: turn.turn_id,
@@ -21,7 +23,11 @@ export function create_chat_model_adapter(
       })) {
         if (event.type === "delta") {
           text += event.text;
-          yield { content: [{ type: "text" as const, text }] };
+          yield assistant_snapshot(text, cards);
+        }
+        if (event.type === "deeplink_widget") {
+          cards.push(event.card);
+          yield assistant_snapshot(text, cards);
         }
         if (event.type === "done") {
           return;
@@ -32,6 +38,20 @@ export function create_chat_model_adapter(
       }
     },
   };
+}
+
+function assistant_snapshot(text: string, cards: DeeplinkCard[]) {
+  const content: (
+    | { type: "text"; text: string }
+    | { type: "data"; name: "deeplink_widget"; data: DeeplinkCard }
+  )[] = [];
+  if (text !== "") {
+    content.push({ type: "text", text });
+  }
+  for (const card of cards) {
+    content.push({ type: "data", name: "deeplink_widget", data: card });
+  }
+  return { content };
 }
 
 export function last_user_text(messages: readonly ThreadMessage[]): string {
