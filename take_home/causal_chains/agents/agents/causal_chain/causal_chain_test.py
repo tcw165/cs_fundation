@@ -20,6 +20,7 @@ def test_causal_chain_prompt_and_tools():
         "pricer",
         "add_situation",
         "link_situations",
+        "make_deeplink_widget",
     ):
         assert tool_name not in prompt
     assert [tool.name for tool in causal_chain.tools] == [
@@ -28,4 +29,6 @@ def test_causal_chain_prompt_and_tools():
         "pricer",
         "add_situation",
         "link_situations",
+        "make_deeplink_widget",
     ]
+    assert causal_chain.tools[-1].name == "make_deeplink_widget"
