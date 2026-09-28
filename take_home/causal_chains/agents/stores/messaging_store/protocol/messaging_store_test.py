@@ -1,12 +1,17 @@
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    MarkdownMessage,
+    Message,
+    Role,
+)
 
 
 class _Both:
     async def append(
         self,
+        conversation_id: str,
         message: Message,
     ) -> None:
         return None
@@ -21,6 +26,7 @@ class _Both:
 class _AppendOnly:
     async def append(
         self,
+        conversation_id: str,
         message: Message,
     ) -> None:
         return None
@@ -32,13 +38,10 @@ def test_messaging_store_requires_append_and_list_messages():
 
 
 def test_message_fields_for_store():
-    message = Message(
+    message = MarkdownMessage(
         message_id="m_1",
-        conversation_id="1",
-        turn_id="t_1",
-        role="user",
+        role=Role.user,
         text="hello",
     )
-    assert message.conversation_id == "1"
-    assert message.role == "user"
+    assert message.role is Role.user
     assert message.text == "hello"

@@ -12,6 +12,7 @@ def test_in_memory_turn_store_round_trips_a_turn():
             turn_id="t_1",
             conversation_id="1",
             status=TurnStatus.queued,
+            from_message="m_1",
         )
         await store.put_turn(queued)
         first = await store.get_turn("t_1")

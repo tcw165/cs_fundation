@@ -8,6 +8,7 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 )
 from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
+from take_home.causal_chains.agents.models.messaging.message import Role
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     RunTraces,
     SseDelta,
@@ -70,9 +71,9 @@ def test_post_message_and_subscribe_stub():
     assert events[-1].type == "done"
     assert turn.conversation_id == "1"
     assert len(stored) == 1
-    assert stored[0].role == "user"
+    assert stored[0].role is Role.user
     assert stored[0].text == "hello"
-    assert stored[0].turn_id == turn.turn_id
+    assert turn.from_message == stored[0].message_id
     assert saved is not None
     assert saved.status is TurnStatus.completed
 

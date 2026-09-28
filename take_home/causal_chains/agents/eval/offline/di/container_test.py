@@ -9,7 +9,10 @@ from take_home.causal_chains.agents.eval.offline.di import container as containe
 from take_home.causal_chains.agents.eval.offline.di.container import EvalContainer
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    MarkdownMessage,
+    Role,
+)
 from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
@@ -55,28 +58,25 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         to_version=later.version,
         p=Decimal("1"),
     )
-    message = Message(
+    message = MarkdownMessage(
         message_id="m_1",
-        conversation_id="1",
-        turn_id="t_1",
-        role="user",
+        role=Role.user,
         text="hormuz",
     )
-    other = message.model_copy(
-        update={"message_id": "m_2", "conversation_id": "2"},
-    )
+    other = message.model_copy(update={"message_id": "m_2"})
     turn = Turn(
         turn_id="t_1",
         conversation_id="1",
         status=TurnStatus.queued,
+        from_message="m_1",
     )
 
     async def round_trip() -> None:
         messaging_store = container.messaging_store()
         turn_store = container.turn_store()
         causal_chain_store = container.causal_chain_store()
-        await messaging_store.append(message)
-        await messaging_store.append(other)
+        await messaging_store.append("1", message)
+        await messaging_store.append("2", other)
         await turn_store.put_turn(turn)
         await causal_chain_store.add_situation(root)
         await causal_chain_store.link_situations(root, later, link)

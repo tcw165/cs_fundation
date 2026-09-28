@@ -1,9 +1,41 @@
-from pydantic import BaseModel
+from enum import StrEnum
+from typing import Annotated, Literal, Union
+
+from pydantic import BaseModel, Field, TypeAdapter
 
 
-class Message(BaseModel):
+class Role(StrEnum):
+    user = "user"
+    agent = "agent"
+    other = "other"
+    meta = "meta"
+
+
+class BaseMessage(BaseModel):
     message_id: str
-    conversation_id: str
-    turn_id: str | None
-    role: str
+    role: Role
+
+
+class MarkdownMessage(BaseMessage):
+    type: Literal["markdown"] = "markdown"
     text: str
+
+
+class DeeplinkCardMessage(BaseMessage):
+    type: Literal["deeplink"] = "deeplink"
+    link: str
+
+
+class HeartbeatMessage(BaseMessage):
+    type: Literal["heartbeat"] = "heartbeat"
+    role: Literal[Role.meta] = Role.meta
+
+
+Message = Annotated[
+    Union[MarkdownMessage, DeeplinkCardMessage, HeartbeatMessage],
+    Field(discriminator="type"),
+]
+
+message_adapter: TypeAdapter[
+    MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage
+] = TypeAdapter(Message)

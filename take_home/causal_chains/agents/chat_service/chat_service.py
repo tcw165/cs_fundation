@@ -22,7 +22,10 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    MarkdownMessage,
+    Role,
+)
 from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
@@ -56,10 +59,12 @@ class ChatService:
         conversation_id: str,
         text: str,
     ) -> Turn:
+        message_id = f"m_{uuid.uuid4().hex[:8]}"
         turn = Turn(
             turn_id=f"t_{uuid.uuid4().hex[:8]}",
             conversation_id=conversation_id,
             status=TurnStatus.queued,
+            from_message=message_id,
         )
         await self._record_turn(turn)
         self._contexts[turn.turn_id] = RunContext(
@@ -72,13 +77,12 @@ class ChatService:
         self._buffers[turn.turn_id] = []
         self._waiters[turn.turn_id] = []
         await self._messaging_store.append(
-            Message(
-                message_id=f"m_{uuid.uuid4().hex[:8]}",
-                conversation_id=conversation_id,
-                turn_id=turn.turn_id,
-                role="user",
+            conversation_id,
+            MarkdownMessage(
+                message_id=message_id,
+                role=Role.user,
                 text=text,
-            )
+            ),
         )
         return turn
 

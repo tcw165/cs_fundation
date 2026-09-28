@@ -4,7 +4,10 @@ from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import D
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    Message,
+    message_adapter,
+)
 
 
 class MessagingStoreImpl(MessagingStore):
@@ -17,18 +20,19 @@ class MessagingStoreImpl(MessagingStore):
     @override
     async def append(
         self,
+        conversation_id: str,
         message: Message,
     ) -> None:
         current = self._dynamo_db.get_item(
             "conversation",
-            {"conversation_id": message.conversation_id},
+            {"conversation_id": conversation_id},
         )
         messages = [] if current is None else list(current["messages"])
-        messages.append(message.model_dump())
+        messages.append(message.model_dump(mode="json"))
         self._dynamo_db.put_item(
             "conversation",
             {
-                "conversation_id": message.conversation_id,
+                "conversation_id": conversation_id,
                 "messages": messages,
             },
         )
@@ -44,4 +48,7 @@ class MessagingStoreImpl(MessagingStore):
         )
         if current is None:
             return []
-        return [Message.model_validate(item) for item in current["messages"]]
+        return [
+            message_adapter.validate_python(item)
+            for item in current["messages"]
+        ]

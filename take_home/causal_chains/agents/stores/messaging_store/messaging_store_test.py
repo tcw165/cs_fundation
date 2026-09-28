@@ -6,7 +6,12 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.models.messaging.message import (
+    DeeplinkCardMessage,
+    HeartbeatMessage,
+    MarkdownMessage,
+    Role,
+)
 
 
 class _FakeDynamoDb:
@@ -54,27 +59,32 @@ def test_append_and_list_messages_by_conversation():
     async def exercise():
         database = _FakeDynamoDb()
         store = MessagingStoreImpl(database)
-        hello = Message(
+        hello = MarkdownMessage(
             message_id="m_1",
-            conversation_id="1",
-            turn_id="t_1",
-            role="user",
+            role=Role.user,
             text="hello",
         )
-        other = Message(
+        other = MarkdownMessage(
             message_id="m_2",
-            conversation_id="2",
-            turn_id="t_2",
-            role="user",
+            role=Role.user,
             text="other",
         )
-        await store.append(hello)
-        await store.append(other)
+        card = DeeplinkCardMessage(
+            message_id="m_3",
+            role=Role.other,
+            link="/chain/now/1?title=now",
+        )
+        beat = HeartbeatMessage(message_id="m_4")
+        await store.append("1", hello)
+        await store.append("2", other)
+        await store.append("1", card)
+        await store.append("1", beat)
         listed = await store.list_messages("1")
         conversation = database.get_item("conversation", {"conversation_id": "1"})
-        return listed, conversation, hello
+        return listed, conversation, hello, card, beat
 
-    listed, conversation, hello = asyncio.run(exercise())
-    assert listed == [hello]
+    listed, conversation, hello, card, beat = asyncio.run(exercise())
+    assert listed == [hello, card, beat]
+    assert beat.role is Role.meta
     assert conversation is not None
     assert "ttl" not in conversation
