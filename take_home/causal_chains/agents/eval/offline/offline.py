@@ -3,10 +3,15 @@ import os
 import uuid
 
 import click
+from agents import set_default_openai_client, set_trace_processors
+from openai import AsyncOpenAI
 
 from take_home.causal_chains.agents.chat_service.chat_service import (
     ChatService,
     format_sse,
+)
+from take_home.causal_chains.agents.clients.memcache.span_processor import (
+    MemcacheSpanProcessor,
 )
 from take_home.causal_chains.agents.eval.offline.di.container import EvalContainer
 from take_home.causal_chains.agents.models.messaging.message import (
@@ -19,11 +24,24 @@ from take_home.causal_chains.agents.models.messaging.turn_status import TurnStat
 from take_home.causal_chains.agents.models.run_config import RunConfig
 
 
+def _openai_client(api_key: str) -> AsyncOpenAI:
+    client = AsyncOpenAI(api_key=api_key)
+    # AsyncOpenAI copies OPENAI_PROJECT_ID and OPENAI_ORG_ID when these are unset.
+    # A stale shell project 401s with invalid_project. The key selects the account.
+    client.project = None
+    client.organization = None
+    return client
+
+
 async def run_offline(
     query: str,
 ) -> tuple[ChatService, list[Message]]:
     container = EvalContainer()
-    container.config.openai_api_key.from_value(os.environ.get("OPENAI_API_KEY", ""))
+    api_key = os.environ.get("OPENAI_API_KEY", "")
+    container.config.openai_api_key.from_value(api_key)
+    if api_key:
+        set_default_openai_client(_openai_client(api_key), use_for_tracing=False)
+    set_trace_processors([MemcacheSpanProcessor(container.memcache())])
     service = container.chat_service()
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),

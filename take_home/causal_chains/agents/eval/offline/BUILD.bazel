@@ -9,10 +9,13 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/eval/offline/di",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
         requirement("click"),
+        requirement("openai"),
+        requirement("openai-agents"),
     ],
 )
 
@@ -23,5 +26,6 @@ pytest_test(
     deps = [
         ":offline",
         "//take_home/causal_chains/agents/agent_runner",
+        "//take_home/causal_chains/agents/clients/memcache",
     ],
 )
