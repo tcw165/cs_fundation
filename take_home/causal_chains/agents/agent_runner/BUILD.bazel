@@ -13,6 +13,7 @@ py_library(
         "//take_home/causal_chains/agents/agents/causal_chain",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
+        requirement("anyio"),
         requirement("openai"),
         requirement("openai-agents"),
     ],
@@ -27,5 +28,6 @@ pytest_test(
         "//take_home/causal_chains/agents/clients/memcache",
         "//take_home/causal_chains/agents/agents/causal_chain",
         "//take_home/causal_chains/agents/models",
+        requirement("anyio"),
     ],
 )
