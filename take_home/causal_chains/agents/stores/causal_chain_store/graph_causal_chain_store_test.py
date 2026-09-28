@@ -5,7 +5,10 @@ from uuid import UUID
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    StartSituation,
+)
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
     GraphCausalChainStore,
 )
@@ -80,8 +83,13 @@ def test_add_situation_and_link_situations_record_calls():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        now = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False)
+        now = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=[],
+        )
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
         await store.add_situation(now)
         await store.link_situations(
             now,
@@ -132,20 +140,24 @@ def test_get_chains_returns_one_chain_per_root():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        now = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
-        other = Situation(
+        now = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=[],
+        )
+        other = StartSituation(
             situation_id=OTHER_ROOT_ID,
             version=1,
             desc="other",
-            is_root=True,
+            potential_factors=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False)
-        leaf = Situation(situation_id=LEAF_ID, version=1, desc="leaf", is_root=False)
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+        leaf = Situation(situation_id=LEAF_ID, version=1, desc="leaf")
         orphan = Situation(
             situation_id=UUID("55555555-5555-4555-8555-555555555555"),
             version=1,
             desc="orphan",
-            is_root=False,
         )
         await store.add_situation(now)
         await store.add_situation(other)
@@ -157,50 +169,28 @@ def test_get_chains_returns_one_chain_per_root():
         return await store.get_chains()
 
     chains = asyncio.run(exercise())
+    now = StartSituation(
+        situation_id=NOW_ID,
+        version=1,
+        desc="now",
+        potential_factors=[],
+    )
+    other = StartSituation(
+        situation_id=OTHER_ROOT_ID,
+        version=1,
+        desc="other",
+        potential_factors=[],
+    )
+    deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+    leaf = Situation(situation_id=LEAF_ID, version=1, desc="leaf")
     assert chains == [
         CausalChain(
-            situations=[
-                Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True),
-                Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                Situation(situation_id=LEAF_ID, version=1, desc="leaf", is_root=False),
-            ],
-            links=[
-                _link(
-                    Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True),
-                    Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                ),
-                _link(
-                    Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                    Situation(situation_id=LEAF_ID, version=1, desc="leaf", is_root=False),
-                ),
-            ],
+            situations=[now, deal, leaf],
+            links=[_link(now, deal), _link(deal, leaf)],
         ),
         CausalChain(
-            situations=[
-                Situation(
-                    situation_id=OTHER_ROOT_ID,
-                    version=1,
-                    desc="other",
-                    is_root=True,
-                ),
-                Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                Situation(situation_id=LEAF_ID, version=1, desc="leaf", is_root=False),
-            ],
-            links=[
-                _link(
-                    Situation(
-                        situation_id=OTHER_ROOT_ID,
-                        version=1,
-                        desc="other",
-                        is_root=True,
-                    ),
-                    Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                ),
-                _link(
-                    Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=False),
-                    Situation(situation_id=LEAF_ID, version=1, desc="leaf", is_root=False),
-                ),
-            ],
+            situations=[other, deal, leaf],
+            links=[_link(other, deal), _link(deal, leaf)],
         ),
     ]
 

@@ -84,7 +84,10 @@ def test_tools_write_a_situation_and_a_link_through_run_clients():
         link_situations,
         context,
         {
-            "from_situation": now.model_dump(mode="json"),
+            "from_situation": now.model_dump(
+                mode="json",
+                include={"situation_id", "version", "desc"},
+            ),
             "to_situation": deal.model_dump(mode="json"),
             "inputs": [{"name": "deal_odds", "value": "0.08"}],
         },
@@ -94,9 +97,14 @@ def test_tools_write_a_situation_and_a_link_through_run_clients():
     assert isinstance(link, LeadsTo)
     assert "Save one situation" in add_situation.description
     assert "mean of the input values" in link_situations.description
+    linked_now = Situation(
+        situation_id=now.situation_id,
+        version=now.version,
+        desc=now.desc,
+    )
     assert store.situations == [now, deal]
     assert link.p == Decimal("0.0800")
-    assert store.links == [(now, deal, link)]
+    assert store.links == [(linked_now, deal, link)]
     card = _invoke(
         make_deeplink_widget,
         context,

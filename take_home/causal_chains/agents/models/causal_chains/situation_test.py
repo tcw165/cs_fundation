@@ -5,8 +5,9 @@ from pydantic import TypeAdapter, ValidationError
 
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
+    StartSituation,
     TerminalSituation,
-    require_single_root,
+    require_single_start,
 )
 
 
@@ -19,10 +20,8 @@ def test_situation_fields():
         situation_id=NOW_ID,
         version=1,
         desc="Strait shut.",
-        is_root=True,
     )
     assert situation.version == 1
-    assert situation.is_root is True
     assert situation.desc == "Strait shut."
 
 
@@ -31,7 +30,6 @@ def test_situation_json_is_not_a_terminal_situation():
         "situation_id": str(NOW_ID),
         "version": 1,
         "desc": "now",
-        "is_root": True,
     }
     with pytest.raises(ValidationError):
         TerminalSituation.model_validate(payload)
@@ -42,11 +40,32 @@ def test_situation_rejects_the_ask_field():
         "situation_id": str(NOW_ID),
         "version": 1,
         "desc": "now",
-        "is_root": True,
         "original_ask": "the ask",
     }
     with pytest.raises(ValidationError):
         Situation.model_validate(payload)
+
+
+def test_situation_rejects_potential_factors():
+    payload = {
+        "situation_id": str(NOW_ID),
+        "version": 1,
+        "desc": "now",
+        "potential_factors": ["blockade"],
+    }
+    with pytest.raises(ValidationError):
+        Situation.model_validate(payload)
+
+
+def test_start_situation_carries_the_factors():
+    start = StartSituation(
+        situation_id=NOW_ID,
+        version=1,
+        desc="Strait shut.",
+        potential_factors=["blockade", "rejected deal"],
+    )
+    assert start.potential_factors == ["blockade", "rejected deal"]
+    assert isinstance(start, Situation)
 
 
 def test_terminal_situation_carries_the_ask():
@@ -54,12 +73,11 @@ def test_terminal_situation_carries_the_ask():
         situation_id=DEAL_ID,
         version=1,
         desc="Republicans win the House while Democrats take the Senate.",
-        is_root=False,
         original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
     )
-    assert terminal.is_root is False
     assert "Senate" in terminal.desc
     assert terminal.original_ask.endswith("Midterm.")
+    assert not isinstance(terminal, StartSituation)
 
 
 def test_path_return_is_a_list_or_one_terminal():
@@ -70,7 +88,6 @@ def test_path_return_is_a_list_or_one_terminal():
                 "situation_id": str(NOW_ID),
                 "version": 1,
                 "desc": "now",
-                "is_root": False,
             }
         ]
     )
@@ -82,7 +99,6 @@ def test_path_return_is_a_list_or_one_terminal():
             "situation_id": str(DEAL_ID),
             "version": 1,
             "desc": "the end",
-            "is_root": False,
             "original_ask": "the ask",
         }
     )
@@ -95,17 +111,26 @@ def test_path_return_is_a_list_or_one_terminal():
                     "situation_id": str(DEAL_ID),
                     "version": 1,
                     "desc": "the end",
-                    "is_root": False,
                     "original_ask": "the ask",
                 }
             ]
         )
 
 
-def test_second_root_rejected():
+def test_second_start_rejected():
     situations = [
-        Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True),
-        Situation(situation_id=DEAL_ID, version=1, desc="deal", is_root=True),
+        StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=["blockade"],
+        ),
+        StartSituation(
+            situation_id=DEAL_ID,
+            version=1,
+            desc="deal",
+            potential_factors=["talks"],
+        ),
     ]
-    with pytest.raises(ValueError, match="expected one root"):
-        require_single_root(situations)
+    with pytest.raises(ValueError, match="expected one start"):
+        require_single_start(situations)

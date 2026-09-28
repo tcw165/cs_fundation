@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
 
 
 class _FakeDynamoDb:
@@ -65,11 +65,11 @@ def test_post_message_and_sse_with_stub_runner():
 
 
 def test_get_causal_chains_returns_the_stored_chains():
-    root = Situation(
+    root = StartSituation(
         situation_id=UUID("11111111-1111-4111-8111-111111111111"),
         version=1,
         desc="now",
-        is_root=True,
+        potential_factors=[],
     )
     chain = CausalChain(situations=[root], links=[])
 

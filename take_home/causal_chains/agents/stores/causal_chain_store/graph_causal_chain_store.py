@@ -6,7 +6,10 @@ from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import Gr
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    StartSituation,
+)
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
@@ -17,6 +20,26 @@ def _key(
     version: int,
 ) -> tuple[UUID, int]:
     return (situation_id, version)
+
+
+def _situation_from_graph(
+    situation_id: UUID,
+    version: int,
+    desc: str,
+    is_root: bool,
+) -> Situation:
+    if is_root:
+        return StartSituation(
+            situation_id=situation_id,
+            version=version,
+            desc=desc,
+            potential_factors=[],
+        )
+    return Situation(
+        situation_id=situation_id,
+        version=version,
+        desc=desc,
+    )
 
 
 def chains_for(
@@ -37,7 +60,7 @@ def chains_for(
         ).append(link)
     chains: list[CausalChain] = []
     for situation in unique.values():
-        if not situation.is_root:
+        if not isinstance(situation, StartSituation):
             continue
         chains.append(_chain_from(situation, unique, outgoing))
     return chains
@@ -58,7 +81,7 @@ def _chain_from(
         for link in outgoing.get(current_key, []):
             dest_key = _key(link.to_situation_id, link.to_version)
             dest = unique.get(dest_key)
-            if dest is None or dest.is_root:
+            if dest is None or isinstance(dest, StartSituation):
                 continue
             chain_links.append(link)
             if dest_key not in seen:
@@ -86,7 +109,7 @@ class GraphCausalChainStore(CausalChainStore):
             situation.situation_id,
             situation.version,
             situation.desc,
-            situation.is_root,
+            isinstance(situation, StartSituation),
         )
 
     @override
@@ -112,12 +135,7 @@ class GraphCausalChainStore(CausalChainStore):
         self,
     ) -> list[CausalChain]:
         situations = [
-            Situation(
-                situation_id=situation_id,
-                version=version,
-                desc=desc,
-                is_root=is_root,
-            )
+            _situation_from_graph(situation_id, version, desc, is_root)
             for situation_id, version, desc, is_root in self._graph_db.list_situations()
         ]
         links = [

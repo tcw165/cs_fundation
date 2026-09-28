@@ -5,7 +5,10 @@ from uuid import UUID
 from decoy import Decoy, matchers
 
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import (
+    Situation,
+    StartSituation,
+)
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.message import Message
 from take_home.causal_chains.agents.models.messaging.turn import Turn
@@ -79,8 +82,10 @@ def rehearse_persistence(
 
     def load_chains() -> list[CausalChain]:
         stored = list(situations.values())
-        root_count = sum(1 for situation in stored if situation.is_root)
-        if root_count != 1:
+        start_count = sum(
+            1 for situation in stored if isinstance(situation, StartSituation)
+        )
+        if start_count != 1:
             return []
         return [
             CausalChain(

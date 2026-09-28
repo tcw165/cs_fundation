@@ -11,16 +11,23 @@ class Situation(BaseModel):
     situation_id: UUID
     version: int
     desc: str
-    is_root: bool
+
+
+class StartSituation(Situation):
+    """The saved present. potential_factors are the drivers behind it."""
+
+    potential_factors: list[str]
 
 
 class TerminalSituation(Situation):
-    """The saved end, returned with the user's ask. Not the root."""
+    """The saved end, returned with the user's ask. Not the start."""
 
     original_ask: str
 
 
-def require_single_root(situations: list[Situation]) -> None:
-    root_count = sum(1 for situation in situations if situation.is_root)
-    if root_count != 1:
-        raise ValueError(f"expected one root, found {root_count}")
+def require_single_start(situations: list[Situation]) -> None:
+    start_count = sum(
+        1 for situation in situations if isinstance(situation, StartSituation)
+    )
+    if start_count != 1:
+        raise ValueError(f"expected one start, found {start_count}")

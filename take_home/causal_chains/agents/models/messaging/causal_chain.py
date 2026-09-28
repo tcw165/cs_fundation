@@ -3,19 +3,21 @@ from pydantic import BaseModel, model_validator
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    require_single_root,
+    StartSituation,
+    TerminalSituation,
+    require_single_start,
 )
 
 
 class CausalChain(BaseModel):
-    """One root situation and the situations and links reachable from it."""
+    """One start situation and the situations and links reachable from it."""
 
-    situations: list[Situation]
+    situations: list[StartSituation | TerminalSituation | Situation]
     links: list[LeadsTo]
 
     @model_validator(mode="after")
-    def one_root(
+    def one_start(
         self,
     ) -> "CausalChain":
-        require_single_root(self.situations)
+        require_single_start(self.situations)
         return self

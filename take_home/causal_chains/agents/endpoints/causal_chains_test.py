@@ -6,7 +6,7 @@ from dependency_injector import providers
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.endpoints.causal_chains import get_causal_chains
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
 
 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
@@ -26,7 +26,12 @@ class _Chains:
 
 
 def test_get_causal_chains_returns_every_root_chain():
-    root = Situation(situation_id=NOW_ID, version=1, desc="now", is_root=True)
+    root = StartSituation(
+        situation_id=NOW_ID,
+        version=1,
+        desc="now",
+        potential_factors=[],
+    )
     chain = CausalChain(situations=[root], links=[])
     container = AppContainer()
     container.causal_chain_store.override(providers.Object(_Chains([chain])))
