@@ -2,6 +2,7 @@ import asyncio
 from decimal import Decimal
 from uuid import UUID
 
+from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
@@ -30,6 +31,11 @@ class _Both:
         link: LeadsTo,
     ) -> None:
         self.links.append((from_situation, to_situation, link))
+
+    async def get_chains(
+        self,
+    ) -> list[CausalChain]:
+        return []
 
 
 class _AddOnly:
