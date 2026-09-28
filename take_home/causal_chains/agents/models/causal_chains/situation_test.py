@@ -21,6 +21,7 @@ def test_situation_fields():
     )
     assert situation.version == 1
     assert situation.is_root is True
+    assert situation.is_end is False
     assert situation.desc == "Strait shut."
 
 

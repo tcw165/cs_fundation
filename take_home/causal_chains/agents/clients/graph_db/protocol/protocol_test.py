@@ -23,6 +23,7 @@ class _Both:
         version: int,
         desc: str,
         is_root: bool,
+        is_end: bool,
     ) -> None:
         return None
 
@@ -39,7 +40,7 @@ class _Both:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, bool, bool]]:
         return []
 
     def list_leads_to(

@@ -14,6 +14,7 @@ function chain(root_id: string, desc: string): CausalChain {
         version: 1,
         desc,
         is_root: true,
+        is_end: false,
       },
     ],
     links: [],

@@ -9,5 +9,6 @@ class RunContext(BaseModel):
 
     conversation_id: str
     turn_id: str
+    future_situation: str = ""
     run_config: RunConfig = Field(default_factory=RunConfig)
     clients: RunClients = Field(exclude=True)

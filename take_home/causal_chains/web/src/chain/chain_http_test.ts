@@ -11,6 +11,7 @@ describe("create_chain_http", () => {
           version: 1,
           desc: "now",
           is_root: true,
+          is_end: false,
         },
       ],
       links: [],

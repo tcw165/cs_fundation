@@ -21,11 +21,11 @@ LEAF_ID = UUID("44444444-4444-4444-8444-444444444444")
 
 class _FakeGraphDb:
     def __init__(self) -> None:
-        self.situation_calls: list[tuple[UUID, int, str, bool]] = []
+        self.situation_calls: list[tuple[UUID, int, str, bool, bool]] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
-        self._situations: dict[tuple[UUID, int], tuple[UUID, int, str, bool]] = {}
+        self._situations: dict[tuple[UUID, int], tuple[UUID, int, str, bool, bool]] = {}
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
@@ -36,8 +36,9 @@ class _FakeGraphDb:
         version: int,
         desc: str,
         is_root: bool,
+        is_end: bool,
     ) -> None:
-        row = (situation_id, version, desc, is_root)
+        row = (situation_id, version, desc, is_root, is_end)
         self.situation_calls.append(row)
         self._situations[(situation_id, version)] = row
 
@@ -63,7 +64,7 @@ class _FakeGraphDb:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, bool, bool]]:
         return list(self._situations.values())
 
     def list_leads_to(
@@ -99,9 +100,9 @@ def test_add_situation_and_link_situations_record_calls():
 
     graph_db = asyncio.run(exercise())
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, "now", True),
-        (NOW_ID, 1, "now", True),
-        (DEAL_ID, 1, "deal", False),
+        (NOW_ID, 1, "now", True, False),
+        (NOW_ID, 1, "now", True, False),
+        (DEAL_ID, 1, "deal", False, False),
     ]
     assert graph_db.link_calls == [
         (

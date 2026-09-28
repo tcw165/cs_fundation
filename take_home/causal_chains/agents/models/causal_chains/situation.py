@@ -10,6 +10,7 @@ class Situation(BaseModel):
     version: int
     desc: str
     is_root: bool
+    is_end: bool = False
 
 
 def require_single_root(situations: list[Situation]) -> None:

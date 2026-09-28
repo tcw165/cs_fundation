@@ -77,7 +77,7 @@ def test_broken_outgoing_sums_reads_fake_rows():
 def test_merge_situation_writes_node_fields():
     driver = _Driver([])
     client = Neo4jClient(driver)
-    client.merge_situation(NOW_ID, 1, "now", True)
+    client.merge_situation(NOW_ID, 1, "now", True, False)
     query, params = driver.calls[0]
     assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
     assert params == {
@@ -85,6 +85,7 @@ def test_merge_situation_writes_node_fields():
         "version": 1,
         "desc": "now",
         "is_root": True,
+        "is_end": False,
     }
 
 
@@ -128,7 +129,7 @@ def test_list_situations_reads_versioned_rows():
             ]
         )
     )
-    assert client.list_situations() == [(NOW_ID, 1, "now", True)]
+    assert client.list_situations() == [(NOW_ID, 1, "now", True, False)]
     assert "MATCH (s:Situation)" in client._driver.calls[0][0]
 
 

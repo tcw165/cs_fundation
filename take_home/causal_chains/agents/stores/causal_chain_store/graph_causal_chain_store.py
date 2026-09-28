@@ -87,6 +87,7 @@ class GraphCausalChainStore(CausalChainStore):
             situation.version,
             situation.desc,
             situation.is_root,
+            situation.is_end,
         )
 
     @override
@@ -117,8 +118,15 @@ class GraphCausalChainStore(CausalChainStore):
                 version=version,
                 desc=desc,
                 is_root=is_root,
+                is_end=is_end,
             )
-            for situation_id, version, desc, is_root in self._graph_db.list_situations()
+            for (
+                situation_id,
+                version,
+                desc,
+                is_root,
+                is_end,
+            ) in self._graph_db.list_situations()
         ]
         links = [
             LeadsTo(

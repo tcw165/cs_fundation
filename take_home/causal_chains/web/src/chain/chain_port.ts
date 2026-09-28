@@ -9,6 +9,7 @@ export type ChainSituation = {
   version: number;
   desc: string;
   is_root: boolean;
+  is_end: boolean;
 };
 
 export type ChainInput = {

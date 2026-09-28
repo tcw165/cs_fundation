@@ -49,6 +49,7 @@ describe("chain canvas", () => {
             version: 1,
             desc: "strait shut",
             is_root: true,
+            is_end: false,
           },
         ],
         links: [

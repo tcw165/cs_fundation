@@ -17,6 +17,7 @@ class GraphDb(Protocol):
         version: int,
         desc: str,
         is_root: bool,
+        is_end: bool,
     ) -> None: ...
 
     def merge_leads_to(
@@ -31,7 +32,7 @@ class GraphDb(Protocol):
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]: ...
+    ) -> list[tuple[UUID, int, str, bool, bool]]: ...
 
     def list_leads_to(
         self,

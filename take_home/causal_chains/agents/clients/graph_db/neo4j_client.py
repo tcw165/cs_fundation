@@ -29,7 +29,7 @@ RETURN s.situation_id AS situation_id, total
 
 MERGE_SITUATION = """
 MERGE (s:Situation {situation_id: $situation_id, version: $version})
-SET s.desc = $desc, s.is_root = $is_root
+SET s.desc = $desc, s.is_root = $is_root, s.is_end = $is_end
 """
 
 MERGE_LEADS_TO = """
@@ -49,7 +49,8 @@ MATCH (s:Situation)
 RETURN s.situation_id AS situation_id,
     s.version AS version,
     s.desc AS desc,
-    s.is_root AS is_root
+    s.is_root AS is_root,
+    s.is_end AS is_end
 """
 
 LIST_LEADS_TO = """
@@ -118,6 +119,7 @@ class Neo4jClient(GraphDb):
         version: int,
         desc: str,
         is_root: bool,
+        is_end: bool,
     ) -> None:
         with self._driver.session() as session:
             session.run(
@@ -126,6 +128,7 @@ class Neo4jClient(GraphDb):
                 version=version,
                 desc=desc,
                 is_root=is_root,
+                is_end=is_end,
             )
 
     @override
@@ -155,10 +158,10 @@ class Neo4jClient(GraphDb):
     @override
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, bool, bool]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_SITUATIONS))
-        rows: list[tuple[UUID, int, str, bool]] = []
+        rows: list[tuple[UUID, int, str, bool, bool]] = []
         for record in records:
             rows.append(
                 (
@@ -166,6 +169,7 @@ class Neo4jClient(GraphDb):
                     int(record["version"]),
                     str(record["desc"]),
                     bool(record["is_root"]),
+                    bool(record.get("is_end")),
                 )
             )
         return rows
