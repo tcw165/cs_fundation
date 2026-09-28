@@ -4,6 +4,7 @@ from dependency_injector import containers, providers
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
+from take_home.causal_chains.agents.eval.offline.di.rehearsal import rehearse_persistence
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
@@ -41,3 +42,13 @@ class EvalContainer(containers.DeclarativeContainer):
         turn_store=turn_store,
         causal_chain_store=causal_chain_store,
     )
+
+    def __new__(cls, **overriding_providers: object) -> containers.DynamicContainer:
+        container = super().__new__(cls, **overriding_providers)
+        rehearse_persistence(
+            container.decoy(),
+            container.messaging_store(),
+            container.turn_store(),
+            container.causal_chain_store(),
+        )
+        return container

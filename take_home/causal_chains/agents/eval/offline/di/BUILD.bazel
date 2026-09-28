@@ -4,13 +4,18 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "di",
-    srcs = ["container.py"],
+    srcs = [
+        "container.py",
+        "rehearsal.py",
+    ],
     imports = ["../../../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/agent_runner",
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/clients/memcache",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
         "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/agents/stores/turn_store/protocol",
@@ -27,6 +32,8 @@ pytest_test(
         ":di",
         "//take_home/causal_chains/agents/agent_runner",
         "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
     ],
 )
