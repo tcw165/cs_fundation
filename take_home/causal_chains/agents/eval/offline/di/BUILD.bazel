@@ -1,0 +1,32 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "di",
+    srcs = ["container.py"],
+    imports = ["../../../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/agent_runner",
+        "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/clients/memcache",
+        "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",
+        "//take_home/causal_chains/agents/stores/turn_store/protocol",
+        requirement("decoy"),
+        requirement("dependency-injector"),
+    ],
+)
+
+pytest_test(
+    name = "di_test",
+    srcs = ["container_test.py"],
+    imports = ["../../../../../../.."],
+    deps = [
+        ":di",
+        "//take_home/causal_chains/agents/agent_runner",
+        "//take_home/causal_chains/agents/chat_service",
+        "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
+    ],
+)
