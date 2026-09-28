@@ -2,7 +2,7 @@ import type { ChatModelRunOptions, ThreadMessage } from "@assistant-ui/react";
 import { describe, expect, it } from "vitest";
 
 import { create_chat_model_adapter } from "./chat_model_adapter";
-import type { ChatPort, SseEvent } from "./chat_port";
+import type { ChatPort, Message } from "./chat_port";
 
 function user_message(text: string): ThreadMessage {
   return {
@@ -16,8 +16,9 @@ function user_message(text: string): ThreadMessage {
 }
 
 describe("create_chat_model_adapter", () => {
-  it("posts then yields cumulative assistant snapshots", async () => {
+  it("sends after_message and yields each agent paragraph", async () => {
     const posted: string[] = [];
+    const cursors: string[] = [];
     const chat_port: ChatPort = {
       post_message: async ({ text }) => {
         posted.push(text);
@@ -25,13 +26,24 @@ describe("create_chat_model_adapter", () => {
           turn_id: "t_1",
           conversation_id: "1",
           status: "queued",
+          from_message: "m_user",
         };
       },
-      subscribe_turn: async function* (): AsyncGenerator<SseEvent> {
-        yield { type: "delta", text: "oil " };
-        yield { type: "tool", name: "ground", status: "called" };
-        yield { type: "delta", text: "shock" };
-        yield { type: "done", message_id: "m_1" };
+      subscribe_turn: async function* ({ after_message }): AsyncGenerator<Message> {
+        cursors.push(after_message);
+        yield {
+          type: "markdown",
+          message_id: "m_a",
+          role: "agent",
+          text: "one",
+        };
+        yield { type: "heartbeat", message_id: "m_beat", role: "meta" };
+        yield {
+          type: "markdown",
+          message_id: "m_b",
+          role: "agent",
+          text: "two",
+        };
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
@@ -46,13 +58,14 @@ describe("create_chat_model_adapter", () => {
       snapshots.push(snapshot);
     }
     expect(posted).toEqual(["hello"]);
+    expect(cursors).toEqual(["m_user"]);
     expect(snapshots).toEqual([
-      { content: [{ type: "text", text: "oil " }] },
-      { content: [{ type: "text", text: "oil shock" }] },
+      { content: [{ type: "text", text: "one" }] },
+      { content: [{ type: "text", text: "one\n\ntwo" }] },
     ]);
   });
 
-  it("yields a deeplink card without loading the chain", async () => {
+  it("parses a deeplink link into a card", async () => {
     const card = {
       title: "now",
       root_situation_id: "11111111-1111-4111-8111-111111111111",
@@ -63,11 +76,21 @@ describe("create_chat_model_adapter", () => {
         turn_id: "t_1",
         conversation_id: "1",
         status: "queued",
+        from_message: "m_user",
       }),
-      subscribe_turn: async function* (): AsyncGenerator<SseEvent> {
-        yield { type: "delta", text: "saved" };
-        yield { type: "deeplink_widget", card };
-        yield { type: "done", message_id: "m_1" };
+      subscribe_turn: async function* (): AsyncGenerator<Message> {
+        yield {
+          type: "markdown",
+          message_id: "m_a",
+          role: "agent",
+          text: "saved",
+        };
+        yield {
+          type: "deeplink",
+          message_id: "m_card",
+          role: "other",
+          link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
+        };
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
@@ -92,26 +115,36 @@ describe("create_chat_model_adapter", () => {
     ]);
   });
 
-  it("throws when the turn stream reports an error", async () => {
+  it("finishes the turn when the stream ends", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({
-        turn_id: "t_err",
+        turn_id: "t_1",
         conversation_id: "1",
         status: "queued",
+        from_message: "m_user",
       }),
-      subscribe_turn: async function* (): AsyncGenerator<SseEvent> {
-        yield { type: "error", message: "boom" };
+      subscribe_turn: async function* (): AsyncGenerator<Message> {
+        yield {
+          type: "markdown",
+          message_id: "m_a",
+          role: "agent",
+          text: "done talking",
+        };
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
+    const snapshots = [];
     const run = adapter.run({
       messages: [user_message("hello")],
       abortSignal: new AbortController().signal,
     } as unknown as ChatModelRunOptions);
-    await expect(async () => {
-      for await (const _snapshot of run as AsyncGenerator<unknown>) {
-        // drain
-      }
-    }).rejects.toThrow("boom");
+    for await (const snapshot of run as AsyncGenerator<{
+      content: { type: string; text: string }[];
+    }>) {
+      snapshots.push(snapshot);
+    }
+    expect(snapshots).toEqual([
+      { content: [{ type: "text", text: "done talking" }] },
+    ]);
   });
 });

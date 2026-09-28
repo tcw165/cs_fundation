@@ -1,5 +1,9 @@
-import type { DeeplinkCard } from "../chain/chain_port";
-import type { ChatPort, SseEvent, Turn } from "./chat_port";
+import type {
+  ChatPort,
+  Message,
+  Role,
+  Turn,
+} from "./chat_port";
 
 export function create_chat_http(api_url: string): ChatPort {
   return {
@@ -18,8 +22,14 @@ export function create_chat_http(api_url: string): ChatPort {
       }
       return (await response.json()) as Turn;
     },
-    subscribe_turn: ({ conversation_id, turn_id, abort_signal }) => {
-      return read_turn_sse(api_url, conversation_id, turn_id, abort_signal);
+    subscribe_turn: ({ conversation_id, turn_id, after_message, abort_signal }) => {
+      return read_turn_sse(
+        api_url,
+        conversation_id,
+        turn_id,
+        after_message,
+        abort_signal,
+      );
     },
   };
 }
@@ -28,10 +38,12 @@ async function* read_turn_sse(
   api_url: string,
   conversation_id: string,
   turn_id: string,
+  after_message: string,
   abort_signal?: AbortSignal,
-): AsyncGenerator<SseEvent> {
+): AsyncGenerator<Message> {
+  const query = new URLSearchParams({ after_message });
   const response = await fetch(
-    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse`,
+    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${query}`,
     { signal: abort_signal },
   );
   if (!response.ok || response.body === null) {
@@ -42,14 +54,14 @@ async function* read_turn_sse(
 
 export async function* parse_sse_stream(
   body: ReadableStream<Uint8Array>,
-): AsyncGenerator<SseEvent> {
+): AsyncGenerator<Message> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let event_name = "";
   let data_lines: string[] = [];
 
-  const flush = (): SseEvent | null => {
+  const flush = (): Message | null => {
     const data = data_lines.join("\n");
     const name = event_name;
     event_name = "";
@@ -111,44 +123,39 @@ function text_field(
   return typeof value === "string" ? value : fallback;
 }
 
-function decode_sse_event(event_name: string, data: string): SseEvent {
-  const payload =
-    data === "" ? {} : (JSON.parse(data) as Record<string, unknown>);
-  if (event_name === "delta") {
-    return { type: "delta", text: text_field(payload, "text") };
+function role_field(payload: Record<string, unknown>): Role {
+  const role = payload.role;
+  if (role === "user" || role === "agent" || role === "other" || role === "meta") {
+    return role;
   }
-  if (event_name === "tool") {
-    return {
-      type: "tool",
-      name: text_field(payload, "name"),
-      status: text_field(payload, "status"),
-    };
-  }
-  if (event_name === "done") {
-    return { type: "done", message_id: text_field(payload, "message_id") };
-  }
-  if (event_name === "error") {
-    const message = payload.message;
-    return {
-      type: "error",
-      message: typeof message === "string" ? message : "sse error",
-    };
-  }
-  if (event_name === "deeplink_widget") {
-    return { type: "deeplink_widget", card: decode_deeplink_card(payload.card) };
-  }
-  throw new Error(`unknown sse event: ${event_name}`);
+  return "other";
 }
 
-function decode_deeplink_card(value: unknown): DeeplinkCard {
-  if (typeof value !== "object" || value === null) {
-    throw new Error("deeplink card missing");
+function decode_sse_event(event_name: string, data: string): Message {
+  const payload =
+    data === "" ? {} : (JSON.parse(data) as Record<string, unknown>);
+  if (event_name === "markdown") {
+    return {
+      type: "markdown",
+      message_id: text_field(payload, "message_id"),
+      role: role_field(payload),
+      text: text_field(payload, "text"),
+    };
   }
-  const card = value as Record<string, unknown>;
-  const root_version = card.root_version;
-  return {
-    title: text_field(card, "title"),
-    root_situation_id: text_field(card, "root_situation_id"),
-    root_version: typeof root_version === "number" ? root_version : 0,
-  };
+  if (event_name === "deeplink") {
+    return {
+      type: "deeplink",
+      message_id: text_field(payload, "message_id"),
+      role: role_field(payload),
+      link: text_field(payload, "link"),
+    };
+  }
+  if (event_name === "heartbeat") {
+    return {
+      type: "heartbeat",
+      message_id: text_field(payload, "message_id"),
+      role: "meta",
+    };
+  }
+  throw new Error(`unknown sse event: ${event_name}`);
 }
