@@ -12,7 +12,9 @@ from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
 )
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.messaging.sse_event import (
+    DeeplinkWidget,
     RunTraces,
     SseDelta,
     SseDone,
@@ -24,7 +26,19 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
-def _map_model_event(event: object) -> SseEvent | None:
+def _raw_field(
+    item: object,
+    field_name: str,
+) -> object:
+    raw_item = getattr(item, "raw_item", None)
+    if isinstance(raw_item, dict):
+        return raw_item.get(field_name)
+    return getattr(raw_item, field_name, None)
+
+
+def _map_model_event(
+    event: object,
+) -> SseEvent | None:
     event_type = getattr(event, "type", "")
     if event_type == "raw_response_event":
         data = getattr(event, "data", None)
@@ -34,9 +48,19 @@ def _map_model_event(event: object) -> SseEvent | None:
     if event_type == "run_item_stream_event":
         item = getattr(event, "item", None)
         if getattr(item, "type", "") == "tool_call_item":
-            name = getattr(getattr(item, "raw_item", None), "name", "tool")
-            return SseTool(name=str(name), status="called")
+            name = _raw_field(item, "name")
+            return SseTool(name=str(name or "tool"), status="called")
     return None
+
+
+def _deeplink_widget(
+    output: object,
+) -> DeeplinkWidget:
+    if isinstance(output, DeeplinkCard):
+        return DeeplinkWidget(card=output)
+    if isinstance(output, str):
+        return DeeplinkWidget(card=DeeplinkCard.model_validate_json(output))
+    return DeeplinkWidget(card=DeeplinkCard.model_validate(output))
 
 
 async def stream_heartbeat(
@@ -129,10 +153,27 @@ class AppAgentRunner(AgentRunner):
                     context=context,
                 )
                 results.append(result)
+                tool_names: dict[str, str] = {}
                 async for event in result.stream_events():
                     mapped = _map_model_event(event)
                     if mapped is not None:
+                        if mapped.type == "tool":
+                            item = getattr(event, "item", None)
+                            call_id = _raw_field(item, "call_id")
+                            if isinstance(call_id, str):
+                                tool_names[call_id] = mapped.name
                         await send.send(mapped)
+                        continue
+                    item = getattr(event, "item", None)
+                    if (
+                        getattr(event, "type", "") == "run_item_stream_event"
+                        and getattr(item, "type", "") == "tool_call_output_item"
+                    ):
+                        call_id = _raw_field(item, "call_id")
+                        if tool_names.get(str(call_id)) == "make_deeplink_widget":
+                            await send.send(
+                                _deeplink_widget(getattr(item, "output", None)),
+                            )
                 if context.run_config.include_traces:
                     await send.send(RunTraces(text=self._memcache.flush()))
                 else:

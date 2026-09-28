@@ -1,4 +1,8 @@
+from uuid import UUID
+
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.messaging.sse_event import (
+    DeeplinkWidget,
     RunTraces,
     SseDelta,
     SseDone,
@@ -33,3 +37,14 @@ def test_run_traces_json():
 
 def test_sse_heartbeat_json():
     assert SseHeartbeat().model_dump() == {"type": "heartbeat"}
+
+
+def test_deeplink_widget_json():
+    card = DeeplinkCard(
+        title="now",
+        root_situation_id=UUID("11111111-1111-4111-8111-111111111111"),
+        root_version=1,
+    )
+    payload = DeeplinkWidget(card=card)
+    assert payload.type == "deeplink_widget"
+    assert payload.model_dump(mode="json")["card"]["title"] == "now"
