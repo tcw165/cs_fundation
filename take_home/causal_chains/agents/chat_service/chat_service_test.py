@@ -1,5 +1,6 @@
 import asyncio
 
+import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
@@ -92,3 +93,52 @@ def test_post_message_builds_run_clients():
     clients = asyncio.run(exercise())
     assert isinstance(clients, RunClients)
     assert clients.causal_chain_store is chain_store
+
+
+def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
+    opened: list[tuple[str, str | None, dict[str, str] | None]] = []
+    flushed_while_open: list[bool] = []
+    active = {"value": False}
+
+    class _Trace:
+        def __init__(
+            self,
+            workflow_name: str,
+            group_id: str | None = None,
+            metadata: dict[str, str] | None = None,
+        ) -> None:
+            self._name = workflow_name
+            self._group_id = group_id
+            self._metadata = metadata
+
+        def __enter__(self) -> "_Trace":
+            active["value"] = True
+            opened.append((self._name, self._group_id, self._metadata))
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            active["value"] = False
+
+    monkeypatch.setattr(chat_service_module, "trace", _Trace)
+    monkeypatch.setattr(
+        chat_service_module,
+        "flush_traces",
+        lambda: flushed_while_open.append(active["value"]),
+    )
+
+    async def exercise():
+        service = ChatService(
+            StubTurnRunner(),
+            MessagingStoreImpl(_FakeDynamoDb()),
+            InMemoryTurnStore(),
+            _ChainStore(),
+        )
+        turn = await service.post_message("1", "hello")
+        await service.run_turn(turn, "hello")
+        return turn
+
+    turn = asyncio.run(exercise())
+    assert opened == [
+        ("chat_service", "1", {"turn_id": turn.turn_id}),
+    ]
+    assert flushed_while_open == [False]

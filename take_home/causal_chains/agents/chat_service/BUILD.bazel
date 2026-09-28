@@ -1,3 +1,4 @@
+load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
@@ -7,6 +8,7 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        requirement("openai-agents"),
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
         "//take_home/causal_chains/agents/models/messaging",
