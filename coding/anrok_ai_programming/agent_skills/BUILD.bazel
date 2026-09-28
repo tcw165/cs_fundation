@@ -1,1 +1,8 @@
-# //coding/anrok_ai_programming/agent_skills
+filegroup(
+    name = "agent_skills",
+    srcs = [
+        "//coding/anrok_ai_programming/agent_skills/sales_tax_ingest:sales_tax_ingest",
+        "//coding/anrok_ai_programming/agent_skills/sales_tax_query:sales_tax_query",
+    ],
+    visibility = ["//visibility:public"],
+)
