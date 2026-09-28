@@ -21,7 +21,7 @@ class LinkInput(BaseModel):
     value: str
 
 
-def _store(
+def _require_store(
     ctx: RunContextWrapper[RunContext],
 ) -> CausalChainStore:
     store = ctx.context.clients.causal_chain_store
@@ -48,7 +48,7 @@ async def add_situation(
         desc=desc,
         is_root=is_root,
     )
-    await _store(ctx).add_situation(situation)
+    await _require_store(ctx).add_situation(situation)
     return situation
 
 
@@ -82,7 +82,7 @@ async def link_situations(
         inputs=parsed,
         p=probability(parsed),
     )
-    await _store(ctx).link_situations(
+    await _require_store(ctx).link_situations(
         from_situation,
         to_situation,
         link,
