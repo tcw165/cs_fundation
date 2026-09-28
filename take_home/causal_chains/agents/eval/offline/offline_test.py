@@ -36,6 +36,7 @@ def test_offline_turn_saves_the_user_message_and_prints_runner_messages(
         agent,
         input,
         context=None,
+        max_turns=None,
     ):
         seen_include_traces.append(context.run_config.include_traces)
         return _FakeResult()
@@ -91,7 +92,7 @@ def test_offline_uses_the_api_key_without_a_shell_project(monkeypatch) -> None:
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None: _FakeResult(),
+        lambda agent, input, context=None, max_turns=None: _FakeResult(),
     )
 
     asyncio.run(run_offline("hormuz"))
@@ -143,7 +144,7 @@ def test_offline_logs_to_braintrust_when_key_and_project_are_set(monkeypatch) ->
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None: _fake_result(),
+        lambda agent, input, context=None, max_turns=None: _fake_result(),
     )
 
     asyncio.run(run_offline("hormuz"))
@@ -168,7 +169,7 @@ def test_offline_omits_braintrust_when_either_env_var_is_missing(monkeypatch) ->
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None: _fake_result(),
+        lambda agent, input, context=None, max_turns=None: _fake_result(),
     )
     for api_key, project_id in (("", ""), ("sk-test", ""), ("", "proj_123")):
         processor_lists: list[list[object]] = []

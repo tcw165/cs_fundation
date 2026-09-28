@@ -164,9 +164,10 @@ class AppAgentRunner(AgentRunner):
                     causal_chain,
                     input=(
                         f"Future situation:\n{user_ask}\n"
-                        f"Remaining attempts: {context.run_config.attempt_quota}"
+                        f"Remaining attempts: {context.run_config.causal_chain_max_steps}"
                     ),
                     context=context,
+                    max_turns=context.run_config.causal_chain_max_steps,
                 )
                 results.append(result)
                 tool_names: dict[str, str] = {}

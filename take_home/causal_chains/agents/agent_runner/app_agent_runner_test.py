@@ -37,6 +37,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     prompts: list[str] = []
     seen: list[object] = []
     contexts: list[object] = []
+    seen_max_turns: list[int | None] = []
     cache = InMemoryMemcache()
 
     class FakeResult:
@@ -55,10 +56,12 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             seen.append(agent)
             contexts.append(context)
             prompts.append(input)
+            seen_max_turns.append(max_turns)
             cache.append("span\n")
             return FakeResult()
 
@@ -68,7 +71,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     context = RunContext(
         conversation_id="1",
         turn_id="t_1",
-        run_config=RunConfig(include_traces=True, attempt_quota=2),
+        run_config=RunConfig(include_traces=True, causal_chain_max_steps=2),
         clients=RunClients(causal_chain_store=object()),
     )
 
@@ -80,6 +83,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     assert contexts == [context]
     assert seen == [causal_chain]
     assert prompts == ["Future situation:\nhormuz\nRemaining attempts: 2"]
+    assert seen_max_turns == [2]
     assert [type(event) for event in events] == [MarkdownMessage]
     assert events[0].role is Role.agent
     assert events[0].text == "oil "
@@ -114,6 +118,7 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             cache.append("span\n")
             return FakeResult()
@@ -163,6 +168,7 @@ def test_app_agent_runner_cuts_markdown_on_a_blank_line(monkeypatch):
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             return FakeResult()
 
@@ -210,6 +216,7 @@ def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch)
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             return FakeResult()
 
@@ -298,6 +305,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             return FakeResult()
 
@@ -364,6 +372,7 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
             agent,
             input,
             context=None,
+            max_turns=None,
         ):
             ran_inside.append(active["value"])
             return FakeResult()
