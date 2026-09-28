@@ -9,3 +9,4 @@ psycopg[binary]
 openai-agents
 neo4j
 boto3
+braintrust
