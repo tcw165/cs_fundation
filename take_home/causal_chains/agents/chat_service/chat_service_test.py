@@ -7,7 +7,11 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 )
 from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
-from take_home.causal_chains.agents.models.messaging.sse_event import RunTraces, SseDelta
+from take_home.causal_chains.agents.models.messaging.sse_event import (
+    RunTraces,
+    SseDelta,
+    SseHeartbeat,
+)
 from take_home.causal_chains.models.turn_status import TurnStatus
 
 
@@ -22,6 +26,11 @@ def test_format_sse_run_traces():
     line = format_sse(RunTraces(text="span\n"))
     assert line.startswith("event: run_traces\n")
     assert "span" in line
+
+
+def test_format_sse_heartbeat():
+    line = format_sse(SseHeartbeat())
+    assert line.startswith("event: heartbeat\n")
 
 
 class _ChainStore:
