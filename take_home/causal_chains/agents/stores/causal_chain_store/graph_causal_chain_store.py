@@ -4,6 +4,7 @@ from uuid import UUID
 
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
@@ -21,10 +22,6 @@ def _key(
     version: int,
 ) -> tuple[UUID, int]:
     return (situation_id, version)
-
-
-# Situations belong to a caller-supplied case once the store takes one.
-_UNSCOPED_CASE_ID = UUID("00000000-0000-4000-8000-000000000000")
 
 
 def _kind(situation: Situation) -> str:
@@ -135,15 +132,33 @@ class GraphCausalChainStore(CausalChainStore):
         self._graph_db = graph_db
 
     @override
+    async def add_case(
+        self,
+        case: Case,
+    ) -> None:
+        self._graph_db.merge_case(case.case_id)
+
+    @override
+    async def get_case(
+        self,
+        case_id: UUID,
+    ) -> Case:
+        found = self._graph_db.get_case(case_id)
+        if found is None:
+            raise ValueError("case is missing")
+        return Case(case_id=found)
+
+    @override
     async def add_situation(
         self,
+        case: Case,
         situation: Situation,
     ) -> None:
         self._graph_db.merge_situation(
             situation.situation_id,
             situation.version,
             situation.desc,
-            _UNSCOPED_CASE_ID,
+            case.case_id,
             _kind(situation),
             _factors(situation),
             _ask(situation),
@@ -152,12 +167,13 @@ class GraphCausalChainStore(CausalChainStore):
     @override
     async def link_situations(
         self,
+        case: Case,
         from_situation: Situation,
         to_situation: Situation,
         link: LeadsTo,
     ) -> None:
-        await self.add_situation(from_situation)
-        await self.add_situation(to_situation)
+        await self.add_situation(case, from_situation)
+        await self.add_situation(case, to_situation)
         self._graph_db.merge_leads_to(
             link.from_situation_id,
             link.from_version,
@@ -168,28 +184,48 @@ class GraphCausalChainStore(CausalChainStore):
         )
 
     @override
+    async def lookup_leaf_situations(
+        self,
+        case: Case,
+        start: StartSituation,
+    ) -> list[Situation]:
+        return [
+            Situation(
+                situation_id=situation_id,
+                version=version,
+                desc=desc,
+            )
+            for situation_id, version, desc in self._graph_db.list_leaf_situations(
+                case.case_id,
+                start.situation_id,
+                start.version,
+            )
+        ]
+
+    @override
     async def get_chains(
         self,
     ) -> list[CausalChain]:
-        situations = [
-            _situation_from_graph(
-                situation_id,
-                version,
-                desc,
-                kind,
-                potential_factors,
-                original_ask,
+        grouped: dict[UUID, list[Situation]] = {}
+        for (
+            situation_id,
+            version,
+            desc,
+            kind,
+            potential_factors,
+            original_ask,
+            case_id,
+        ) in self._graph_db.list_situations():
+            grouped.setdefault(case_id, []).append(
+                _situation_from_graph(
+                    situation_id,
+                    version,
+                    desc,
+                    kind,
+                    potential_factors,
+                    original_ask,
+                )
             )
-            for (
-                situation_id,
-                version,
-                desc,
-                kind,
-                potential_factors,
-                original_ask,
-                _case_id,
-            ) in self._graph_db.list_situations()
-        ]
         links = [
             LeadsTo(
                 from_situation_id=from_situation_id,
@@ -214,4 +250,17 @@ class GraphCausalChainStore(CausalChainStore):
                 inputs,
             ) in self._graph_db.list_leads_to()
         ]
-        return chains_for(situations, links)
+        chains: list[CausalChain] = []
+        for case_situations in grouped.values():
+            keys = {
+                _key(situation.situation_id, situation.version)
+                for situation in case_situations
+            }
+            case_links = [
+                link
+                for link in links
+                if _key(link.from_situation_id, link.from_version) in keys
+                and _key(link.to_situation_id, link.to_version) in keys
+            ]
+            chains.extend(chains_for(case_situations, case_links))
+        return chains

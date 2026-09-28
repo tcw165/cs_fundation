@@ -3,6 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
@@ -11,7 +12,6 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
     GraphCausalChainStore,
-    _UNSCOPED_CASE_ID,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -21,10 +21,13 @@ NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 OTHER_ROOT_ID = UUID("33333333-3333-4333-8333-333333333333")
 LEAF_ID = UUID("44444444-4444-4444-8444-444444444444")
+CASE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+OTHER_CASE_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
 
 
 class _FakeGraphDb:
     def __init__(self) -> None:
+        self.case_calls: list[UUID] = []
         self.situation_calls: list[tuple[UUID, int, str, UUID, str, list[str], str]] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
@@ -36,6 +39,25 @@ class _FakeGraphDb:
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
+        self._cases: set[UUID] = set()
+        self.leaf_rows: list[tuple[UUID, int, str]] = []
+
+    def merge_case(self, case_id: UUID) -> None:
+        self.case_calls.append(case_id)
+        self._cases.add(case_id)
+
+    def get_case(self, case_id: UUID) -> UUID | None:
+        if case_id not in self._cases:
+            return None
+        return case_id
+
+    def list_leaf_situations(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> list[tuple[UUID, int, str]]:
+        return list(self.leaf_rows)
 
     def merge_situation(
         self,
@@ -99,6 +121,7 @@ def test_add_situation_and_link_situations_record_calls():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
+        case = Case(case_id=CASE_ID)
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
@@ -106,8 +129,10 @@ def test_add_situation_and_link_situations_record_calls():
             potential_factors=[],
         )
         deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
-        await store.add_situation(now)
+        await store.add_case(case)
+        await store.add_situation(case, now)
         await store.link_situations(
+            case,
             now,
             deal,
             LeadsTo(
@@ -122,10 +147,11 @@ def test_add_situation_and_link_situations_record_calls():
         return graph_db
 
     graph_db = asyncio.run(exercise())
+    assert graph_db.case_calls == [CASE_ID]
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, "now", _UNSCOPED_CASE_ID, "start", [], ""),
-        (NOW_ID, 1, "now", _UNSCOPED_CASE_ID, "start", [], ""),
-        (DEAL_ID, 1, "deal", _UNSCOPED_CASE_ID, "situation", [], ""),
+        (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
+        (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
+        (DEAL_ID, 1, "deal", CASE_ID, "situation", [], ""),
     ]
     assert graph_db.link_calls == [
         (
@@ -175,13 +201,14 @@ def test_get_chains_returns_one_chain_per_root():
             version=1,
             desc="orphan",
         )
-        await store.add_situation(now)
-        await store.add_situation(other)
-        await store.add_situation(orphan)
-        await store.link_situations(now, deal, _link(now, deal))
-        await store.link_situations(deal, leaf, _link(deal, leaf))
-        await store.link_situations(other, deal, _link(other, deal))
-        await store.link_situations(now, other, _link(now, other))
+        case = Case(case_id=CASE_ID)
+        await store.add_situation(case, now)
+        await store.add_situation(case, other)
+        await store.add_situation(case, orphan)
+        await store.link_situations(case, now, deal, _link(now, deal))
+        await store.link_situations(case, deal, leaf, _link(deal, leaf))
+        await store.link_situations(case, other, deal, _link(other, deal))
+        await store.link_situations(case, now, other, _link(now, other))
         return await store.get_chains()
 
     chains = asyncio.run(exercise())
@@ -209,6 +236,66 @@ def test_get_chains_returns_one_chain_per_root():
             links=[_link(other, deal), _link(deal, leaf)],
         ),
     ]
+
+
+def test_get_chains_keeps_each_case_separate():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        case = Case(case_id=CASE_ID)
+        other_case = Case(case_id=OTHER_CASE_ID)
+        now = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=["blockade"],
+        )
+        elsewhere = StartSituation(
+            situation_id=OTHER_ROOT_ID,
+            version=1,
+            desc="elsewhere",
+            potential_factors=["talks"],
+        )
+        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+        await store.add_situation(case, now)
+        await store.add_situation(other_case, elsewhere)
+        await store.link_situations(case, now, deal, _link(now, deal))
+        return await store.get_chains()
+
+    chains = asyncio.run(exercise())
+    assert len(chains) == 2
+    assert [chain.situations[0].desc for chain in chains] == ["now", "elsewhere"]
+    assert chains[0].situations[0].potential_factors == ["blockade"]
+    assert chains[0].links[0].to_situation_id == DEAL_ID
+    assert chains[1].links == []
+
+
+def test_get_case_and_leaf_lookup():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        case = Case(case_id=CASE_ID)
+        start = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=["blockade"],
+        )
+        await store.add_case(case)
+        graph_db.leaf_rows = [(LEAF_ID, 1, "leaf")]
+        found = await store.get_case(CASE_ID)
+        leaves = await store.lookup_leaf_situations(case, start)
+        missing = None
+        try:
+            await store.get_case(OTHER_CASE_ID)
+        except ValueError as error:
+            missing = str(error)
+        return found, leaves, missing
+
+    found, leaves, missing = asyncio.run(exercise())
+    assert found == Case(case_id=CASE_ID)
+    assert leaves == [Situation(situation_id=LEAF_ID, version=1, desc="leaf")]
+    assert missing == "case is missing"
 
 
 def test_get_chains_returns_empty_when_the_graph_is_empty():

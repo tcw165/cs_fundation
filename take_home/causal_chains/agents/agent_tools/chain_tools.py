@@ -4,6 +4,7 @@ from uuid import uuid4
 from agents import RunContextWrapper, function_tool
 from pydantic import BaseModel
 
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.input_variable import (
     InputVariable,
     probability,
@@ -37,6 +38,7 @@ def _require_store(
 @function_tool
 async def add_situation(
     ctx: RunContextWrapper[RunContext],
+    case: Case,
     desc: str,
     is_root: bool,
 ) -> Situation:
@@ -44,6 +46,7 @@ async def add_situation(
 
     Args:
         ctx: Run context. The causal chain store is on its clients.
+        case: The case this situation belongs to.
         desc: What is true in this situation.
         is_root: True only for the present.
     """
@@ -60,13 +63,14 @@ async def add_situation(
             version=1,
             desc=desc,
         )
-    await _require_store(ctx).add_situation(situation)
+    await _require_store(ctx).add_situation(case, situation)
     return situation
 
 
 @function_tool
 async def link_situations(
     ctx: RunContextWrapper[RunContext],
+    case: Case,
     from_situation: Situation,
     to_situation: Situation,
     inputs: list[LinkInput],
@@ -77,6 +81,7 @@ async def link_situations(
 
     Args:
         ctx: Run context. The causal chain store is on its clients.
+        case: The case both situations belong to.
         from_situation: The situation this link leaves.
         to_situation: The situation this link reaches.
         inputs: Named values between 0 and 1 that a person could move later.
@@ -97,6 +102,7 @@ async def link_situations(
         p=probability(parsed),
     )
     await _require_store(ctx).link_situations(
+        case,
         from_situation,
         to_situation,
         link,
