@@ -7,3 +7,4 @@ class Turn(BaseModel):
     turn_id: str
     conversation_id: str
     status: TurnStatus
+    from_message: str

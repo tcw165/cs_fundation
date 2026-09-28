@@ -38,6 +38,7 @@ def test_put_turn_stores_ttl_about_ten_minutes_ahead():
             turn_id="t_1",
             conversation_id="1",
             status=TurnStatus.queued,
+            from_message="m_1",
         )
         written_at = time.time()
         await store.put_turn(turn)

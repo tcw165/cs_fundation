@@ -33,23 +33,24 @@ def rehearse_persistence(
     turn_store: TurnStore,
     causal_chain_store: CausalChainStore,
 ) -> None:
-    messages: list[Message] = []
+    messages: list[tuple[str, Message]] = []
     turns: dict[str, Turn] = {}
     situations: dict[UUID, Situation] = {}
     links: list[LeadsTo] = []
 
     def remember_message(
+        conversation_id: str,
         message: Message,
     ) -> None:
-        messages.append(message)
+        messages.append((conversation_id, message))
 
     def list_messages(
         conversation_id: str,
     ) -> list[Message]:
         return [
             message
-            for message in messages
-            if message.conversation_id == conversation_id
+            for stored_id, message in messages
+            if stored_id == conversation_id
         ]
 
     def remember_turn(
@@ -89,7 +90,12 @@ def rehearse_persistence(
         ]
 
     decoy.when(
-        _drive(messaging_store.append(matchers.Anything())),
+        _drive(
+            messaging_store.append(
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
         ignore_extra_args=True,
     ).then_do(remember_message)
     decoy.when(

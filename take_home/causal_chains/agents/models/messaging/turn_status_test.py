@@ -14,4 +14,9 @@ def test_turn_status_values():
 
 def test_turn_status_rejects_unknown():
     with pytest.raises(ValidationError):
-        Turn(turn_id="t_1", conversation_id="1", status="unknown")
+        Turn(
+            turn_id="t_1",
+            conversation_id="1",
+            status="unknown",
+            from_message="m_1",
+        )
