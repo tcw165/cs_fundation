@@ -1,0 +1,35 @@
+export type DeeplinkCard = {
+  title: string;
+  root_situation_id: string;
+  root_version: number;
+};
+
+export type ChainSituation = {
+  situation_id: string;
+  version: number;
+  desc: string;
+  is_root: boolean;
+};
+
+export type ChainInput = {
+  name: string;
+  value: string;
+};
+
+export type ChainLink = {
+  from_situation_id: string;
+  from_version: number;
+  to_situation_id: string;
+  to_version: number;
+  p: string;
+  inputs: ChainInput[];
+};
+
+export type CausalChain = {
+  situations: ChainSituation[];
+  links: ChainLink[];
+};
+
+export type ChainPort = {
+  get_chains: () => Promise<CausalChain[]>;
+};

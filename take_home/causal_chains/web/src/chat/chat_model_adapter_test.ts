@@ -52,6 +52,46 @@ describe("create_chat_model_adapter", () => {
     ]);
   });
 
+  it("yields a deeplink card without loading the chain", async () => {
+    const card = {
+      title: "now",
+      root_situation_id: "11111111-1111-4111-8111-111111111111",
+      root_version: 1,
+    };
+    const chat_port: ChatPort = {
+      post_message: async () => ({
+        turn_id: "t_1",
+        conversation_id: "1",
+        status: "queued",
+      }),
+      subscribe_turn: async function* (): AsyncGenerator<SseEvent> {
+        yield { type: "delta", text: "saved" };
+        yield { type: "deeplink_widget", card };
+        yield { type: "done", message_id: "m_1" };
+      },
+    };
+    const adapter = create_chat_model_adapter(chat_port, "1");
+    const snapshots = [];
+    const run = adapter.run({
+      messages: [user_message("hello")],
+      abortSignal: new AbortController().signal,
+    } as unknown as ChatModelRunOptions);
+    for await (const snapshot of run as AsyncGenerator<{
+      content: { type: string; text?: string; name?: string; data?: typeof card }[];
+    }>) {
+      snapshots.push(snapshot);
+    }
+    expect(snapshots).toEqual([
+      { content: [{ type: "text", text: "saved" }] },
+      {
+        content: [
+          { type: "text", text: "saved" },
+          { type: "data", name: "deeplink_widget", data: card },
+        ],
+      },
+    ]);
+  });
+
   it("throws when the turn stream reports an error", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({

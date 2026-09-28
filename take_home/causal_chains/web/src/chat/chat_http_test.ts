@@ -85,4 +85,25 @@ describe("parse_sse_stream", () => {
     }
     expect(events).toEqual([{ type: "delta", text: "oil " }]);
   });
+
+  it("decodes a deeplink widget", async () => {
+    const events = [];
+    for await (const event of parse_sse_stream(
+      sse_stream([
+        'event: deeplink_widget\ndata: {"card":{"title":"now","root_situation_id":"11111111-1111-4111-8111-111111111111","root_version":1}}\n\n',
+      ]),
+    )) {
+      events.push(event);
+    }
+    expect(events).toEqual([
+      {
+        type: "deeplink_widget",
+        card: {
+          title: "now",
+          root_situation_id: "11111111-1111-4111-8111-111111111111",
+          root_version: 1,
+        },
+      },
+    ]);
+  });
 });

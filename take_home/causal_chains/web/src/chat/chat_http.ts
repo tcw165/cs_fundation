@@ -1,3 +1,4 @@
+import type { DeeplinkCard } from "../chain/chain_port";
 import type { ChatPort, SseEvent, Turn } from "./chat_port";
 
 export function create_chat_http(api_url: string): ChatPort {
@@ -101,23 +102,53 @@ export async function* parse_sse_stream(
   }
 }
 
+function text_field(
+  payload: Record<string, unknown>,
+  key: string,
+  fallback = "",
+): string {
+  const value = payload[key];
+  return typeof value === "string" ? value : fallback;
+}
+
 function decode_sse_event(event_name: string, data: string): SseEvent {
-  const payload = data === "" ? {} : (JSON.parse(data) as Record<string, string>);
+  const payload =
+    data === "" ? {} : (JSON.parse(data) as Record<string, unknown>);
   if (event_name === "delta") {
-    return { type: "delta", text: payload.text ?? "" };
+    return { type: "delta", text: text_field(payload, "text") };
   }
   if (event_name === "tool") {
     return {
       type: "tool",
-      name: payload.name ?? "",
-      status: payload.status ?? "",
+      name: text_field(payload, "name"),
+      status: text_field(payload, "status"),
     };
   }
   if (event_name === "done") {
-    return { type: "done", message_id: payload.message_id ?? "" };
+    return { type: "done", message_id: text_field(payload, "message_id") };
   }
   if (event_name === "error") {
-    return { type: "error", message: payload.message ?? "sse error" };
+    const message = payload.message;
+    return {
+      type: "error",
+      message: typeof message === "string" ? message : "sse error",
+    };
+  }
+  if (event_name === "deeplink_widget") {
+    return { type: "deeplink_widget", card: decode_deeplink_card(payload.card) };
   }
   throw new Error(`unknown sse event: ${event_name}`);
+}
+
+function decode_deeplink_card(value: unknown): DeeplinkCard {
+  if (typeof value !== "object" || value === null) {
+    throw new Error("deeplink card missing");
+  }
+  const card = value as Record<string, unknown>;
+  const root_version = card.root_version;
+  return {
+    title: text_field(card, "title"),
+    root_situation_id: text_field(card, "root_situation_id"),
+    root_version: typeof root_version === "number" ? root_version : 0,
+  };
 }
