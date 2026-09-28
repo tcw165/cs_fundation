@@ -1,1 +1,10 @@
-# //.agents/skills
+filegroup(
+    name = "skills",
+    srcs = [
+        "//.agents/skills/graphite",
+        "//.agents/skills/morning-standup:morning_standup",
+        "//.agents/skills/sales_tax_ingest:sales_tax_ingest",
+        "//.agents/skills/sales_tax_query:sales_tax_query",
+    ],
+    visibility = ["//visibility:public"],
+)

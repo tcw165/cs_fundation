@@ -1,0 +1,5 @@
+filegroup(
+    name = "sales_tax_query",
+    srcs = ["SKILL.md"],
+    visibility = ["//visibility:public"],
+)
