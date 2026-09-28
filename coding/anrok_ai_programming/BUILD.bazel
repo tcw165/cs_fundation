@@ -2,6 +2,8 @@ load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary")
 load("//tools/pytest:defs.bzl", "pytest_test")
 
+exports_files(["docker-compose.yml"])
+
 py_binary(
     name = "anrok_ai_programming",
     srcs = ["anrok_ai_programming.py"],
