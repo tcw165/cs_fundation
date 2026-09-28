@@ -11,6 +11,7 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
     GraphCausalChainStore,
+    _UNSCOPED_CASE_ID,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -24,11 +25,14 @@ LEAF_ID = UUID("44444444-4444-4444-8444-444444444444")
 
 class _FakeGraphDb:
     def __init__(self) -> None:
-        self.situation_calls: list[tuple[UUID, int, str, bool]] = []
+        self.situation_calls: list[tuple[UUID, int, str, UUID, str, list[str], str]] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
-        self._situations: dict[tuple[UUID, int], tuple[UUID, int, str, bool]] = {}
+        self._situations: dict[
+            tuple[UUID, int],
+            tuple[UUID, int, str, str, list[str], str, UUID],
+        ] = {}
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
@@ -38,11 +42,23 @@ class _FakeGraphDb:
         situation_id: UUID,
         version: int,
         desc: str,
-        is_root: bool,
+        case_id: UUID,
+        kind: str,
+        potential_factors: list[str],
+        original_ask: str,
     ) -> None:
-        row = (situation_id, version, desc, is_root)
-        self.situation_calls.append(row)
-        self._situations[(situation_id, version)] = row
+        self.situation_calls.append(
+            (situation_id, version, desc, case_id, kind, potential_factors, original_ask)
+        )
+        self._situations[(situation_id, version)] = (
+            situation_id,
+            version,
+            desc,
+            kind,
+            potential_factors,
+            original_ask,
+            case_id,
+        )
 
     def merge_leads_to(
         self,
@@ -66,7 +82,7 @@ class _FakeGraphDb:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]:
         return list(self._situations.values())
 
     def list_leads_to(
@@ -107,9 +123,9 @@ def test_add_situation_and_link_situations_record_calls():
 
     graph_db = asyncio.run(exercise())
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, "now", True),
-        (NOW_ID, 1, "now", True),
-        (DEAL_ID, 1, "deal", False),
+        (NOW_ID, 1, "now", _UNSCOPED_CASE_ID, "start", [], ""),
+        (NOW_ID, 1, "now", _UNSCOPED_CASE_ID, "start", [], ""),
+        (DEAL_ID, 1, "deal", _UNSCOPED_CASE_ID, "situation", [], ""),
     ]
     assert graph_db.link_calls == [
         (

@@ -9,15 +9,15 @@ from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import Gr
 _P_SCALE = Decimal("0.0001")
 
 P_QUERY = """
-MATCH (root:Situation {is_root: true})
+MATCH (root:Situation {kind: 'start'})
 MATCH path = (root)-[:LEADS_TO*1..8]->(dest)
 WHERE dest.situation_id IN $destination_ids
 RETURN sum(reduce(acc = 1.0, r IN relationships(path) | acc * r.p)) AS p_query
 """
 
-ROOT_COUNT = """
-MATCH (s:Situation {is_root: true})
-RETURN count(s) AS root_count
+START_COUNT = """
+MATCH (s:Situation {kind: 'start'})
+RETURN count(s) AS start_count
 """
 
 BROKEN_OUTGOING_SUMS = """
@@ -27,9 +27,36 @@ WHERE abs(total - 1.0) > 0.00005
 RETURN s.situation_id AS situation_id, total
 """
 
+MERGE_CASE = """
+MERGE (c:Case {case_id: $case_id})
+"""
+
+GET_CASE = """
+MATCH (c:Case {case_id: $case_id})
+RETURN c.case_id AS case_id
+"""
+
 MERGE_SITUATION = """
+MERGE (c:Case {case_id: $case_id})
 MERGE (s:Situation {situation_id: $situation_id, version: $version})
-SET s.desc = $desc, s.is_root = $is_root
+SET s.desc = $desc,
+    s.kind = $kind,
+    s.potential_factors = $potential_factors,
+    s.original_ask = $original_ask
+REMOVE s.is_root
+MERGE (s)-[:BELONGS_TO]->(c)
+"""
+
+LIST_LEAF_SITUATIONS = """
+MATCH (start:Situation {situation_id: $start_situation_id, version: $start_version, kind: 'start'})
+MATCH (start)-[:BELONGS_TO]->(:Case {case_id: $case_id})
+MATCH (start)-[:LEADS_TO*1..8]->(leaf:Situation)
+WHERE leaf.kind = 'situation'
+  AND NOT (leaf)-[:LEADS_TO]->()
+  AND EXISTS { MATCH (leaf)-[:BELONGS_TO]->(:Case {case_id: $case_id}) }
+RETURN leaf.situation_id AS situation_id,
+    leaf.version AS version,
+    leaf.desc AS desc
 """
 
 MERGE_LEADS_TO = """
@@ -45,11 +72,14 @@ SET r.p = $p,
 """
 
 LIST_SITUATIONS = """
-MATCH (s:Situation)
+MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)
 RETURN s.situation_id AS situation_id,
     s.version AS version,
     s.desc AS desc,
-    s.is_root AS is_root
+    s.kind AS kind,
+    s.potential_factors AS potential_factors,
+    s.original_ask AS original_ask,
+    c.case_id AS case_id
 """
 
 CLEAR = """
@@ -70,6 +100,12 @@ RETURN r.from_situation_id AS from_situation_id,
 
 def _decimal(value: object) -> Decimal:
     return Decimal(str(value)).quantize(_P_SCALE)
+
+
+def _strings(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
 
 
 def _input_rows(
@@ -100,12 +136,12 @@ class Neo4jClient(GraphDb):
         return _decimal(record["p_query"])
 
     @override
-    def root_count(self) -> int:
+    def start_count(self) -> int:
         with self._driver.session() as session:
-            record = session.run(ROOT_COUNT).single()
+            record = session.run(START_COUNT).single()
         if record is None:
             return 0
-        return int(record["root_count"])
+        return int(record["start_count"])
 
     @override
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]:
@@ -117,12 +153,28 @@ class Neo4jClient(GraphDb):
         return rows
 
     @override
+    def merge_case(self, case_id: UUID) -> None:
+        with self._driver.session() as session:
+            session.run(MERGE_CASE, case_id=str(case_id))
+
+    @override
+    def get_case(self, case_id: UUID) -> UUID | None:
+        with self._driver.session() as session:
+            record = session.run(GET_CASE, case_id=str(case_id)).single()
+        if record is None or record["case_id"] is None:
+            return None
+        return UUID(str(record["case_id"]))
+
+    @override
     def merge_situation(
         self,
         situation_id: UUID,
         version: int,
         desc: str,
-        is_root: bool,
+        case_id: UUID,
+        kind: str,
+        potential_factors: list[str],
+        original_ask: str,
     ) -> None:
         with self._driver.session() as session:
             session.run(
@@ -130,7 +182,10 @@ class Neo4jClient(GraphDb):
                 situation_id=str(situation_id),
                 version=version,
                 desc=desc,
-                is_root=is_root,
+                case_id=str(case_id),
+                kind=kind,
+                potential_factors=potential_factors,
+                original_ask=original_ask,
             )
 
     @override
@@ -160,17 +215,48 @@ class Neo4jClient(GraphDb):
     @override
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_SITUATIONS))
-        rows: list[tuple[UUID, int, str, bool]] = []
+        rows: list[tuple[UUID, int, str, str, list[str], str, UUID]] = []
+        for record in records:
+            original_ask = record["original_ask"]
+            rows.append(
+                (
+                    UUID(str(record["situation_id"])),
+                    int(record["version"]),
+                    str(record["desc"]),
+                    str(record["kind"]),
+                    _strings(record["potential_factors"]),
+                    "" if original_ask is None else str(original_ask),
+                    UUID(str(record["case_id"])),
+                )
+            )
+        return rows
+
+    @override
+    def list_leaf_situations(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> list[tuple[UUID, int, str]]:
+        with self._driver.session() as session:
+            records = list(
+                session.run(
+                    LIST_LEAF_SITUATIONS,
+                    case_id=str(case_id),
+                    start_situation_id=str(start_situation_id),
+                    start_version=start_version,
+                )
+            )
+        rows: list[tuple[UUID, int, str]] = []
         for record in records:
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
                     str(record["desc"]),
-                    bool(record["is_root"]),
                 )
             )
         return rows

@@ -24,4 +24,4 @@ P(reopen) = P(deal) * P(clear | deal) + P(no deal) * P(clear | no deal)
 
 # Schema
 
-(:Situation {situation_id, desc, is_root})-[:LEADS_TO {p, inputs}]->(:Situation)
+(:Case {case_id})<-[:BELONGS_TO]-(:Situation {situation_id, desc, kind})-[:LEADS_TO {p, inputs}]->(:Situation)

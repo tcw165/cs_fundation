@@ -7,16 +7,23 @@ from uuid import UUID
 class GraphDb(Protocol):
     def p_query(self, destination_ids: list[UUID]) -> Decimal: ...
 
-    def root_count(self) -> int: ...
+    def start_count(self) -> int: ...
 
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]: ...
+
+    def merge_case(self, case_id: UUID) -> None: ...
+
+    def get_case(self, case_id: UUID) -> UUID | None: ...
 
     def merge_situation(
         self,
         situation_id: UUID,
         version: int,
         desc: str,
-        is_root: bool,
+        case_id: UUID,
+        kind: str,
+        potential_factors: list[str],
+        original_ask: str,
     ) -> None: ...
 
     def merge_leads_to(
@@ -31,7 +38,14 @@ class GraphDb(Protocol):
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]: ...
+    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]: ...
+
+    def list_leaf_situations(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> list[tuple[UUID, int, str]]: ...
 
     def list_leads_to(
         self,

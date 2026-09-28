@@ -11,18 +11,27 @@ class _Both:
     ) -> Decimal:
         return Decimal("0")
 
-    def root_count(self) -> int:
+    def start_count(self) -> int:
         return 0
 
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]:
         return []
+
+    def merge_case(self, case_id: UUID) -> None:
+        return None
+
+    def get_case(self, case_id: UUID) -> UUID | None:
+        return None
 
     def merge_situation(
         self,
         situation_id: UUID,
         version: int,
         desc: str,
-        is_root: bool,
+        case_id: UUID,
+        kind: str,
+        potential_factors: list[str],
+        original_ask: str,
     ) -> None:
         return None
 
@@ -39,7 +48,15 @@ class _Both:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, bool]]:
+    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]:
+        return []
+
+    def list_leaf_situations(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> list[tuple[UUID, int, str]]:
         return []
 
     def list_leads_to(
@@ -58,7 +75,7 @@ class _ReadsOnly:
     ) -> Decimal:
         return Decimal("0")
 
-    def root_count(self) -> int:
+    def start_count(self) -> int:
         return 0
 
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]:
