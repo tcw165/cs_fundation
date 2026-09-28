@@ -11,6 +11,7 @@ def test_now_scout_prompt_model_and_search():
     assert now_scout.instructions == prompt
     assert "# Goal" in prompt and "# Key Rules" in prompt
     assert "# Examples" not in prompt
+    assert "not a restatement of the ask" in prompt
     assert "add_situation" not in prompt
     assert now_scout.model == "gpt-5.6-luna"
     assert now_scout.output_type is Situation

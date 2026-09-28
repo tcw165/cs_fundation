@@ -160,6 +160,7 @@ class AppAgentRunner(AgentRunner):
                 metadata={"turn_id": context.turn_id},
             ):
                 user_ask = "\n".join(inputs)
+                context.future_situation = user_ask
                 result = Runner.run_streamed(
                     causal_chain,
                     input=(

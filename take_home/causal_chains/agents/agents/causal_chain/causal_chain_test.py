@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import causal_chain
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 
 def test_causal_chain_prompt_and_tools():
@@ -9,7 +8,8 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.instructions == prompt
     assert causal_chain.name == "causal_chain"
     assert causal_chain.model == "gpt-5.6-luna"
-    assert causal_chain.output_type is Situation
+    assert causal_chain.output_type is None
+    assert causal_chain.model_settings.tool_choice == "required"
     assert "# Goal" in prompt
     assert "# Iterative Process" in prompt
     assert "# Communication" in prompt
@@ -27,6 +27,7 @@ def test_causal_chain_prompt_and_tools():
         "add_situation",
         "link_situations",
         "make_deeplink_widget",
+        "return_root",
     ):
         assert tool_name not in prompt
     assert [tool.name for tool in causal_chain.tools] == [
@@ -36,5 +37,6 @@ def test_causal_chain_prompt_and_tools():
         "add_situation",
         "link_situations",
         "make_deeplink_widget",
+        "return_root",
     ]
-    assert causal_chain.tools[-1].name == "make_deeplink_widget"
+    assert causal_chain.tools[-1].name == "return_root"

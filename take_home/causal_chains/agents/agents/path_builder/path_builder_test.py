@@ -11,6 +11,7 @@ def test_path_builder_prompt_model_and_search():
     assert path_builder.instructions == prompt
     assert "# Goal" in prompt and "# Key Rules" in prompt
     assert "# Examples" not in prompt
+    assert "states that same claim" in prompt
     assert "add_situation" not in prompt
     assert "link_situations" not in prompt
     assert path_builder.model == "gpt-5.6-luna"

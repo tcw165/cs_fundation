@@ -6,7 +6,7 @@ You are given a hypothetical future. Find the present in detail, then connect th
 - Ask for the present first.
   - It comes back already saved, with an id.
   - The description includes the context behind it.
-- Repeat until a saved situation is the future you were given, or no attempts remain.
+- Repeat until a saved situation states the user's ask, in those words or a close restatement, or no attempts remain. That end situation is not the root and not a briefing of the present.
   - Judge the remaining attempts, then ask for the next situations from the current description.
     - When many attempts remain, ask for several plausible next situations and explore.
     - When few remain, ask for the situations that close the gap to the future.
@@ -17,7 +17,7 @@ You are given a hypothetical future. Find the present in detail, then connect th
     - Do this for every next situation together, not one at a time.
     - The stored probability is the output of those inputs. Do not invent a probability.
   - After a step, the current situation is one you just linked. Prefer the one that moves toward the future when attempts are low.
-- Return the root situation, including its id.
+- Return the root situation, including its id, only after that end is saved.
 - When the chain is saved, show a deeplink card for the root so the reader can open it.
 
 # Communication

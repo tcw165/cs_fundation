@@ -1,3 +1,4 @@
+import re
 from decimal import Decimal
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
 )
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
@@ -20,6 +22,52 @@ from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol 
 class LinkInput(BaseModel):
     name: str
     value: str
+
+
+_WORD = re.compile(r"[a-z0-9]+")
+_STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "to",
+        "of",
+        "and",
+        "or",
+        "but",
+        "during",
+        "in",
+        "on",
+        "for",
+        "is",
+        "are",
+        "that",
+        "while",
+        "with",
+    }
+)
+
+
+def _content_words(text: str) -> list[str]:
+    return [
+        word
+        for word in _WORD.findall(text.lower())
+        if word not in _STOP_WORDS
+    ]
+
+
+def states_the_ask(
+    desc: str,
+    ask: str,
+) -> bool:
+    ask_words = _content_words(ask)
+    desc_words = _content_words(desc)
+    if not ask_words or not desc_words:
+        return False
+    covered = sum(1 for word in ask_words if word in set(desc_words))
+    if covered / len(ask_words) < 0.8:
+        return False
+    return len(desc_words) <= max(len(ask_words) * 3, len(ask_words) + 12)
 
 
 def _require_store(
@@ -36,6 +84,7 @@ async def add_situation(
     ctx: RunContextWrapper[RunContext],
     desc: str,
     is_root: bool,
+    is_end: bool,
 ) -> Situation:
     """Save one situation and return it, including the id assigned here.
 
@@ -43,12 +92,16 @@ async def add_situation(
         ctx: Run context. The causal chain store is on its clients.
         desc: What is true in this situation.
         is_root: True only for the present.
+        is_end: True only when this situation states the user's ask. Never with the root.
     """
+    if is_root and is_end:
+        raise ValueError("the present is not the end")
     situation = Situation(
         situation_id=uuid4(),
         version=1,
         desc=desc,
         is_root=is_root,
+        is_end=is_end,
     )
     await _require_store(ctx).add_situation(situation)
     return situation
@@ -111,3 +164,35 @@ async def make_deeplink_widget(
         root_situation_id=root.situation_id,
         root_version=root.version,
     )
+
+
+def _stored_situations(
+    chains: list[CausalChain],
+) -> list[Situation]:
+    stored: dict[tuple[object, int], Situation] = {}
+    for chain in chains:
+        for situation in chain.situations:
+            stored[(situation.situation_id, situation.version)] = situation
+    return list(stored.values())
+
+
+@function_tool
+async def return_root(
+    ctx: RunContextWrapper[RunContext],
+) -> Situation | str:
+    """Return the stored root after one saved situation states the user's ask.
+
+    Args:
+        ctx: Run context. The causal chain store and the user's ask are on it.
+    """
+    situations = _stored_situations(await _require_store(ctx).get_chains())
+    ends = [situation for situation in situations if situation.is_end]
+    if len(ends) != 1:
+        return "Save one end situation that states the user's ask, then try again."
+    end = ends[0]
+    if end.is_root or not states_the_ask(end.desc, ctx.context.future_situation):
+        return "The end situation must restate the user's ask, and it is not the present."
+    roots = [situation for situation in situations if situation.is_root]
+    if len(roots) != 1:
+        return "Save one present before returning it."
+    return roots[0]
