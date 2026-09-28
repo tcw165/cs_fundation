@@ -1,5 +1,6 @@
 import asyncio
 import os
+import uuid
 
 import click
 
@@ -8,21 +9,44 @@ from take_home.causal_chains.agents.chat_service.chat_service import (
     format_sse,
 )
 from take_home.causal_chains.agents.eval.offline.di.container import EvalContainer
-from take_home.causal_chains.agents.models.messaging.sse_event import SseEvent
+from take_home.causal_chains.agents.models.messaging.message import (
+    MarkdownMessage,
+    Message,
+    Role,
+)
+from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_config import RunConfig
 
 
 async def run_offline(
     query: str,
-) -> tuple[ChatService, list[SseEvent]]:
+) -> tuple[ChatService, list[Message]]:
     container = EvalContainer()
     container.config.openai_api_key.from_value(os.environ.get("OPENAI_API_KEY", ""))
     service = container.chat_service()
-    turn = await service.post_message("1", query)
-    context = service._contexts[turn.turn_id]
-    context.run_config = RunConfig(include_traces=True)
-    await service.run_turn(turn, query)
-    return service, list(service._buffers[turn.turn_id])
+    message = MarkdownMessage(
+        message_id=str(uuid.uuid4()),
+        role=Role.user,
+        text=query,
+    )
+    await container.messaging_store().append("1", message)
+    turn = Turn(
+        turn_id=f"t_{uuid.uuid4().hex[:8]}",
+        conversation_id="1",
+        status=TurnStatus.queued,
+        from_message=message.message_id,
+    )
+    await container.turn_store().put_turn(turn)
+    messages = [
+        item
+        async for item in service.run_turn(
+            turn,
+            query,
+            RunConfig(include_traces=True),
+        )
+    ]
+    return service, messages
 
 
 @click.command()
@@ -30,9 +54,9 @@ async def run_offline(
 def main(
     query: str,
 ) -> None:
-    _service, events = asyncio.run(run_offline(query))
-    for event in events:
-        click.echo(format_sse(event), nl=False)
+    _service, messages = asyncio.run(run_offline(query))
+    for message in messages:
+        click.echo(format_sse(message), nl=False)
 
 
 if __name__ == "__main__":

@@ -2,19 +2,24 @@ import asyncio
 
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
-from take_home.causal_chains.agents.models.run_clients import RunClients
-from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
-    MessagingStoreImpl,
+from take_home.causal_chains.agents.models.messaging.message import (
+    MarkdownMessage,
+    Role,
 )
-from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
-from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
-from take_home.causal_chains.agents.models.messaging.message import Role
 from take_home.causal_chains.agents.models.messaging.sse_event import (
     RunTraces,
     SseDelta,
     SseHeartbeat,
 )
+from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.run_clients import RunClients
+from take_home.causal_chains.agents.models.run_context import RunContext
+from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
+    MessagingStoreImpl,
+)
+from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
 def test_format_sse_excludes_type_from_data():
@@ -53,45 +58,75 @@ class _FakeDynamoDb:
         return self._items.get((table_name, stored_key))
 
 
-def test_post_message_and_subscribe_stub():
+def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
+    message = MarkdownMessage(
+        message_id=message_id,
+        role=Role.user,
+        text="hello",
+    )
+    turn = Turn(
+        turn_id="t_1",
+        conversation_id="1",
+        status=TurnStatus.queued,
+        from_message=message.message_id,
+    )
+    return message, turn
+
+
+def test_run_turn_yields_runner_messages_and_completes():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
         service = ChatService(StubTurnRunner(), store, turn_store, _ChainStore())
-        turn = await service.post_message("1", "hello")
-        assert turn.status is TurnStatus.queued
-        await service.run_turn(turn, "hello")
-        events = [event async for event in service.subscribe("1", turn.turn_id)]
+        message, turn = _user_turn()
+        await store.append("1", message)
+        await turn_store.put_turn(turn)
+        events = [event async for event in service.run_turn(turn, message.text)]
         stored = await store.list_messages("1")
         saved = await turn_store.get_turn(turn.turn_id)
-        return turn, events, stored, saved
+        return events, stored, saved
 
-    turn, events, stored, saved = asyncio.run(exercise())
-    assert events[0].type == "markdown"
-    assert events[-1].type == "done"
-    assert turn.conversation_id == "1"
+    events, stored, saved = asyncio.run(exercise())
+    assert len(events) == 1
+    assert isinstance(events[0], MarkdownMessage)
+    assert events[0].role is Role.agent
+    assert events[0].text == "echo: hello"
     assert len(stored) == 1
     assert stored[0].role is Role.user
     assert stored[0].text == "hello"
-    assert turn.from_message == stored[0].message_id
     assert saved is not None
+    assert saved.from_message == stored[0].message_id
     assert saved.status is TurnStatus.completed
 
 
-def test_post_message_builds_run_clients():
+def test_run_turn_builds_run_clients():
     chain_store = _ChainStore()
 
+    class _Recording:
+        def __init__(self) -> None:
+            self.contexts: list[RunContext] = []
+
+        async def stream(self, inputs: list[str], context: RunContext):
+            self.contexts.append(context)
+            if False:
+                yield MarkdownMessage(message_id="m_1", role=Role.agent, text="")
+
     async def exercise():
+        runner = _Recording()
         service = ChatService(
-            StubTurnRunner(),
+            runner,
             MessagingStoreImpl(_FakeDynamoDb()),
             InMemoryTurnStore(),
             chain_store,
         )
-        turn = await service.post_message("1", "hello")
-        return service._contexts[turn.turn_id].clients
+        _message, turn = _user_turn()
+        async for _event in service.run_turn(turn, "hello"):
+            pass
+        return runner.contexts
 
-    clients = asyncio.run(exercise())
+    contexts = asyncio.run(exercise())
+    assert len(contexts) == 1
+    clients = contexts[0].clients
     assert isinstance(clients, RunClients)
     assert clients.causal_chain_store is chain_store
 
@@ -134,8 +169,9 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
             InMemoryTurnStore(),
             _ChainStore(),
         )
-        turn = await service.post_message("1", "hello")
-        await service.run_turn(turn, "hello")
+        _message, turn = _user_turn()
+        async for _event in service.run_turn(turn, "hello"):
+            pass
         return turn
 
     turn = asyncio.run(exercise())

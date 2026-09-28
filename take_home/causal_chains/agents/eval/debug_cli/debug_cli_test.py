@@ -66,13 +66,13 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
     )
     assert result.exit_code == 0
     assert "event: markdown" in result.output
-    assert "event: done" in result.output
     sse_requests = [
         request
         for request in transport.requests
         if request.url.path.endswith("/sse")
     ]
     assert sse_requests[-1].url.params["include_traces"] == "true"
+    assert sse_requests[-1].url.params["after_message"]
 
 
 def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
@@ -87,7 +87,7 @@ def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
             return None
 
         def json(self) -> dict[str, str]:
-            return {"turn_id": "t_1"}
+            return {"turn_id": "t_1", "from_message": "m_1"}
 
         def iter_text(self):
             for index, chunk in enumerate(chunks):
