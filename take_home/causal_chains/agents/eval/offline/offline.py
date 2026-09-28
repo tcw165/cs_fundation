@@ -57,6 +57,8 @@ async def run_offline(
     query: str,
 ) -> tuple[ChatService, list[Message]]:
     container = EvalContainer()
+    message_store = container.messaging_store()
+    turn_store = container.turn_store()
     api_key = os.environ.get("OPENAI_API_KEY", "")
     container.config.openai_api_key.from_value(api_key)
     if api_key:
@@ -68,14 +70,14 @@ async def run_offline(
         role=Role.user,
         text=query,
     )
-    await container.messaging_store().append("1", message)
+    await message_store.append("1", message)
     turn = Turn(
         turn_id=f"t_{uuid.uuid4().hex[:8]}",
         conversation_id="1",
         status=TurnStatus.queued,
         from_message=message.message_id,
     )
-    await container.turn_store().put_turn(turn)
+    await turn_store.put_turn(turn)
     messages = [
         item
         async for item in service.run_turn(
