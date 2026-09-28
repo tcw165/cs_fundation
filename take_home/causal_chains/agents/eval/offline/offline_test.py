@@ -21,14 +21,23 @@ def _silence_runner(monkeypatch) -> None:
     )
 
 
+class _FakeGraphDb:
+    def __init__(self) -> None:
+        self.cleared = False
+
+    def clear(self) -> None:
+        self.cleared = True
+
+
 def test_offline_uses_the_graph_store_when_neo4j_uri_is_set(monkeypatch) -> None:
     seen: dict[str, object] = {}
+    graph_db = _FakeGraphDb()
 
-    def fake_build_graph_db(uri: str, user: str, password: str) -> object:
+    def fake_build_graph_db(uri: str, user: str, password: str) -> _FakeGraphDb:
         seen["uri"] = uri
         seen["user"] = user
         seen["password"] = password
-        return "graph-db"
+        return graph_db
 
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -42,12 +51,44 @@ def test_offline_uses_the_graph_store_when_neo4j_uri_is_set(monkeypatch) -> None
     service, _events = asyncio.run(run_offline("hormuz"))
     store = service._causal_chain_store
     assert isinstance(store, GraphCausalChainStore)
-    assert store._graph_db == "graph-db"
+    assert store._graph_db is graph_db
+    assert graph_db.cleared is True
     assert seen == {
         "uri": "bolt://localhost:7687",
         "user": "neo4j",
         "password": "causal_chains",
     }
+
+
+def test_offline_skips_clear_when_clean_graph_is_off(monkeypatch) -> None:
+    graph_db = _FakeGraphDb()
+    monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_PROJECT_ID", raising=False)
+    monkeypatch.setattr(offline_module, "build_graph_db", lambda uri, user, password: graph_db)
+    _silence_runner(monkeypatch)
+
+    asyncio.run(run_offline("hormuz", clean_graph=False))
+    assert graph_db.cleared is False
+
+
+def test_offline_does_not_clear_without_neo4j_uri(monkeypatch) -> None:
+    called = {"build": False}
+
+    def fake_build_graph_db(uri: str, user: str, password: str) -> _FakeGraphDb:
+        called["build"] = True
+        return _FakeGraphDb()
+
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+    monkeypatch.delenv("BRAINTRUST_PROJECT_ID", raising=False)
+    monkeypatch.setattr(offline_module, "build_graph_db", fake_build_graph_db)
+    _silence_runner(monkeypatch)
+
+    asyncio.run(run_offline("hormuz"))
+    assert called["build"] is False
 
 
 def test_offline_keeps_the_decoy_store_without_neo4j_uri(monkeypatch) -> None:

@@ -26,7 +26,7 @@ Keep models, protocols, and implementations apart.
 
 ## Offline eval
 
-Use this when you need to quickly validate the causal chain core functionality. It starts Neo4j and saves the chain there. Open `http://localhost:7474` to read the graph.
+Use this when you need to quickly validate the causal chain core functionality. It starts Neo4j and saves the chain there. Each run deletes the situations already in the graph. Pass `--no-clean-graph` to keep them. Open `http://localhost:7474` to read the graph.
 
 ```bash
 cd take_home/causal_chains
