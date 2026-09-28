@@ -77,11 +77,12 @@ def test_broken_outgoing_sums_reads_fake_rows():
 def test_merge_situation_writes_node_fields():
     driver = _Driver([])
     client = Neo4jClient(driver)
-    client.merge_situation(NOW_ID, "now", True)
+    client.merge_situation(NOW_ID, 1, "now", True)
     query, params = driver.calls[0]
-    assert "MERGE (s:Situation {situation_id: $situation_id})" in query
+    assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
     assert params == {
         "situation_id": str(NOW_ID),
+        "version": 1,
         "desc": "now",
         "is_root": True,
     }
@@ -92,17 +93,68 @@ def test_merge_leads_to_writes_float_p():
     client = Neo4jClient(driver)
     client.merge_leads_to(
         NOW_ID,
+        1,
         CLEAR_ID,
+        1,
         Decimal("0.5"),
         [("deal_odds", Decimal("0.5"))],
     )
     query, params = driver.calls[0]
     assert "MERGE (a)-[r:LEADS_TO]->(b)" in query
+    assert "r.from_version = $from_version" in query
+    assert "r.to_version = $to_version" in query
     assert params == {
         "from_situation_id": str(NOW_ID),
+        "from_version": 1,
         "to_situation_id": str(CLEAR_ID),
+        "to_version": 1,
         "p": 0.5,
         "inputs": [{"name": "deal_odds", "value": 0.5}],
     }
     assert isinstance(params["p"], float)
     assert isinstance(params["inputs"][0]["value"], float)
+
+
+def test_list_situations_reads_versioned_rows():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "situation_id": str(NOW_ID),
+                    "version": 1,
+                    "desc": "now",
+                    "is_root": True,
+                }
+            ]
+        )
+    )
+    assert client.list_situations() == [(NOW_ID, 1, "now", True)]
+    assert "MATCH (s:Situation)" in client._driver.calls[0][0]
+
+
+def test_list_leads_to_reads_versioned_rows():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "from_situation_id": str(NOW_ID),
+                    "from_version": 1,
+                    "to_situation_id": str(CLEAR_ID),
+                    "to_version": 1,
+                    "p": 0.5,
+                    "inputs": [{"name": "deal_odds", "value": 0.5}],
+                }
+            ]
+        )
+    )
+    assert client.list_leads_to() == [
+        (
+            NOW_ID,
+            1,
+            CLEAR_ID,
+            1,
+            Decimal("0.5000"),
+            [("deal_odds", Decimal("0.5000"))],
+        ),
+    ]
+    assert "MATCH ()-[r:LEADS_TO]->()" in client._driver.calls[0][0]

@@ -8,6 +8,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_situation,
     link_situations,
 )
+from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.models.run_clients import RunClients
@@ -32,6 +33,11 @@ class _Store:
         link: LeadsTo,
     ) -> None:
         self.links.append((from_situation, to_situation, link))
+
+    async def get_chains(
+        self,
+    ) -> list[CausalChain]:
+        return []
 
 
 def _invoke(

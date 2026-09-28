@@ -24,6 +24,7 @@ pytest_test(
         ":agent_tools",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging",
         requirement("openai-agents"),
     ],
 )

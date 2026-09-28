@@ -1,5 +1,6 @@
 from typing import Protocol, runtime_checkable
 
+from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
@@ -17,3 +18,7 @@ class CausalChainStore(Protocol):
         to_situation: Situation,
         link: LeadsTo,
     ) -> None: ...
+
+    async def get_chains(
+        self,
+    ) -> list[CausalChain]: ...

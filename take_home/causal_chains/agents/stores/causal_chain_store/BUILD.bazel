@@ -11,6 +11,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
         "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
     ],
 )
@@ -22,6 +23,7 @@ pytest_test(
     deps = [
         ":causal_chain_store",
         "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
     ],
 )
