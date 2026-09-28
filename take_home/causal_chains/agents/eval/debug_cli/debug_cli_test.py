@@ -1,10 +1,10 @@
 import anyio
-import asyncio
 import httpx
+from click.testing import CliRunner
 from dependency_injector import providers
 
-from take_home.causal_chains.agents.eval.debug_cli.debug_cli import post_and_read
 from take_home.causal_chains.agents.di.container import AppContainer
+from take_home.causal_chains.agents.eval.debug_cli.debug_cli import main
 from take_home.causal_chains.agents.main_app import create_app
 
 
@@ -28,8 +28,11 @@ class _FakeDynamoDb:
 class _SyncAsgiTransport(httpx.BaseTransport):
     def __init__(self, app: object) -> None:
         self._transport = httpx.ASGITransport(app=app)
+        self.requests: list[httpx.Request] = []
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
+        self.requests.append(request)
+
         async def send() -> httpx.Response:
             response = await self._transport.handle_async_request(request)
             body = await response.aread()
@@ -43,15 +46,82 @@ class _SyncAsgiTransport(httpx.BaseTransport):
         return anyio.run(send)
 
 
-def test_post_and_read_stub_prints_delta_and_done():
+def test_query_hello_prints_delta_and_done(monkeypatch):
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
     transport = _SyncAsgiTransport(create_app(container))
-    with httpx.Client(transport=transport, base_url="http://test") as client:
-        body = post_and_read("http://test", "1", "hello", client)
-    assert "event: delta" in body
-    assert "event: done" in body
-    stored = asyncio.run(container.messaging_store().list_messages("1"))
-    assert len(stored) == 1
-    assert stored[0].text == "hello"
+    original_client = httpx.Client
+
+    def client_for_app(*args, **kwargs):
+        return original_client(transport=transport, base_url="http://test")
+
+    monkeypatch.setattr(
+        "take_home.causal_chains.agents.eval.debug_cli.debug_cli.httpx.Client",
+        client_for_app,
+    )
+    result = CliRunner().invoke(
+        main,
+        ["--query", "hello"],
+    )
+    assert result.exit_code == 0
+    assert "event: delta" in result.output
+    assert "event: done" in result.output
+    sse_requests = [
+        request
+        for request in transport.requests
+        if request.url.path.endswith("/sse")
+    ]
+    assert sse_requests[-1].url.params["include_traces"] == "true"
+
+
+def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
+    chunks = [
+        "event: delta\ndata: {\"text\":\"oil\"}\n\n",
+        "event: done\ndata: {\"message_id\":\"m_1\"}\n\n",
+    ]
+    echoed: list[str] = []
+
+    class _Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"turn_id": "t_1"}
+
+        def iter_text(self):
+            for index, chunk in enumerate(chunks):
+                assert echoed == chunks[:index]
+                yield chunk
+
+    class _Stream:
+        def __enter__(self) -> _Response:
+            return _Response()
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+    class _Client:
+        def __enter__(self) -> "_Client":
+            return self
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+        def post(self, *args: object, **kwargs: object) -> _Response:
+            return _Response()
+
+        def stream(self, *args: object, **kwargs: object) -> _Stream:
+            return _Stream()
+
+    monkeypatch.setattr(
+        "take_home.causal_chains.agents.eval.debug_cli.debug_cli.httpx.Client",
+        lambda *args, **kwargs: _Client(),
+    )
+    monkeypatch.setattr(
+        "take_home.causal_chains.agents.eval.debug_cli.debug_cli.click.echo",
+        lambda text, nl=True: echoed.append(text),
+    )
+    result = CliRunner().invoke(main, ["--query", "hello"])
+    assert result.exit_code == 0
+    assert echoed == chunks
