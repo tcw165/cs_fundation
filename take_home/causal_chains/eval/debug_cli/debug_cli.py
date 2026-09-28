@@ -7,7 +7,7 @@ def post_and_read(
     conversation_id: str,
     query: str,
     client: httpx.Client,
-) -> str:
+) -> None:
     created = client.post(
         f"{base_url}/conversation/{conversation_id}/messages",
         json={"text": query},
@@ -20,7 +20,8 @@ def post_and_read(
         params={"include_traces": True},
     ) as response:
         response.raise_for_status()
-        return response.read().decode()
+        for chunk in response.iter_text():
+            click.echo(chunk, nl=False)
 
 
 @click.command()
@@ -32,11 +33,8 @@ def main(
     conversation_id: str,
     query: str
 ) -> None:
-    with httpx.Client() as client:
-        click.echo(
-            post_and_read(base_url, conversation_id, query, client),
-            nl=False,
-        )
+    with httpx.Client(timeout=httpx.Timeout(300.0)) as client:
+        post_and_read(base_url, conversation_id, query, client)
 
 
 if __name__ == "__main__":
