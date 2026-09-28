@@ -27,4 +27,8 @@ class RunTraces(BaseModel):
     text: str
 
 
-SseEvent = SseDelta | SseTool | SseDone | SseError | RunTraces
+class SseHeartbeat(BaseModel):
+    type: str = "heartbeat"
+
+
+SseEvent = SseDelta | SseTool | SseDone | SseError | RunTraces | SseHeartbeat

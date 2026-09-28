@@ -3,6 +3,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseDone,
     SseError,
+    SseHeartbeat,
     SseTool,
 )
 
@@ -28,3 +29,7 @@ def test_sse_error_json():
 def test_run_traces_json():
     payload = RunTraces(text="span\n")
     assert payload.model_dump() == {"type": "run_traces", "text": "span\n"}
+
+
+def test_sse_heartbeat_json():
+    assert SseHeartbeat().model_dump() == {"type": "heartbeat"}
