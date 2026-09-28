@@ -383,6 +383,10 @@ cryptography==50.0.1 \
     --hash=sha256:fd3718b960d0b5dd213cdf03f3bcb7000e69dda0de8b956061947ff6bcff5558 \
     --hash=sha256:ff838d62ec1bfce4f9ba7fa16f4a7b554cd8d0c299e6be37502161a660c84eef
     # via pyjwt
+decoy==2.6.0 \
+    --hash=sha256:c2d333a2ee3632d5bae907eca4bf7c341c287589cc37ebdfad51038e9bdcf192 \
+    --hash=sha256:e65c875c8cfaed6ceff55df39d266e2967e90de3390c99d228ff94c6a2ba51d7
+    # via -r requirements.in
 dependency-injector==4.49.1 \
     --hash=sha256:06e4f02d61a80311f6af4d233fb37640733d30d74eb669748f02328ad7435fe7 \
     --hash=sha256:10e481880b307a6a438c1cc7b0a1fa8754247239ef5a2e8fe82bd8a1e76e7682 \
@@ -1051,6 +1055,7 @@ typing-extensions==4.16.0 \
     # via
     #   anyio
     #   braintrust
+    #   decoy
     #   dependency-injector
     #   exceptiongroup
     #   fastapi
