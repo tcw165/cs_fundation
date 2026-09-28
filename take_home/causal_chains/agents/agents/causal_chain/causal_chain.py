@@ -26,12 +26,16 @@ causal_chain = Agent[RunContext](
         now_scout.as_tool(
             tool_name="now_scout",
             tool_description=(
+                "Discover the present so the chain has a place to start. "
+                "Use this once, before any next situation. "
                 "Save the present and return that situation, including its id."
             ),
         ),
         path_builder.as_tool(
             tool_name="path_builder",
             tool_description=(
+                "Explore the next situations from the current one, to grow the path toward the future. "
+                "Use this after the present is saved, and again from the situation you just linked. "
                 "Save the next situations from the current description "
                 "and the thoughts about remaining attempts, and return them."
             ),
@@ -39,6 +43,8 @@ causal_chain = Agent[RunContext](
         pricer.as_tool(
             tool_name="pricer",
             tool_description=(
+                "Decide what a person could move on one link, so the chain can store how likely that step is. "
+                "Use this for every next situation, in the same step you save the link. "
                 "Name the input variables on the link from the current situation "
                 "to one next situation."
             ),
