@@ -2,6 +2,8 @@ import asyncio
 import uuid
 from collections.abc import AsyncIterator
 
+from agents import flush_traces, trace
+
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
@@ -120,25 +122,37 @@ class ChatService:
         running = turn.model_copy(update={"status": TurnStatus.running})
         await self._record_turn(running)
         try:
-            context = self._contexts[turn.turn_id]
-            async for event in self._agent_runner.stream([text], context):
-                self._publish(turn.turn_id, event)
-                if isinstance(event, SseDone):
+            with trace(
+                workflow_name="chat_service",
+                group_id=turn.conversation_id,
+                metadata={"turn_id": turn.turn_id},
+            ):
+                try:
+                    context = self._contexts[turn.turn_id]
+                    async for event in self._agent_runner.stream([text], context):
+                        self._publish(turn.turn_id, event)
+                        if isinstance(event, SseDone):
+                            await self._record_turn(
+                                running.model_copy(update={"status": TurnStatus.completed})
+                            )
+                            return
+                        if isinstance(event, SseError):
+                            await self._record_turn(
+                                running.model_copy(update={"status": TurnStatus.failed})
+                            )
+                            return
+                    done = SseDone(message_id=f"m_{turn.turn_id}")
+                    self._publish(turn.turn_id, done)
                     await self._record_turn(
                         running.model_copy(update={"status": TurnStatus.completed})
                     )
-                    return
-                if isinstance(event, SseError):
+                except Exception as error:
+                    self._publish(turn.turn_id, SseError(message=str(error)))
                     await self._record_turn(
                         running.model_copy(update={"status": TurnStatus.failed})
                     )
-                    return
-            done = SseDone(message_id=f"m_{turn.turn_id}")
-            self._publish(turn.turn_id, done)
-            await self._record_turn(running.model_copy(update={"status": TurnStatus.completed}))
-        except Exception as error:
-            self._publish(turn.turn_id, SseError(message=str(error)))
-            await self._record_turn(running.model_copy(update={"status": TurnStatus.failed}))
+        finally:
+            flush_traces()
 
     def _publish(self, turn_id: str, event: SseEvent) -> None:
         self._buffers[turn_id].append(event)
