@@ -9,6 +9,7 @@ from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     StartSituation,
+    TerminalSituation,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -22,18 +23,51 @@ def _key(
     return (situation_id, version)
 
 
+# Situations belong to a caller-supplied case once the store takes one.
+_UNSCOPED_CASE_ID = UUID("00000000-0000-4000-8000-000000000000")
+
+
+def _kind(situation: Situation) -> str:
+    if isinstance(situation, StartSituation):
+        return "start"
+    if isinstance(situation, TerminalSituation):
+        return "terminal"
+    return "situation"
+
+
+def _factors(situation: Situation) -> list[str]:
+    if isinstance(situation, StartSituation):
+        return list(situation.potential_factors)
+    return []
+
+
+def _ask(situation: Situation) -> str:
+    if isinstance(situation, TerminalSituation):
+        return situation.original_ask
+    return ""
+
+
 def _situation_from_graph(
     situation_id: UUID,
     version: int,
     desc: str,
-    is_root: bool,
+    kind: str,
+    potential_factors: list[str],
+    original_ask: str,
 ) -> Situation:
-    if is_root:
+    if kind == "start":
         return StartSituation(
             situation_id=situation_id,
             version=version,
             desc=desc,
-            potential_factors=[],
+            potential_factors=potential_factors,
+        )
+    if kind == "terminal":
+        return TerminalSituation(
+            situation_id=situation_id,
+            version=version,
+            desc=desc,
+            original_ask=original_ask,
         )
     return Situation(
         situation_id=situation_id,
@@ -109,7 +143,10 @@ class GraphCausalChainStore(CausalChainStore):
             situation.situation_id,
             situation.version,
             situation.desc,
-            isinstance(situation, StartSituation),
+            _UNSCOPED_CASE_ID,
+            _kind(situation),
+            _factors(situation),
+            _ask(situation),
         )
 
     @override
@@ -135,8 +172,23 @@ class GraphCausalChainStore(CausalChainStore):
         self,
     ) -> list[CausalChain]:
         situations = [
-            _situation_from_graph(situation_id, version, desc, is_root)
-            for situation_id, version, desc, is_root in self._graph_db.list_situations()
+            _situation_from_graph(
+                situation_id,
+                version,
+                desc,
+                kind,
+                potential_factors,
+                original_ask,
+            )
+            for (
+                situation_id,
+                version,
+                desc,
+                kind,
+                potential_factors,
+                original_ask,
+                _case_id,
+            ) in self._graph_db.list_situations()
         ]
         links = [
             LeadsTo(

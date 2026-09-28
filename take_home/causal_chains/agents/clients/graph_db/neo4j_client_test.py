@@ -67,9 +67,9 @@ def test_p_query_reads_fake_sum():
     assert client.p_query([CLEAR_ID, RESUMES_ID]) == Decimal("0.0206")
 
 
-def test_root_count_reads_fake_count():
-    client = Neo4jClient(_Driver([{"root_count": 1}]))
-    assert client.root_count() == 1
+def test_start_count_reads_fake_count():
+    client = Neo4jClient(_Driver([{"start_count": 1}]))
+    assert client.start_count() == 1
 
 
 def test_broken_outgoing_sums_reads_fake_rows():
@@ -77,17 +77,39 @@ def test_broken_outgoing_sums_reads_fake_rows():
     assert client.broken_outgoing_sums() == [(NOW_ID, Decimal("0.9000"))]
 
 
+def test_merge_case_and_get_case_use_the_case_id():
+    driver = _Driver([{"case_id": str(NOW_ID)}])
+    client = Neo4jClient(driver)
+    client.merge_case(NOW_ID)
+    assert client.get_case(NOW_ID) == NOW_ID
+    merge_query, merge_params = driver.calls[0]
+    get_query, get_params = driver.calls[1]
+    assert "MERGE (c:Case {case_id: $case_id})" in merge_query
+    assert merge_params == {"case_id": str(NOW_ID)}
+    assert "MATCH (c:Case {case_id: $case_id})" in get_query
+    assert get_params == {"case_id": str(NOW_ID)}
+
+
+def test_get_case_returns_none_when_missing():
+    client = Neo4jClient(_Driver([]))
+    assert client.get_case(NOW_ID) is None
+
+
 def test_merge_situation_writes_node_fields():
     driver = _Driver([])
     client = Neo4jClient(driver)
-    client.merge_situation(NOW_ID, 1, "now", True)
+    client.merge_situation(NOW_ID, 1, "now", CLEAR_ID, "start", ["blockade"], "")
     query, params = driver.calls[0]
     assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
+    assert "MERGE (s)-[:BELONGS_TO]->(c)" in query
     assert params == {
         "situation_id": str(NOW_ID),
         "version": 1,
         "desc": "now",
-        "is_root": True,
+        "case_id": str(CLEAR_ID),
+        "kind": "start",
+        "potential_factors": ["blockade"],
+        "original_ask": "",
     }
 
 
@@ -126,13 +148,41 @@ def test_list_situations_reads_versioned_rows():
                     "situation_id": str(NOW_ID),
                     "version": 1,
                     "desc": "now",
-                    "is_root": True,
+                    "kind": "start",
+                    "potential_factors": ["blockade"],
+                    "original_ask": "",
+                    "case_id": str(CLEAR_ID),
                 }
             ]
         )
     )
-    assert client.list_situations() == [(NOW_ID, 1, "now", True)]
-    assert "MATCH (s:Situation)" in client._driver.calls[0][0]
+    assert client.list_situations() == [
+        (NOW_ID, 1, "now", "start", ["blockade"], "", CLEAR_ID),
+    ]
+    assert "MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)" in client._driver.calls[0][0]
+
+
+def test_list_leaf_situations_walks_from_the_start():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "situation_id": str(RESUMES_ID),
+                    "version": 1,
+                    "desc": "leaf",
+                }
+            ]
+        )
+    )
+    assert client.list_leaf_situations(CLEAR_ID, NOW_ID, 1) == [(RESUMES_ID, 1, "leaf")]
+    query, params = client._driver.calls[0]
+    assert "kind = 'situation'" in query
+    assert "NOT (leaf)-[:LEADS_TO]->()" in query
+    assert params == {
+        "case_id": str(CLEAR_ID),
+        "start_situation_id": str(NOW_ID),
+        "start_version": 1,
+    }
 
 
 def test_list_leads_to_reads_versioned_rows():
