@@ -6,8 +6,12 @@ py_library(
     name = "messaging",
     srcs = [
         "causal_chain.py",
+        "conversation.py",
         "deeplink_card.py",
+        "message.py",
         "sse_event.py",
+        "turn.py",
+        "turn_status.py",
     ],
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
@@ -21,12 +25,17 @@ pytest_test(
     name = "messaging_test",
     srcs = [
         "causal_chain_test.py",
+        "conversation_test.py",
         "deeplink_card_test.py",
+        "message_test.py",
         "sse_event_test.py",
+        "turn_status_test.py",
+        "turn_test.py",
     ],
     imports = ["../../../../../"],
     deps = [
         ":messaging",
         "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("pydantic"),
     ],
 )

@@ -1,5 +1,5 @@
-from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.models.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
 
 def test_turn_parses_enum_from_string():

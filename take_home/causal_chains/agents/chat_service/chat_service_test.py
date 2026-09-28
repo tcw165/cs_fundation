@@ -12,7 +12,7 @@ from take_home.causal_chains.agents.models.messaging.sse_event import (
     SseDelta,
     SseHeartbeat,
 )
-from take_home.causal_chains.models.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
 
 def test_format_sse_excludes_type_from_data():

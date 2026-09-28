@@ -1,8 +1,8 @@
 import asyncio
 
 from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
-from take_home.causal_chains.models.turn import Turn
-from take_home.causal_chains.models.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
 
 
 def test_in_memory_turn_store_round_trips_a_turn():
