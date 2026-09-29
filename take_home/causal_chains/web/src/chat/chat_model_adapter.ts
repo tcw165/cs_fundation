@@ -1,5 +1,6 @@
 import type { ChatModelAdapter, ThreadMessage } from "@assistant-ui/react";
 
+import { parse_deeplink } from "../chain/deeplink";
 import type { DeeplinkCard } from "../chain/chain_port";
 import type { ChatPort } from "./chat_port";
 
@@ -39,13 +40,14 @@ export function create_chat_model_adapter(
 }
 
 export function card_from_link(link: string): DeeplinkCard {
-  const url = new URL(link, "http://local");
-  const parts = url.pathname.split("/").filter((part) => part !== "");
-  const root_version = Number(parts[2] ?? "0");
+  const parsed = parse_deeplink(link);
+  if (parsed === null || parsed.route !== "chain") {
+    return { title: "", root_situation_id: "", root_version: 0 };
+  }
   return {
-    title: url.searchParams.get("title") ?? "",
-    root_situation_id: parts[1] ?? "",
-    root_version: Number.isFinite(root_version) ? root_version : 0,
+    title: parsed.title,
+    root_situation_id: parsed.root_situation_id,
+    root_version: parsed.root_version,
   };
 }
 
