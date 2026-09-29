@@ -3,6 +3,7 @@ from uuid import UUID
 
 from take_home.causal_chains.agents.clients.graph_db.neo4j_client import (
     CLEAR,
+    ENSURE_LEADS_TO,
     Neo4jClient,
 )
 from take_home.causal_chains.agents.constants.graph import LEADS_TO_HOP_LIMIT
@@ -21,6 +22,9 @@ class _Result:
         if not self._records:
             return None
         return self._records[0]
+
+    def consume(self) -> None:
+        return None
 
     def __iter__(self):
         return iter(self._records)
@@ -316,6 +320,17 @@ def test_list_leads_to_reads_versioned_rows():
     assert "MATCH (a)-[r:LEADS_TO]->(b)" in client._driver.calls[0][0]
     assert "r.from_situation_id" not in client._driver.calls[0][0]
     assert "properties(r)" in client._driver.calls[0][0]
+
+
+def test_ensure_leads_to_registers_the_type_then_deletes_the_probe():
+    driver = _Driver([])
+    client = Neo4jClient(driver)
+    client.ensure_leads_to()
+    query, params = driver.calls[0]
+    assert query == ENSURE_LEADS_TO
+    assert "[:LEADS_TO]->" in query
+    assert "DETACH DELETE a, b" in query
+    assert params == {}
 
 
 def test_clear_deletes_situations():
