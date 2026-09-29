@@ -68,7 +68,8 @@ export function ChainCanvas({
     };
   }, [chain_port, focus]);
 
-  const title = focus.kind === "chain" ? focus.title : "Causal chain";
+  const title =
+    focus.kind === "chain" || focus.kind === "case" ? focus.title : "Causal chain";
   const layout = chain === null ? null : layout_chain(chain, selection);
 
   return (
@@ -292,6 +293,9 @@ function edge_path(edge: LaidEdge): string {
 }
 
 function selection_from_focus(focus: FocusTarget): GraphSelection | null {
+  if (focus.kind === "case") {
+    return null;
+  }
   if (focus.kind === "chain") {
     return {
       kind: "situation",

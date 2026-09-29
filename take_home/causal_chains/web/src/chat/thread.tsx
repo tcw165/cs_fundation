@@ -12,7 +12,7 @@ export function Thread({
   on_open_link,
 }: {
   session: Session;
-  on_open_link: (link: string) => void;
+  on_open_link: (link: string, title?: string) => void;
 }) {
   const { state, draft, set_draft, send, finish, timing } = session;
   const empty = state.log.length === 0;

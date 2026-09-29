@@ -12,6 +12,7 @@ export type ChatItem =
       message_id: string;
       role: Role;
       link: string;
+      title?: string;
     }
   | {
       type: "heartbeat";
@@ -34,6 +35,7 @@ export function chat_item_from_message(message: Message): ChatItem {
         message_id: message.message_id,
         role: message.role,
         link: message.link,
+        ...(message.title === undefined ? {} : { title: message.title }),
       };
     case "heartbeat":
       return {

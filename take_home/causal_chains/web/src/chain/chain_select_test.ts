@@ -31,6 +31,19 @@ describe("chain_for_card", () => {
     expect(chain_for_card(chains, card)).toEqual(chains[0]);
   });
 
+  it("returns the chain for a case focus", () => {
+    const chains = [chain(now_id, "now"), chain(other_id, "other")];
+    chains[0] = { ...chains[0], case_id: "case-now" };
+    chains[1] = { ...chains[1], case_id: "case-other" };
+    expect(
+      chain_for_focus(chains, {
+        kind: "case",
+        case_id: "case-other",
+        title: "",
+      }),
+    ).toBe(chains[1]);
+  });
+
   it("finds a chain from an edge focus", () => {
     const chains = [chain(now_id, "now")];
     chains[0]?.links.push({

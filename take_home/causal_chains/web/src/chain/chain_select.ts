@@ -24,6 +24,9 @@ export function chain_for_focus(
   chains: CausalChain[],
   focus: FocusTarget,
 ): CausalChain | null {
+  if (focus.kind === "case") {
+    return chains.find((chain) => chain.case_id === focus.case_id) ?? null;
+  }
   if (focus.kind === "chain") {
     return chain_for_card(chains, {
       title: focus.title,
