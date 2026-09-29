@@ -4,7 +4,10 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "agent_tools",
-    srcs = ["chain_tools.py"],
+    srcs = [
+        "chain_tools.py",
+        "widgets.py",
+    ],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -19,7 +22,10 @@ py_library(
 
 pytest_test(
     name = "agent_tools_test",
-    srcs = ["chain_tools_test.py"],
+    srcs = [
+        "chain_tools_test.py",
+        "widgets_test.py",
+    ],
     imports = ["../../../.."],
     deps = [
         ":agent_tools",

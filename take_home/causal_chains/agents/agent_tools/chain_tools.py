@@ -16,7 +16,6 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
     StartSituation,
     TerminalSituation,
 )
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -232,18 +231,3 @@ async def lookup_chain_so_far(
         start: The saved start to walk from.
     """
     return await _require_store(ctx).lookup_chain_so_far(case, start)
-
-
-@function_tool(strict_mode=False)
-async def make_deeplink_widget(
-    ctx: RunContextWrapper[RunContext],
-    card: DeeplinkCard,
-) -> DeeplinkCard:
-    """Show a deeplink card.
-
-    Args:
-        ctx: Run context.
-        card: The card to show.
-    """
-    del ctx
-    return card

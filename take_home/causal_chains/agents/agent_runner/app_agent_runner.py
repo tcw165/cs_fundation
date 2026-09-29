@@ -1,3 +1,4 @@
+import json
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import datetime
@@ -22,6 +23,7 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Role,
 )
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
     deeplink_message,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
@@ -77,6 +79,19 @@ def _markdown(text: str) -> MarkdownMessage:
         role=Role.agent,
         text=text,
     )
+
+
+def _render_at_end(item: object) -> bool:
+    raw = _raw_field(item, "arguments")
+    if not isinstance(raw, str) or not raw.strip():
+        return True
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return True
+    if not isinstance(payload, dict) or "render_at_end" not in payload:
+        return True
+    return bool(payload["render_at_end"])
 
 
 def _card_from_output(output: object) -> DeeplinkCard:
@@ -204,6 +219,8 @@ class AppAgentRunner(AgentRunner):
                 )
                 results.append(result)
                 tool_names: dict[str, str] = {}
+                render_later: dict[str, bool] = {}
+                pending: list[DeeplinkCardMessage] = []
                 buffer = ""
                 async for event in result.stream_events():
                     event_type = getattr(event, "type", "")
@@ -223,6 +240,8 @@ class AppAgentRunner(AgentRunner):
                         call_id = _raw_field(item, "call_id")
                         if isinstance(call_id, str):
                             tool_names[call_id] = str(name or "tool")
+                            if tool_names[call_id] == "make_deeplink_widget":
+                                render_later[call_id] = _render_at_end(item)
                         continue
                     if (
                         event_type == "run_item_stream_event"
@@ -232,12 +251,16 @@ class AppAgentRunner(AgentRunner):
                         if tool_names.get(str(call_id)) != "make_deeplink_widget":
                             continue
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
-                        await send.send(
-                            deeplink_message(
-                                _card_from_output(getattr(item, "output", None)),
-                            ),
+                        message = deeplink_message(
+                            _card_from_output(getattr(item, "output", None)),
                         )
+                        if render_later.get(str(call_id), True):
+                            pending.append(message)
+                        else:
+                            await send.send(message)
                 buffer = await _emit_paragraphs(send, buffer, rest=True)
+                for message in pending:
+                    await send.send(message)
                 self._memcache.flush()
         finally:
             stop.set()
