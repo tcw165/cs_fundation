@@ -51,7 +51,6 @@ def test_request_keeps_a_start_and_a_mid_situation():
         from_situation=_start(),
         terminal_situation=_terminal(),
         prompt="one variable: the blockade lifts",
-        remained_situation_quota=2,
     )
     assert isinstance(from_start.from_situation, StartSituation)
     assert from_start.from_situation.potential_factors == ["blockade"]
@@ -60,7 +59,6 @@ def test_request_keeps_a_start_and_a_mid_situation():
         from_situation=_mid(),
         terminal_situation=_terminal(),
         prompt="one variable: the deal is signed",
-        remained_situation_quota=0,
     )
     assert type(from_mid.from_situation) is Situation
 
@@ -71,7 +69,6 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
             from_situation=_start(),
             terminal_situation=_terminal(),
             prompt="  ",
-            remained_situation_quota=1,
         )
 
     terminal = _terminal()
@@ -84,17 +81,6 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
             ),
             terminal_situation=terminal,
             prompt="close",
-            remained_situation_quota=1,
-        )
-
-
-def test_request_rejects_a_negative_quota():
-    with pytest.raises(ValidationError):
-        PathBuilderRequest(
-            from_situation=_start(),
-            terminal_situation=_terminal(),
-            prompt="close",
-            remained_situation_quota=-1,
         )
 
 
@@ -159,7 +145,7 @@ def test_model_shape_with_description():
     assert "The saved future this chain is moving toward." in request_text
     assert "The direction for this one step." in request_text
     assert "including each saved link" in request_text
-    assert "Zero means no room remains for another situation." in request_text
+    assert "remained_situation_quota" not in request_text
 
     result_text = "\n".join(
         _descriptions(AgentOutputSchema(PathBuilderResult).json_schema())
