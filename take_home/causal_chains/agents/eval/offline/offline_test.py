@@ -6,6 +6,7 @@ import take_home.causal_chains.agents.eval.offline.offline as offline_module
 from take_home.causal_chains.agents.clients.memcache.span_processor import (
     MemcacheSpanProcessor,
 )
+from take_home.causal_chains.agents.chat_service.chat_service import format_sse
 from take_home.causal_chains.agents.eval.offline.offline import run_offline
 from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
@@ -17,7 +18,7 @@ def _silence_runner(monkeypatch) -> None:
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None, max_turns=None: _fake_result(),
+        lambda agent, input, context=None, max_turns=None, run_config=None: _fake_result(),
     )
 
 
@@ -129,6 +130,7 @@ def test_offline_turn_saves_the_user_message_and_prints_runner_messages(
         input,
         context=None,
         max_turns=None,
+        run_config=None,
     ):
         seen_include_traces.append(context.run_config.include_traces)
         return _FakeResult()
@@ -140,8 +142,10 @@ def test_offline_turn_saves_the_user_message_and_prints_runner_messages(
         run_streamed,
     )
 
+    printed: list[str] = []
+
     async def exercise():
-        service, events = await run_offline("hormuz")
+        service, events = await run_offline("hormuz", on_message=printed.append)
         messages = await service._messaging_store.list_messages("1")
         return messages, events
 
@@ -149,6 +153,7 @@ def test_offline_turn_saves_the_user_message_and_prints_runner_messages(
     user_messages = [message.text for message in messages if message.role == "user"]
     assert user_messages == ["hormuz"]
     assert [event.text for event in events] == ["one", "two"]
+    assert [format_sse(item) for item in printed] == [format_sse(event) for event in events]
     assert all(isinstance(event, MarkdownMessage) for event in events)
     assert seen_include_traces == [True]
 
@@ -184,7 +189,7 @@ def test_offline_uses_the_api_key_without_a_shell_project(monkeypatch) -> None:
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None, max_turns=None: _FakeResult(),
+        lambda agent, input, context=None, max_turns=None, run_config=None: _FakeResult(),
     )
 
     asyncio.run(run_offline("hormuz"))
@@ -236,7 +241,7 @@ def test_offline_logs_to_braintrust_when_key_and_project_are_set(monkeypatch) ->
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None, max_turns=None: _fake_result(),
+        lambda agent, input, context=None, max_turns=None, run_config=None: _fake_result(),
     )
 
     asyncio.run(run_offline("hormuz"))
@@ -261,7 +266,7 @@ def test_offline_omits_braintrust_when_either_env_var_is_missing(monkeypatch) ->
     monkeypatch.setattr(
         app_agent_runner_module.Runner,
         "run_streamed",
-        lambda agent, input, context=None, max_turns=None: _fake_result(),
+        lambda agent, input, context=None, max_turns=None, run_config=None: _fake_result(),
     )
     for api_key, project_id in (("", ""), ("sk-test", ""), ("", "proj_123")):
         processor_lists: list[list[object]] = []
