@@ -106,6 +106,21 @@ def _ready_paragraphs(buffer: str) -> tuple[list[str], str]:
     return ready, parts[-1]
 
 
+async def _emit_paragraphs(
+    send: MemoryObjectSendStream[Message],
+    buffer: str,
+    *,
+    rest: bool,
+) -> str:
+    ready, buffer = _ready_paragraphs(buffer)
+    for paragraph in ready:
+        await send.send(_markdown(paragraph))
+    if rest and buffer.strip():
+        await send.send(_markdown(buffer))
+        return ""
+    return buffer
+
+
 async def stream_heartbeat(
     send: MemoryObjectSendStream[Message],
     stop: anyio.Event,
@@ -207,15 +222,14 @@ class AppAgentRunner(AgentRunner):
                         data = getattr(event, "data", None)
                         if isinstance(data, ResponseTextDeltaEvent):
                             buffer += data.delta
-                            ready, buffer = _ready_paragraphs(buffer)
-                            for paragraph in ready:
-                                await send.send(_markdown(paragraph))
+                            buffer = await _emit_paragraphs(send, buffer, rest=False)
                         continue
                     item = getattr(event, "item", None)
                     if (
                         event_type == "run_item_stream_event"
                         and getattr(item, "type", "") == "tool_call_item"
                     ):
+                        buffer = await _emit_paragraphs(send, buffer, rest=True)
                         name = _raw_field(item, "name")
                         call_id = _raw_field(item, "call_id")
                         if isinstance(call_id, str):
@@ -228,17 +242,11 @@ class AppAgentRunner(AgentRunner):
                         call_id = _raw_field(item, "call_id")
                         if tool_names.get(str(call_id)) != "make_deeplink_widget":
                             continue
-                        ready, buffer = _ready_paragraphs(buffer)
-                        for paragraph in ready:
-                            await send.send(_markdown(paragraph))
-                        if buffer.strip():
-                            await send.send(_markdown(buffer))
-                            buffer = ""
+                        buffer = await _emit_paragraphs(send, buffer, rest=True)
                         await send.send(
                             _deeplink_message(getattr(item, "output", None)),
                         )
-                if buffer.strip():
-                    await send.send(_markdown(buffer))
+                buffer = await _emit_paragraphs(send, buffer, rest=True)
                 self._memcache.flush()
         finally:
             stop.set()

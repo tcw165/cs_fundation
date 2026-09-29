@@ -207,6 +207,80 @@ def test_app_agent_runner_cuts_markdown_on_a_blank_line(monkeypatch):
     assert len({event.message_id for event in events}) == 3
 
 
+def test_app_agent_runner_flushes_a_preamble_when_a_tool_call_starts(monkeypatch):
+    class FakeDelta:
+        def __init__(
+            self,
+            delta: str,
+        ) -> None:
+            self.delta = delta
+
+    def _tool_call(name: str, call_id: str) -> SimpleNamespace:
+        return SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_item",
+                raw_item=SimpleNamespace(name=name, call_id=call_id),
+            ),
+        )
+
+    async def fake_stream():
+        yield SimpleNamespace(
+            type="raw_response_event",
+            data=FakeDelta("preamble one"),
+        )
+        yield _tool_call("add_case", "call_1")
+        yield SimpleNamespace(
+            type="raw_response_event",
+            data=FakeDelta("preamble two"),
+        )
+        yield _tool_call("lookup_chain_so_far", "call_2")
+        yield SimpleNamespace(
+            type="raw_response_event",
+            data=FakeDelta("the story"),
+        )
+
+    class FakeResult:
+        def stream_events(self):
+            return fake_stream()
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(
+            agent,
+            input,
+            context=None,
+            max_turns=None,
+            run_config=None,
+        ):
+            return FakeResult()
+
+    monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def collect():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            clock=_FixedClock(),
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        return [event async for event in runner.stream(["hormuz"], context)]
+
+    events = asyncio.run(collect())
+    assert [event.text for event in events] == [
+        "preamble one",
+        "preamble two",
+        "the story",
+    ]
+    assert all(isinstance(event, MarkdownMessage) for event in events)
+    assert len({event.message_id for event in events}) == 3
+
+
 def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch):
     class FakeDelta:
         def __init__(
