@@ -3,7 +3,9 @@ from pathlib import Path
 from agents import WebSearchTool
 
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
-from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.causal_chains.path_builder_models import (
+    PathBuilderResult,
+)
 
 
 def test_path_builder_prompt_model_and_search():
@@ -13,9 +15,14 @@ def test_path_builder_prompt_model_and_search():
     assert "# Examples" not in prompt
     assert "add_situation" not in prompt
     assert "link_situations" not in prompt
-    assert "case" in prompt
+    assert "case id" in prompt
+    assert "one key-factor" in prompt
+    assert "save it in the database" in prompt
+    assert "remained_situation_quota" not in prompt
+    assert "no room remains for another situation" in prompt
+    assert "return no situation" in prompt
     assert path_builder.model == "gpt-5.6-luna"
-    assert path_builder.output_type == list[Situation]
+    assert path_builder.output_type is PathBuilderResult
     assert any(isinstance(tool, WebSearchTool) for tool in path_builder.tools)
     assert [tool.name for tool in path_builder.tools if not isinstance(tool, WebSearchTool)] == [
         "add_situation",
