@@ -15,7 +15,6 @@ from take_home.causal_chains.agents.agents.path_builder.path_builder import path
 from take_home.causal_chains.agents.models.causal_chains.path_builder_models import (
     PathBuilderRequest,
 )
-from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -54,5 +53,5 @@ causal_chain = Agent[RunContext](
         ),
         make_deeplink_widget,
     ],
-    output_type=StartSituation,
+    output_type=str,
 )

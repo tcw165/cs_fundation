@@ -94,7 +94,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     events = asyncio.run(collect())
     assert contexts == [context]
     assert seen == [causal_chain]
-    assert prompts == ["Future situation:\nhormuz\nRemaining attempts: 2"]
+    assert prompts == ["hormuz"]
     assert seen_max_turns == [2]
     assert [type(event) for event in events] == [MarkdownMessage]
     assert events[0].role is Role.agent

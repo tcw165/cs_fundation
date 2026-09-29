@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import causal_chain
-from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
 
 
 def test_causal_chain_prompt_and_tools():
@@ -9,11 +8,16 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.instructions == prompt
     assert causal_chain.name == "causal_chain"
     assert causal_chain.model == "gpt-5.6-luna"
-    assert causal_chain.output_type is StartSituation
+    assert causal_chain.output_type is str
     assert "# Goal" in prompt
     assert "# Iterative Process" not in prompt
     assert "# Communication" in prompt
-    assert "That number is the situation quota." in prompt
+    assert "Each saved mid-chain situation spends one." in prompt
+    assert "The input tells you how many attempts you have." not in prompt
+    assert (
+        "Write the story of how the current situation evolves to the asked situation "
+        "only after that path exists."
+    ) in prompt
     assert "The direction starts with the case id, then the open line, then the one change." in prompt
     assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
@@ -28,9 +32,9 @@ def test_causal_chain_prompt_and_tools():
         terminal_tool.params_json_schema["properties"]["desc"]["description"]
         == "What is true in the future, in your own words, including the current time."
     )
-    assert "Return the stored start only after that path exists." in prompt
-    assert "Do not return the start until the last step." in prompt
-    assert "Do not return the start during this repeat." in prompt
+    assert "Do not write the story until the last step." in prompt
+    assert "Do not write the story during this repeat." in prompt
+    assert "The only answer is that story" in prompt
     assert "A preamble is not an answer." in prompt
     assert (
         "Always write a short preamble before you call a tool. "
