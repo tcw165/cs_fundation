@@ -4,9 +4,13 @@ from types import SimpleNamespace
 from uuid import UUID
 
 import anyio
+from agents.run_config import CallModelData, ModelInputData
 
 import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
-from take_home.causal_chains.agents.agent_runner.app_agent_runner import AppAgentRunner
+from take_home.causal_chains.agents.agent_runner.app_agent_runner import (
+    AppAgentRunner,
+    _decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
 )
@@ -63,6 +67,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             seen.append(agent)
             contexts.append(context)
@@ -126,6 +131,7 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             cache.append("span\n")
             return FakeResult()
@@ -177,6 +183,7 @@ def test_app_agent_runner_cuts_markdown_on_a_blank_line(monkeypatch):
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             return FakeResult()
 
@@ -226,6 +233,7 @@ def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch)
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             return FakeResult()
 
@@ -316,6 +324,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             return FakeResult()
 
@@ -384,6 +393,7 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
             input,
             context=None,
             max_turns=None,
+            run_config=None,
         ):
             ran_inside.append(active["value"])
             return FakeResult()
@@ -405,3 +415,33 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
     assert ran_inside == [True]
     assert opened == [("app_agent_runner", "1", {"turn_id": "t_1"})]
     assert events == []
+
+
+def test_decorate_tail_messages_refreshes_the_clock_before_the_user():
+    context = RunContext(
+        conversation_id="1",
+        clock=_FixedClock(),
+        turn_id="t_1",
+        clients=RunClients(causal_chain_store=object()),
+    )
+    data = CallModelData(
+        model_data=ModelInputData(
+            input=[
+                {
+                    "role": "assistant",
+                    "content": "Current time: 2020-01-01T00:00:00+00:00 UTC",
+                },
+                {"role": "user", "content": "Future situation:\nopen"},
+            ],
+            instructions="stay",
+        ),
+        agent=causal_chain,
+        context=context,
+    )
+    updated = _decorate_tail_messages(data)
+    assert updated.instructions == "stay"
+    assert updated.input[0] == {
+        "role": "assistant",
+        "content": "Current time: 2026-09-29T05:16:00+00:00 UTC",
+    }
+    assert updated.input[1]["role"] == "user"

@@ -124,7 +124,7 @@ async def add_terminal_situation(
     Args:
         ctx: Run context. The causal chain store is on its clients.
         case: The case this terminal belongs to.
-        desc: What is true in the future.
+        desc: What is true in the future, in your own words, including the current time.
         original_ask: The user's ask, kept with the terminal.
     """
     situation = TerminalSituation(

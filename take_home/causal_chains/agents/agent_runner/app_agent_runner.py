@@ -1,11 +1,13 @@
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime
 from functools import partial
 from typing import override
 from urllib.parse import quote
 
 import anyio
-from agents import Runner, trace
+from agents import RunConfig, Runner, trace
+from agents.run_config import CallModelData, ModelInputData
 from anyio.streams.memory import MemoryObjectSendStream
 from openai.types.responses import ResponseTextDeltaEvent
 
@@ -23,6 +25,33 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Role,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
+
+
+def _make_current_time_reminder_message(moment: datetime) -> dict[str, str]:
+    return {
+        "role": "assistant",
+        "content": f"Current time: {moment.isoformat()} {moment.tzname()}",
+    }
+
+
+def _decorate_tail_messages(data: CallModelData[RunContext]) -> ModelInputData:
+    note = _make_current_time_reminder_message(data.context.clock.now())
+    items = list(data.model_data.input)
+    user_at = next(
+        index
+        for index in range(len(items) - 1, -1, -1)
+        if items[index].get("role") == "user"
+    )
+    previous = user_at - 1
+    if (
+        previous >= 0
+        and items[previous].get("role") == "assistant"
+        and str(items[previous].get("content", "")).startswith("Current time:")
+    ):
+        items[previous] = note
+    else:
+        items.insert(user_at, note)
+    return ModelInputData(input=items, instructions=data.model_data.instructions)
 
 
 def _raw_field(
@@ -168,6 +197,9 @@ class AppAgentRunner(AgentRunner):
                     ),
                     context=context,
                     max_turns=context.run_config.causal_chain_max_steps,
+                    run_config=RunConfig(
+                        call_model_input_filter=_decorate_tail_messages,
+                    ),
                 )
                 results.append(result)
                 tool_names: dict[str, str] = {}
