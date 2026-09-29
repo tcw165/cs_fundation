@@ -5,7 +5,7 @@ from datetime import datetime
 from functools import partial
 from typing import override
 import anyio
-from agents import RunConfig, Runner, trace
+from agents import InputGuardrailTripwireTriggered, RunConfig, Runner, trace
 from agents.run_config import CallModelData, ModelInputData
 from anyio.streams.memory import MemoryObjectSendStream
 from openai.types.responses import ResponseTextDeltaEvent
@@ -13,6 +13,9 @@ from openai.types.responses import ResponseTextDeltaEvent
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
+)
+from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
+    blocked_input_message,
 )
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
@@ -262,6 +265,9 @@ class AppAgentRunner(AgentRunner):
                 for message in pending:
                     await send.send(message)
                 self._memcache.flush()
+        except InputGuardrailTripwireTriggered:
+            self._memcache.flush()
+            await send.send(_markdown(blocked_input_message))
         finally:
             stop.set()
             await send.aclose()
