@@ -7,10 +7,12 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
     MessagingStore,
 )
 from take_home.causal_chains.agents.models.messaging.message import (
-    DeeplinkCardMessage,
     HeartbeatMessage,
     MarkdownMessage,
     Role,
+)
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
 )
 
 
@@ -72,7 +74,10 @@ def test_append_and_list_messages_by_conversation():
         card = DeeplinkCardMessage(
             message_id="m_3",
             role=Role.other,
-            link="/chain/now/1?title=now",
+            title="now",
+            subtitle="the present",
+            link="/chain/now",
+            enabled=True,
         )
         beat = HeartbeatMessage(message_id="m_4")
         await store.append("1", hello)

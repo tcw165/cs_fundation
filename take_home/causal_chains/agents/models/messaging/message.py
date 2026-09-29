@@ -21,15 +21,14 @@ class MarkdownMessage(BaseMessage):
     text: str
 
 
-class DeeplinkCardMessage(BaseMessage):
-    type: Literal["deeplink"] = "deeplink"
-    link: str
-
-
 class HeartbeatMessage(BaseMessage):
     type: Literal["heartbeat"] = "heartbeat"
     role: Literal[Role.meta] = Role.meta
 
+
+from take_home.causal_chains.agents.models.messaging.message_widgets import (  # noqa: E402
+    DeeplinkCardMessage,
+)
 
 Message = Annotated[
     Union[MarkdownMessage, DeeplinkCardMessage, HeartbeatMessage],

@@ -17,10 +17,12 @@ from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.messaging.message import (
-    DeeplinkCardMessage,
     HeartbeatMessage,
     MarkdownMessage,
     Role,
+)
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
 )
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
@@ -339,7 +341,13 @@ def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch)
 
 def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     now_id = UUID("11111111-1111-4111-8111-111111111111")
-    card = DeeplinkCard(title="now", root_situation_id=now_id, root_version=1)
+    card = DeeplinkCard(
+        title="now",
+        subtitle="the present",
+        scheme="",
+        route=f"/chain/{now_id}",
+        params={},
+    )
 
     class FakeDelta:
         def __init__(
@@ -421,7 +429,10 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     message = events[1]
     assert isinstance(message, DeeplinkCardMessage)
     assert message.role is Role.other
-    assert message.link == f"/chain/{now_id}/1?title=now"
+    assert message.title == "now"
+    assert message.subtitle == "the present"
+    assert message.link == f"/chain/{now_id}"
+    assert message.enabled is True
     assert len(events) == 2
 
 
