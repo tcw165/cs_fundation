@@ -1,3 +1,4 @@
+import json
 from collections.abc import Mapping
 from decimal import Decimal
 from typing import override
@@ -201,6 +202,8 @@ def _link_rows(
 def _input_rows(
     value: object,
 ) -> list[tuple[str, Decimal]]:
+    if isinstance(value, str):
+        value = json.loads(value)
     if not isinstance(value, list):
         return []
     rows: list[tuple[str, Decimal]] = []
@@ -300,10 +303,12 @@ class Neo4jClient(GraphDb):
                 to_situation_id=str(to_situation_id),
                 to_version=to_version,
                 p=float(p),
-                inputs=[
-                    {"name": name, "value": float(value)}
-                    for name, value in inputs
-                ],
+                inputs=json.dumps(
+                    [
+                        {"name": name, "value": float(value)}
+                        for name, value in inputs
+                    ]
+                ),
             )
 
     @override

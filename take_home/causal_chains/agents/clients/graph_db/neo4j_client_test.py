@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 from uuid import UUID
 
@@ -139,10 +140,10 @@ def test_merge_leads_to_writes_float_p():
         "to_situation_id": str(CLEAR_ID),
         "to_version": 1,
         "p": 0.5,
-        "inputs": [{"name": "deal_odds", "value": 0.5}],
+        "inputs": json.dumps([{"name": "deal_odds", "value": 0.5}]),
     }
     assert isinstance(params["p"], float)
-    assert isinstance(params["inputs"][0]["value"], float)
+    assert isinstance(params["inputs"], str)
 
 
 def test_list_situations_reads_versioned_rows():
@@ -263,7 +264,9 @@ def test_lookup_chain_so_far_reads_one_hop():
                             "to_version": 1,
                             "props": {
                                 "p": 0.5,
-                                "inputs": [{"name": "deal_odds", "value": 0.5}],
+                                "inputs": json.dumps(
+                                    [{"name": "deal_odds", "value": 0.5}]
+                                ),
                             },
                         }
                     ],
@@ -301,7 +304,7 @@ def test_list_leads_to_reads_versioned_rows():
                     "to_version": 1,
                     "props": {
                         "p": 0.5,
-                        "inputs": [{"name": "deal_odds", "value": 0.5}],
+                        "inputs": json.dumps([{"name": "deal_odds", "value": 0.5}]),
                     },
                 }
             ]
