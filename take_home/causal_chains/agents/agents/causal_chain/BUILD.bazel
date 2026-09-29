@@ -12,7 +12,6 @@ py_library(
         "//take_home/causal_chains/agents/agent_tools",
         "//take_home/causal_chains/agents/agents/now_scout",
         "//take_home/causal_chains/agents/agents/path_builder",
-        "//take_home/causal_chains/agents/agents/pricer",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
