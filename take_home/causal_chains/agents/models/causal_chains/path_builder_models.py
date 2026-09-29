@@ -28,7 +28,9 @@ class PathBuilderRequest(BaseModel):
     prompt: str = Field(
         description=(
             "The direction for this one step. "
-            "It starts with the case id, then the one key-factor to change."
+            "It starts with the case id, then the open line from the present "
+            "through the current situation including each saved link, "
+            "then the one key-factor to change."
         ),
     )
     remained_situation_quota: int = Field(
@@ -49,16 +51,17 @@ class PathBuilderRequest(BaseModel):
 
 
 class PathBuilderResult(BaseModel):
-    """Zero or one saved mid-chain situation. Empty means the next hop is the terminal."""
+    """Zero or one saved mid-chain situation. Empty means the current situation is already linked to the terminal."""
 
     model_config = ConfigDict(extra="forbid")
 
     situation: Situation | None = Field(
         default=None,
         description=(
-            "The one saved mid-chain situation, with one key-factor changed "
-            "from the current situation. "
-            "None means no new situation was saved, and the next hop is the terminal."
+            "The one saved mid-chain situation, already linked from the current situation, "
+            "with one key-factor changed. "
+            "None means no new situation was saved, and the current situation "
+            "is already linked to the terminal."
         ),
     )
 

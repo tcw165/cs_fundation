@@ -158,10 +158,13 @@ def test_model_shape_with_description():
     assert "The current situation this step leaves." in request_text
     assert "The saved future this chain is moving toward." in request_text
     assert "The direction for this one step." in request_text
+    assert "including each saved link" in request_text
     assert "Zero means no room remains for another situation." in request_text
 
     result_text = "\n".join(
         _descriptions(AgentOutputSchema(PathBuilderResult).json_schema())
     )
     assert "The one saved mid-chain situation" in result_text
+    assert "already linked from the current situation" in result_text
     assert "None means no new situation was saved" in result_text
+    assert "is already linked to the terminal" in result_text
