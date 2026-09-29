@@ -4,11 +4,17 @@ from uuid import UUID
 
 from decoy import Decoy, matchers
 
+from take_home.causal_chains.agents.constants.graph import LEADS_TO_HOP_LIMIT
 from take_home.causal_chains.agents.models.causal_chains.case import Case
+from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
+    ChainSoFar,
+    LinkedHop,
+)
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     StartSituation,
+    TerminalSituation,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.message import Message
@@ -129,6 +135,41 @@ def rehearse_persistence(
             frontier.extend(outgoing.get(current, []))
         return False
 
+    def load_chain_so_far(
+        case: Case,
+        start: StartSituation,
+    ) -> ChainSoFar:
+        outgoing: dict[tuple[UUID, int], list[LeadsTo]] = {}
+        for stored_case, link in links:
+            if stored_case.case_id != case.case_id:
+                continue
+            key = (link.from_situation_id, link.from_version)
+            outgoing.setdefault(key, []).append(link)
+        hops: list[LinkedHop] = []
+        current = (start.situation_id, start.version)
+        seen: set[tuple[UUID, int]] = set()
+        while len(hops) < LEADS_TO_HOP_LIMIT:
+            if current in seen:
+                break
+            seen.add(current)
+            candidates: list[tuple[Situation, LeadsTo]] = []
+            for link in outgoing.get(current, []):
+                stored = situations.get(link.to_situation_id)
+                if stored is None:
+                    continue
+                stored_case, dest = stored
+                if stored_case.case_id != case.case_id:
+                    continue
+                if isinstance(dest, TerminalSituation) or type(dest) is not Situation:
+                    continue
+                candidates.append((dest, link))
+            if len(candidates) != 1:
+                break
+            dest, link = candidates[0]
+            hops.append(LinkedHop(situation=dest, link=link))
+            current = (dest.situation_id, dest.version)
+        return ChainSoFar(start=start, hops=hops)
+
     def load_chains() -> list[CausalChain]:
         grouped: dict[UUID, list[Situation]] = {}
         for case, situation in situations.values():
@@ -221,6 +262,15 @@ def rehearse_persistence(
         ),
         ignore_extra_args=True,
     ).then_do(load_reaches)
+    decoy.when(
+        _drive(
+            causal_chain_store.lookup_chain_so_far(
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
+        ignore_extra_args=True,
+    ).then_do(load_chain_so_far)
     decoy.when(
         _drive(causal_chain_store.get_chains()),
     ).then_do(load_chains)

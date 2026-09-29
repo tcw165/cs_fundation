@@ -43,6 +43,11 @@ class _FakeGraphDb:
         self._cases: set[UUID] = set()
         self.leaf_rows: list[tuple[UUID, int, str]] = []
         self.reaches = False
+        self.chain_row: tuple[
+            tuple[UUID, int, str, list[str]],
+            list[tuple[UUID, int, str]],
+            list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+        ] | None = None
 
     def merge_case(self, case_id: UUID) -> None:
         self.case_calls.append(case_id)
@@ -70,6 +75,18 @@ class _FakeGraphDb:
         terminal_version: int,
     ) -> bool:
         return self.reaches
+
+    def lookup_chain_so_far(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> tuple[
+        tuple[UUID, int, str, list[str]],
+        list[tuple[UUID, int, str]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+    ] | None:
+        return self.chain_row
 
     def merge_situation(
         self,
@@ -331,6 +348,56 @@ def test_reaches_terminal_reads_the_graph():
         return await store.reaches_terminal(case, start, terminal)
 
     assert asyncio.run(exercise()) is True
+
+
+def test_lookup_chain_so_far_reads_the_open_line():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        case = Case(case_id=CASE_ID)
+        start = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=["blockade"],
+        )
+        graph_db.chain_row = (
+            (NOW_ID, 1, "now", ["blockade"]),
+            [],
+            [],
+        )
+        empty = await store.lookup_chain_so_far(case, start)
+        graph_db.chain_row = (
+            (NOW_ID, 1, "now", ["blockade"]),
+            [(DEAL_ID, 1, "talks open")],
+            [
+                (
+                    NOW_ID,
+                    1,
+                    DEAL_ID,
+                    1,
+                    Decimal("0.5000"),
+                    [("deal_odds", Decimal("0.5000"))],
+                )
+            ],
+        )
+        linked = await store.lookup_chain_so_far(case, start)
+        graph_db.chain_row = None
+        missing = None
+        try:
+            await store.lookup_chain_so_far(case, start)
+        except ValueError as error:
+            missing = str(error)
+        return empty, linked, missing
+
+    empty, linked, missing = asyncio.run(exercise())
+    assert empty.hops == []
+    assert empty.start.potential_factors == ["blockade"]
+    assert linked.hops[0].situation.desc == "talks open"
+    assert linked.hops[0].link.from_situation_id == NOW_ID
+    assert linked.hops[0].link.to_situation_id == DEAL_ID
+    assert linked.hops[0].link.p == Decimal("0.5000")
+    assert missing == "start is missing"
 
 
 def test_get_chains_returns_empty_when_the_graph_is_empty():

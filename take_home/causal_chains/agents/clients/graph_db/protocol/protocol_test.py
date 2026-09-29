@@ -69,6 +69,18 @@ class _Both:
     ) -> bool:
         return False
 
+    def lookup_chain_so_far(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> tuple[
+        tuple[UUID, int, str, list[str]],
+        list[tuple[UUID, int, str]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+    ] | None:
+        return None
+
     def list_leads_to(
         self,
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:

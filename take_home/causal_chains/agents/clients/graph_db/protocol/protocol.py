@@ -56,6 +56,17 @@ class GraphDb(Protocol):
         terminal_version: int,
     ) -> bool: ...
 
+    def lookup_chain_so_far(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> tuple[
+        tuple[UUID, int, str, list[str]],
+        list[tuple[UUID, int, str]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+    ] | None: ...
+
     def list_leads_to(
         self,
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]: ...

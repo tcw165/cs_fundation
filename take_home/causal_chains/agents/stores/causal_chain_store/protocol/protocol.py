@@ -3,6 +3,7 @@ from uuid import UUID
 
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.case import Case
+from take_home.causal_chains.agents.models.causal_chains.chain_so_far import ChainSoFar
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
@@ -49,6 +50,12 @@ class CausalChainStore(Protocol):
         start: StartSituation,
         terminal: TerminalSituation,
     ) -> bool: ...
+
+    async def lookup_chain_so_far(
+        self,
+        case: Case,
+        start: StartSituation,
+    ) -> ChainSoFar: ...
 
     async def get_chains(
         self,
