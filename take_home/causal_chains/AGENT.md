@@ -24,6 +24,15 @@ Keep models, protocols, and implementations apart.
 - Write the prompt in natural language. Do not quote tool or function names.
 - Every agent tool has a docstring for the function and for each argument.
 
+## Play
+
+```bash
+cd take_home/causal_chains
+just play
+```
+
+That brings up every service in the compose file and waits until they are ready. Open the chat at `http://127.0.0.1:5173/`. The API is on port 8000.
+
 ## Offline eval
 
 Use this when you need to quickly validate the causal chain core functionality. It starts Neo4j and saves the chain there. Each run deletes the situations already in the graph. Pass `--no-clean-graph` to keep them. Open `http://localhost:7474` to read the graph.

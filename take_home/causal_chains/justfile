@@ -1,3 +1,6 @@
+play:
+    docker compose up --build --wait
+
 eval-offline query:
     clear
     docker compose up -d --wait graph
