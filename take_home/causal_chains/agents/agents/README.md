@@ -10,15 +10,17 @@ flowchart TD
   builder[path builder]
   pricerNode[pricer]
   linkTool[save link]
+  reaches[reaches terminal]
   runner --> causal
   causal --> scout
   causal --> builder
-  builder --> pricerNode
-  pricerNode --> linkTool
+  causal --> pricerNode
+  causal --> linkTool
+  causal --> reaches
 ```
 
 - The runner passes the future and the remaining attempts. It does not call the store.
 - Now scout saves the present and returns that situation. The id is assigned when it is saved. The description includes the sources behind it.
-- Path builder saves the next situations from the current description plus thoughts about how many attempts remain, and returns those situations.
-- For every next situation, the pricer names the input variables on that one link, and the link tool saves the link between the two saved situations. The stored probability is the mean of those inputs.
-- The agent returns the stored root situation.
+- Path builder saves at most one next situation. The request is the current situation, the terminal, a direction, and the remaining quota. An empty result means the next hop is the terminal. The new description changes one variable.
+- The pricer names the input variables on that one link, and the link tool saves the link. The stored probability is the mean of those inputs.
+- The agent stops when a path runs from the start to the terminal, then returns the stored root situation.
