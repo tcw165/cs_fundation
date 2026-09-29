@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
@@ -17,6 +18,11 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 )
 from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
+
+
+class _FixedClock:
+    def now(self) -> datetime:
+        return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
 
 
 def test_format_sse_excludes_type_from_data():
@@ -83,7 +89,13 @@ def test_run_turn_yields_runner_messages_and_completes():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb())
         turn_store = InMemoryTurnStore()
-        service = ChatService(StubTurnRunner(), store, turn_store, _ChainStore())
+        service = ChatService(
+            StubTurnRunner(),
+            store,
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
         message, turn = _user_turn()
         await store.append("1", message)
         await turn_store.put_turn(turn)
@@ -107,6 +119,7 @@ def test_run_turn_yields_runner_messages_and_completes():
 
 def test_run_turn_builds_run_clients():
     chain_store = _ChainStore()
+    clock = _FixedClock()
 
     class _Recording:
         def __init__(self) -> None:
@@ -124,6 +137,7 @@ def test_run_turn_builds_run_clients():
             MessagingStoreImpl(_FakeDynamoDb()),
             InMemoryTurnStore(),
             chain_store,
+            clock,
         )
         _message, turn = _user_turn()
         async for _event in service.run_turn(turn, "hello"):
@@ -135,6 +149,7 @@ def test_run_turn_builds_run_clients():
     clients = contexts[0].clients
     assert isinstance(clients, RunClients)
     assert clients.causal_chain_store is chain_store
+    assert contexts[0].clock is clock
 
 
 def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
@@ -174,6 +189,7 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
             MessagingStoreImpl(_FakeDynamoDb()),
             InMemoryTurnStore(),
             _ChainStore(),
+            _FixedClock(),
         )
         _message, turn = _user_turn()
         async for _event in service.run_turn(turn, "hello"):

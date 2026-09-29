@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import post_message, turn_sse
@@ -17,6 +18,11 @@ from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemory
 
 class _ChainStore:
     pass
+
+
+class _FixedClock:
+    def now(self) -> datetime:
+        return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
 
 
 class _FakeDynamoDb:
@@ -73,7 +79,7 @@ def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurn
     store = MessagingStoreImpl(_FakeDynamoDb())
     turn_store = InMemoryTurnStore()
     runner = _Scripted()
-    service = ChatService(runner, store, turn_store, _ChainStore())
+    service = ChatService(runner, store, turn_store, _ChainStore(), _FixedClock())
     return _Container(service, store, turn_store), runner, store, turn_store
 
 

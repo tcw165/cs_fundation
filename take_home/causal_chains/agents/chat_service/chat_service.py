@@ -21,6 +21,7 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
     MessagingStore,
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
+from take_home.causal_chains.time.protocol.protocol import Clock
 
 
 class ChatService:
@@ -30,11 +31,13 @@ class ChatService:
         messaging_store: MessagingStore,
         turn_store: TurnStore,
         causal_chain_store: CausalChainStore,
+        clock: Clock,
     ) -> None:
         self._agent_runner = agent_runner
         self._messaging_store = messaging_store
         self._turn_store = turn_store
         self._causal_chain_store = causal_chain_store
+        self._clock = clock
 
     async def run_turn(
         self,
@@ -46,6 +49,7 @@ class ChatService:
         await self._turn_store.put_turn(running)
         context = RunContext(
             conversation_id=turn.conversation_id,
+            clock=self._clock,
             turn_id=turn.turn_id,
             run_config=run_config or RunConfig(),
             clients=RunClients(

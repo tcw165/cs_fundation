@@ -12,6 +12,7 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
     MessagingStore,
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
+from take_home.causal_chains.time.utc_clock import UtcClock
 
 
 class EvalContainer(containers.DeclarativeContainer):
@@ -35,12 +36,14 @@ class EvalContainer(containers.DeclarativeContainer):
         api_key=config.openai_api_key,
         memcache=memcache,
     )
+    clock = providers.Singleton(UtcClock)
     chat_service = providers.Singleton(
         ChatService,
         agent_runner=app_agent_runner,
         messaging_store=messaging_store,
         turn_store=turn_store,
         causal_chain_store=causal_chain_store,
+        clock=clock,
     )
 
     def __new__(cls, **overriding_providers: object) -> containers.DynamicContainer:

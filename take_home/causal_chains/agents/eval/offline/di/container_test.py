@@ -37,6 +37,7 @@ def test_eval_container_wires_the_real_runner_to_store_mocks() -> None:
     assert isinstance(store, CausalChainStore)
     assert isinstance(service, ChatService)
     assert service._agent_runner is runner
+    assert service._clock is container.clock()
     assert "boto3" not in source
     assert "neo4j" not in source
 
