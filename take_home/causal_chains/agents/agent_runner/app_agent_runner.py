@@ -81,7 +81,12 @@ def _markdown(text: str) -> MarkdownMessage:
 
 def _deeplink_link(card: DeeplinkCard) -> str:
     title = quote(card.title, safe="")
-    return f"/chain/{card.root_situation_id}/{card.root_version}?title={title}"
+    return (
+        "causal_chains://chain"
+        f"?root_situation_id={card.root_situation_id}"
+        f"&root_version={card.root_version}"
+        f"&title={title}"
+    )
 
 
 def _deeplink_message(output: object) -> DeeplinkCardMessage:
