@@ -5,6 +5,7 @@ from take_home.causal_chains.agents.clients.graph_db.neo4j_client import (
     CLEAR,
     Neo4jClient,
 )
+from take_home.causal_chains.agents.constants.graph import LEADS_TO_HOP_LIMIT
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 
 CLEAR_ID = UUID("44444444-4444-4444-8444-444444444444")
@@ -191,7 +192,7 @@ def test_reaches_terminal_walks_to_the_terminal():
     query, params = client._driver.calls[0]
     assert "kind: 'start'" in query
     assert "kind: 'terminal'" in query
-    assert "[:LEADS_TO*1..64]" in query
+    assert f"[:LEADS_TO*1..{LEADS_TO_HOP_LIMIT}]" in query
     assert params == {
         "case_id": str(CLEAR_ID),
         "start_situation_id": str(NOW_ID),

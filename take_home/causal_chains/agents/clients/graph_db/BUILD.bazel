@@ -9,6 +9,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
+        "//take_home/causal_chains/agents/constants:graph",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("neo4j"),
     ],
@@ -21,5 +22,6 @@ pytest_test(
     deps = [
         ":graph_db",
         "//take_home/causal_chains/agents/clients/graph_db/protocol",
+        "//take_home/causal_chains/agents/constants:graph",
     ],
 )
