@@ -115,6 +115,44 @@ describe("create_chat_model_adapter", () => {
     ]);
   });
 
+  it("parses a causal_chains:// chain link", async () => {
+    const chat_port: ChatPort = {
+      post_message: async () => ({
+        turn_id: "t_1",
+        conversation_id: "1",
+        status: "queued",
+        from_message: "m_user",
+      }),
+      subscribe_turn: async function* (): AsyncGenerator<Message> {
+        yield {
+          type: "deeplink",
+          message_id: "m_card",
+          role: "other",
+          link: "causal_chains://chain?root_situation_id=11111111-1111-4111-8111-111111111111&root_version=1&title=now",
+        };
+      },
+    };
+    const adapter = create_chat_model_adapter(chat_port, "1");
+    const snapshots = [];
+    const run = adapter.run({
+      messages: [user_message("hello")],
+      abortSignal: new AbortController().signal,
+    } as unknown as ChatModelRunOptions);
+    for await (const snapshot of run as AsyncGenerator<{
+      content: { type: string; data?: { root_situation_id: string; title: string } }[];
+    }>) {
+      snapshots.push(snapshot);
+    }
+    expect(snapshots[0]?.content[0]).toMatchObject({
+      type: "data",
+      data: {
+        title: "now",
+        root_situation_id: "11111111-1111-4111-8111-111111111111",
+        root_version: 1,
+      },
+    });
+  });
+
   it("finishes the turn when the stream ends", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({
