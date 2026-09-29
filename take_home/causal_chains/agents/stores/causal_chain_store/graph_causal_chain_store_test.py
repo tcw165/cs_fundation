@@ -259,10 +259,12 @@ def test_get_chains_returns_one_chain_per_root():
         CausalChain(
             situations=[now, deal, leaf],
             links=[_link(now, deal), _link(deal, leaf)],
+            case_id=CASE_ID,
         ),
         CausalChain(
             situations=[other, deal, leaf],
             links=[_link(other, deal), _link(deal, leaf)],
+            case_id=CASE_ID,
         ),
     ]
 
@@ -293,6 +295,7 @@ def test_get_chains_keeps_each_case_separate():
 
     chains = asyncio.run(exercise())
     assert len(chains) == 2
+    assert [chain.case_id for chain in chains] == [CASE_ID, OTHER_CASE_ID]
     assert [chain.situations[0].desc for chain in chains] == ["now", "elsewhere"]
     assert chains[0].situations[0].potential_factors == ["blockade"]
     assert chains[0].links[0].to_situation_id == DEAL_ID

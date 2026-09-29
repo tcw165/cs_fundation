@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, model_validator
 
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
@@ -14,6 +16,7 @@ class CausalChain(BaseModel):
 
     situations: list[StartSituation | TerminalSituation | Situation]
     links: list[LeadsTo]
+    case_id: UUID | None = None
 
     @model_validator(mode="after")
     def one_start(
