@@ -1,6 +1,9 @@
 from pathlib import Path
 
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import causal_chain
+from take_home.causal_chains.agents.agents.deeplinks_finder.deeplinks_finder import (
+    deeplinks_finder,
+)
 
 
 def test_causal_chain_prompt_and_tools():
@@ -74,6 +77,7 @@ def test_causal_chain_prompt_and_tools():
         "reaches_terminal",
         "link_situations",
         "make_deeplink_widget",
+        "deeplinks_finder",
     ):
         assert tool_name not in prompt
     assert [tool.name for tool in causal_chain.tools] == [
@@ -84,6 +88,7 @@ def test_causal_chain_prompt_and_tools():
         "reaches_terminal",
         "lookup_chain_so_far",
         "path_builder",
+        "deeplinks_finder",
         "make_deeplink_widget",
     ]
     path_builder_tool = next(
@@ -111,4 +116,34 @@ def test_causal_chain_prompt_and_tools():
     assert "Pass the case you created and the future you were given." in prompt
     assert "pricer" not in [tool.name for tool in causal_chain.tools]
     assert "link_situations" not in [tool.name for tool in causal_chain.tools]
-    assert causal_chain.tools[-1].name == "make_deeplink_widget"
+    assert [tool.name for tool in causal_chain.tools[-2:]] == [
+        "deeplinks_finder",
+        "make_deeplink_widget",
+    ]
+    assert "# Widget" in prompt
+    assert "Find the in-app destination for the case and the description." in prompt
+    assert "route is `/chain/<case_id>`" in prompt
+    assert (
+        "step N-2:\n"
+        "- Search deeplink with current case\n\n"
+        "step N-1:\n"
+        "- Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.\n"
+        "- Emit a deeplink card widget after the writing\n\n"
+        "step N:\n"
+        "- Emit a deeplink card for that start.\n"
+    ) in prompt
+    finder = next(tool for tool in causal_chain.tools if tool.name == "deeplinks_finder")
+    assert finder.params_json_schema["properties"].keys() == {"case", "destination_desc"}
+    assert finder.description == _finder_sentences(deeplinks_finder.instructions)
+
+
+def _finder_sentences(prompt: str) -> str:
+    parts: list[str] = []
+    for line in prompt.splitlines():
+        text = line.strip()
+        if not text or text.startswith("#"):
+            continue
+        if text.startswith("- "):
+            text = text[2:]
+        parts.append(text.replace("`", ""))
+    return " ".join(parts)

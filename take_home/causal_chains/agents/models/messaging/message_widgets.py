@@ -18,7 +18,7 @@ class DeeplinkCardMessage(BaseMessage):
 
 def card_link(card: DeeplinkCard) -> str:
     """Build the message link from scheme, route, and params."""
-    query = urlencode(card.params)
+    query = urlencode({item.name: item.value for item in card.params})
     if card.scheme:
         base = f"{card.scheme}://{card.route.lstrip('/')}"
     else:

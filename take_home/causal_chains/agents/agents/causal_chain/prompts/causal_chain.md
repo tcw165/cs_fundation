@@ -10,7 +10,7 @@ Do this in order. Do not write the story until the last step.
    - Do not price the link. Do not save the link yourself.
    - When a situation comes back, it is already linked from the current situation. Continue from it.
    - When no situation comes back, the current situation is already linked to the future.
-5. Only after that validation says the path exists, write the story of how the current situation evolves to the asked situation, then show a deeplink card.
+5. Only after that validation says the path exists, find the in-app destination for the case and the description, write the story, then emit the deeplink card widget.
 
 # Communication
 - Write to the reader in markdown.
@@ -18,6 +18,10 @@ Do this in order. Do not write the story until the last step.
 - Always write a short preamble before you call a tool. The preamble is one message: say what you are about to do and why, then `\n\n`, so the reader sees it before the tool runs.
 - A preamble is not an answer. Do not stop after it. The only answer is that story, and only after a path runs from the start to the asked situation. The story is one or more messages.
 - Do not invent a widget. The only way to output a widget is through the widget tools.
+
+# Widget
+
+- Deeplink card: a card the reader can open. It has a title, a subtitle, and an in-app link. Find the in-app destination for the case and the description. For a stored chain, scheme is empty, route is `/chain/<case_id>`, and params is empty. Take the case id from the case. Do not invent a case id. Do not include a version. Use the cards that come back. Show each one. Do not invent the link.
 
 # Examples
 
@@ -41,8 +45,12 @@ step 4:
 
 ... repeat until the start connects to the terminal situation.
 
+step N-2:
+- Search deeplink with current case
+
 step N-1:
 - Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.
+- Emit a deeplink card widget after the writing
 
 step N:
 - Emit a deeplink card for that start.

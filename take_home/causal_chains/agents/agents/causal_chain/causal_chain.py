@@ -10,11 +10,15 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     reaches_terminal,
 )
 from take_home.causal_chains.agents.agent_tools.widgets import make_deeplink_widget
+from take_home.causal_chains.agents.agents.deeplinks_finder.deeplinks_finder import (
+    deeplinks_finder,
+)
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
 from take_home.causal_chains.agents.models.causal_chains.now_scout_models import (
     NowScoutRequest,
 )
+from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkRequest
 from take_home.causal_chains.agents.models.causal_chains.path_builder_models import (
     PathBuilderRequest,
 )
@@ -55,6 +59,19 @@ causal_chain = Agent[RunContext](
                 "or save one next situation and link the current situation to it."
             ),
             parameters=PathBuilderRequest,
+        ),
+        deeplinks_finder.as_tool(
+            tool_name="deeplinks_finder",
+            tool_description=(
+                "Find the in-app destination for the case and the description. "
+                "The input is the case and the destination description. "
+                "Return one card when it names one stored chain. "
+                "title is a short name. subtitle is one sentence. "
+                "For a stored chain, scheme is empty, route is /chain/<case_id>, and params is empty. "
+                "Take the case id from the case. Do not invent a case id. Do not include a version. "
+                "Do not save anything. Do not write a story."
+            ),
+            parameters=DeeplinkRequest,
         ),
         make_deeplink_widget,
     ],
