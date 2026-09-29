@@ -15,15 +15,20 @@ def test_path_builder_prompt_model_and_search():
     assert "# Examples" not in prompt
     assert "add_situation" not in prompt
     assert "link_situations" not in prompt
+    assert "pricer" not in prompt
     assert "case id" in prompt
     assert "one key-factor" in prompt
-    assert "save it in the database" in prompt
+    assert "Save that link once the step is sorted out." in prompt
+    assert "including each saved link" in prompt
     assert "remained_situation_quota" not in prompt
     assert "no room remains for another situation" in prompt
-    assert "return no situation" in prompt
+    assert "Return no situation" in prompt
+    assert "mean of those inputs" in prompt
     assert path_builder.model == "gpt-5.6-luna"
     assert path_builder.output_type is PathBuilderResult
     assert any(isinstance(tool, WebSearchTool) for tool in path_builder.tools)
     assert [tool.name for tool in path_builder.tools if not isinstance(tool, WebSearchTool)] == [
         "add_situation",
+        "pricer",
+        "link_situations",
     ]
