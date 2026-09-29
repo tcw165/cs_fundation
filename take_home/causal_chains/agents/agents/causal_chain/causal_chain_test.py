@@ -120,6 +120,10 @@ def test_causal_chain_prompt_and_tools():
         "deeplinks_finder",
         "make_deeplink_widget",
     ]
+    assert [guardrail.name for guardrail in causal_chain.input_guardrails] == [
+        "input_guardrail",
+    ]
+    assert causal_chain.input_guardrails[0].run_in_parallel is False
     assert "# Widget" in prompt
     assert "Find the in-app destination for the case and the description." in prompt
     assert "route is `/chain/<case_id>`" in prompt

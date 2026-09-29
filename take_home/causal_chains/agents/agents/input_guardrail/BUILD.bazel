@@ -1,0 +1,32 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "input_guardrail",
+    srcs = ["input_guardrail_agent.py"],
+    data = [
+        "//take_home/causal_chains/agents/agents/input_guardrail/prompts:input_guardrail.md",
+    ],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "input_guardrail_test",
+    srcs = ["input_guardrail_agent_test.py"],
+    data = [
+        "//take_home/causal_chains/agents/agents/input_guardrail/prompts:input_guardrail.md",
+    ],
+    imports = ["../../../../.."],
+    deps = [
+        ":input_guardrail",
+        "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai-agents"),
+    ],
+)
