@@ -2,7 +2,11 @@ from pathlib import Path
 
 from agents import Agent, WebSearchTool
 
-from take_home.causal_chains.agents.agent_tools.chain_tools import add_situation
+from take_home.causal_chains.agents.agent_tools.chain_tools import (
+    add_situation,
+    link_situations,
+)
+from take_home.causal_chains.agents.agents.pricer.pricer import pricer
 from take_home.causal_chains.agents.models.causal_chains.path_builder_models import (
     PathBuilderResult,
 )
@@ -20,6 +24,16 @@ path_builder = Agent[RunContext](
     tools=[
         WebSearchTool(),
         add_situation,
+        pricer.as_tool(
+            tool_name="pricer",
+            tool_description=(
+                "Decide what a person could move on one link, so the chain can store how likely that step is. "
+                "Use this once for the link you are about to save, "
+                "from the current situation to the next situation or to the terminal. "
+                "Name the input variables on that link."
+            ),
+        ),
+        link_situations,
     ],
     output_type=PathBuilderResult,
 )
