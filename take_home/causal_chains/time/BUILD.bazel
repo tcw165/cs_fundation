@@ -1,1 +1,20 @@
-# //take_home/causal_chains/time
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "time",
+    srcs = ["utc_clock.py"],
+    imports = ["../../.."],
+    visibility = ["//visibility:public"],
+    deps = ["//take_home/causal_chains/time/protocol"],
+)
+
+pytest_test(
+    name = "utc_clock_test",
+    srcs = ["utc_clock_test.py"],
+    imports = ["../../.."],
+    deps = [
+        ":time",
+        "//take_home/causal_chains/time/protocol",
+    ],
+)
