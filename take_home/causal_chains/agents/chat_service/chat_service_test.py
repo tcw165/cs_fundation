@@ -4,10 +4,12 @@ from datetime import datetime, timezone
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
 from take_home.causal_chains.agents.models.messaging.message import (
-    DeeplinkCardMessage,
     HeartbeatMessage,
     MarkdownMessage,
     Role,
+)
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
 )
 from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
@@ -39,11 +41,15 @@ def test_format_sse_deeplink():
         DeeplinkCardMessage(
             message_id="m_2",
             role=Role.other,
-            link="/chain/now/1?title=now",
+            title="now",
+            subtitle="the present",
+            link="/chain/now",
+            enabled=True,
         ),
     )
     assert line.startswith("event: deeplink\n")
-    assert "/chain/now/1" in line
+    assert "/chain/now" in line
+    assert '"enabled":true' in line or '"enabled": true' in line
 
 
 def test_format_sse_heartbeat():

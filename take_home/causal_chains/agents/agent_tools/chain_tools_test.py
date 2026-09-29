@@ -212,15 +212,19 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         "Validate whether the start situation connects to the terminal situation."
         in reaches_terminal.description
     )
+    widget = DeeplinkCard(
+        title=now.desc,
+        subtitle="the present",
+        scheme="",
+        route=f"/chain/{case.case_id}",
+        params={},
+    )
     card = _invoke(
         make_deeplink_widget,
         context,
-        {"start": now.model_dump(mode="json")},
+        {"card": widget.model_dump(mode="json")},
     )
-    assert isinstance(card, DeeplinkCard)
-    assert card.title == now.desc
-    assert card.root_situation_id == now.situation_id
-    assert card.root_version == now.version
+    assert card == widget
     assert "deeplink card" in make_deeplink_widget.description
     empty_line = _invoke(
         lookup_chain_so_far,

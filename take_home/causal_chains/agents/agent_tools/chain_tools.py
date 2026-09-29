@@ -234,20 +234,16 @@ async def lookup_chain_so_far(
     return await _require_store(ctx).lookup_chain_so_far(case, start)
 
 
-@function_tool
+@function_tool(strict_mode=False)
 async def make_deeplink_widget(
     ctx: RunContextWrapper[RunContext],
-    start: StartSituation,
+    card: DeeplinkCard,
 ) -> DeeplinkCard:
-    """Show a deeplink card for one saved start situation.
+    """Show a deeplink card.
 
     Args:
         ctx: Run context.
-        start: The stored start, including its id and version.
+        card: The card to show.
     """
-    _require_store(ctx)
-    return DeeplinkCard(
-        title=start.desc,
-        root_situation_id=start.situation_id,
-        root_version=start.version,
-    )
+    del ctx
+    return card

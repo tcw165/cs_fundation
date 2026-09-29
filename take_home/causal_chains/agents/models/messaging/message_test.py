@@ -1,9 +1,11 @@
 from take_home.causal_chains.agents.models.messaging.message import (
-    DeeplinkCardMessage,
     HeartbeatMessage,
     MarkdownMessage,
     Role,
     message_adapter,
+)
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
 )
 
 
@@ -22,11 +24,15 @@ def test_deeplink_message_parses():
     message = DeeplinkCardMessage(
         message_id="m_2",
         role=Role.other,
-        link="/chain/now/1?title=now",
+        title="now",
+        subtitle="the present",
+        link="/chain/now",
+        enabled=True,
     )
     restored = message_adapter.validate_python(message.model_dump())
     assert restored == message
-    assert restored.link == "/chain/now/1?title=now"
+    assert restored.link == "/chain/now"
+    assert restored.enabled is True
 
 
 def test_heartbeat_message_parses():

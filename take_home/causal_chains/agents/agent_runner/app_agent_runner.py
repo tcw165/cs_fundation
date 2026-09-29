@@ -3,8 +3,6 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 from functools import partial
 from typing import override
-from urllib.parse import quote
-
 import anyio
 from agents import RunConfig, Runner, trace
 from agents.run_config import CallModelData, ModelInputData
@@ -18,11 +16,13 @@ from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.messaging.message import (
-    DeeplinkCardMessage,
     HeartbeatMessage,
     MarkdownMessage,
     Message,
     Role,
+)
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    deeplink_message,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -79,23 +79,12 @@ def _markdown(text: str) -> MarkdownMessage:
     )
 
 
-def _deeplink_link(card: DeeplinkCard) -> str:
-    title = quote(card.title, safe="")
-    return f"/chain/{card.root_situation_id}/{card.root_version}?title={title}"
-
-
-def _deeplink_message(output: object) -> DeeplinkCardMessage:
+def _card_from_output(output: object) -> DeeplinkCard:
     if isinstance(output, DeeplinkCard):
-        card = output
-    elif isinstance(output, str):
-        card = DeeplinkCard.model_validate_json(output)
-    else:
-        card = DeeplinkCard.model_validate(output)
-    return DeeplinkCardMessage(
-        message_id=str(uuid.uuid4()),
-        role=Role.other,
-        link=_deeplink_link(card),
-    )
+        return output
+    if isinstance(output, str):
+        return DeeplinkCard.model_validate_json(output)
+    return DeeplinkCard.model_validate(output)
 
 
 def _ready_paragraphs(buffer: str) -> tuple[list[str], str]:
@@ -244,7 +233,9 @@ class AppAgentRunner(AgentRunner):
                             continue
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
                         await send.send(
-                            _deeplink_message(getattr(item, "output", None)),
+                            deeplink_message(
+                                _card_from_output(getattr(item, "output", None)),
+                            ),
                         )
                 buffer = await _emit_paragraphs(send, buffer, rest=True)
                 self._memcache.flush()
