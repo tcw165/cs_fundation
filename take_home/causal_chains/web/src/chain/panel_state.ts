@@ -2,6 +2,11 @@ import { parse_deeplink } from "./deeplink";
 
 export type FocusTarget =
   | {
+      kind: "case";
+      case_id: string;
+      title: string;
+    }
+  | {
       kind: "chain";
       root_situation_id: string;
       root_version: number;
@@ -31,6 +36,16 @@ export function panel_from_link(link: string): PanelState | null {
   const parsed = parse_deeplink(link);
   if (parsed === null) {
     return null;
+  }
+  if (parsed.route === "case") {
+    return {
+      open: true,
+      focus: {
+        kind: "case",
+        case_id: parsed.case_id,
+        title: "",
+      },
+    };
   }
   if (parsed.route === "chain") {
     return {

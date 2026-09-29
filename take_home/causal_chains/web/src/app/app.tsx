@@ -35,6 +35,14 @@ export function AppShell({
   );
 }
 
+function panel_for(link: string, title?: string): PanelState | null {
+  const next = panel_from_link(link);
+  if (next?.focus.kind === "case" && title) {
+    return { open: true, focus: { ...next.focus, title } };
+  }
+  return next;
+}
+
 export function App({
   health_port,
   chain_port,
@@ -66,7 +74,7 @@ export function App({
         continue;
       }
       opened_links.current.add(item.message_id);
-      const next = panel_from_link(item.link);
+      const next = panel_for(item.link, item.title);
       if (next !== null) {
         set_panel(next);
       }
@@ -85,8 +93,8 @@ export function App({
       >
         <Thread
           session={session}
-          on_open_link={(link) => {
-            const next = panel_from_link(link);
+          on_open_link={(link, title) => {
+            const next = panel_for(link, title);
             if (next !== null) {
               set_panel(next);
             }

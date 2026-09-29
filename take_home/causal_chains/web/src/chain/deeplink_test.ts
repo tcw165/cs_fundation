@@ -43,6 +43,13 @@ describe("parse_deeplink", () => {
     });
   });
 
+  it("reads a stored chain as causal_chains://chain/<case_id>", () => {
+    const case_id = "22222222-2222-4222-8222-222222222222";
+    const link = { route: "case" as const, case_id };
+    expect(parse_deeplink(`causal_chains://chain/${case_id}`)).toEqual(link);
+    expect(parse_deeplink(deeplink_href(link))).toEqual(link);
+  });
+
   it("round-trips a chain link", () => {
     const link = {
       route: "chain" as const,

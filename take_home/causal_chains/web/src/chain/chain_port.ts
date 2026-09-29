@@ -27,6 +27,7 @@ export type ChainLink = {
 };
 
 export type CausalChain = {
+  case_id?: string;
   situations: ChainSituation[];
   links: ChainLink[];
 };

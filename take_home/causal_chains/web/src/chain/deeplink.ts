@@ -1,5 +1,9 @@
 export type Deeplink =
   | {
+      route: "case";
+      case_id: string;
+    }
+  | {
       route: "chain";
       root_situation_id: string;
       root_version: number;
@@ -28,6 +32,9 @@ export function parse_deeplink(link: string): Deeplink | null {
 
 export function deeplink_href(link: Deeplink): string {
   const params = new URLSearchParams();
+  if (link.route === "case") {
+    return `causal_chains://chain/${link.case_id}`;
+  }
   if (link.route === "chain") {
     params.set("root_situation_id", link.root_situation_id);
     params.set("root_version", String(link.root_version));
@@ -55,6 +62,14 @@ function parse_scheme(link: string): Deeplink | null {
   }
   const route = (match[1] ?? "").replace(/\/$/, "");
   const params = new URLSearchParams(match[2] ?? "");
+  const case_route = /^chain\/(.+)$/.exec(route);
+  if (case_route !== null) {
+    const case_id = case_route[1] ?? "";
+    if (case_id === "") {
+      return null;
+    }
+    return { route: "case", case_id };
+  }
   if (route === "chain") {
     const root_situation_id = params.get("root_situation_id") ?? "";
     const root_version = number_param(params, "root_version");

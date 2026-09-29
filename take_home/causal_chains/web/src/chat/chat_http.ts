@@ -143,11 +143,13 @@ function decode_sse_event(event_name: string, data: string): Message {
     };
   }
   if (event_name === "deeplink") {
+    const title = text_field(payload, "title");
     return {
       type: "deeplink",
       message_id: text_field(payload, "message_id"),
       role: role_field(payload),
       link: text_field(payload, "link"),
+      ...(title === "" ? {} : { title }),
     };
   }
   if (event_name === "heartbeat") {

@@ -15,7 +15,7 @@ export function MessageView({
   active: boolean;
   timing: RevealTiming;
   on_done: () => void;
-  on_open_link: (link: string) => void;
+  on_open_link: (link: string, title?: string) => void;
 }) {
   switch (item.type) {
     case "markdown":
@@ -78,18 +78,21 @@ function DeeplinkMessage({
   on_open_link,
 }: {
   item: Extract<ChatItem, { type: "deeplink" }>;
-  on_open_link: (link: string) => void;
+  on_open_link: (link: string, title?: string) => void;
 }) {
   const parsed = parse_deeplink(item.link);
-  const title = parsed?.route === "chain" ? parsed.title : item.link;
+  const title =
+    item.title ||
+    (parsed?.route === "chain" ? parsed.title : "") ||
+    (parsed === null ? item.link : "Open causal chain");
   const href =
     parsed === null
       ? item.link
-      : parsed.route === "chain"
-        ? `causal_chains://chain`
+      : parsed.route === "case" || parsed.route === "chain"
+        ? "causal_chains://chain"
         : `causal_chains://${parsed.route}`;
   return (
-    <button type="button" className="deeplink-card" onClick={() => on_open_link(item.link)}>
+    <button type="button" className="deeplink-card" onClick={() => on_open_link(item.link, item.title)}>
       <span className="deeplink-card-kicker">{href}</span>
       <span className="deeplink-card-title">{title || "Open causal chain"}</span>
     </button>

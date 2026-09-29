@@ -17,6 +17,19 @@ describe("panel_from_link", () => {
     });
   });
 
+  it("unfolds the panel for a stored case", () => {
+    expect(
+      panel_from_link("causal_chains://chain/22222222-2222-4222-8222-222222222222"),
+    ).toEqual({
+      open: true,
+      focus: {
+        kind: "case",
+        case_id: "22222222-2222-4222-8222-222222222222",
+        title: "",
+      },
+    });
+  });
+
   it("centers an edge when the link names one", () => {
     expect(
       panel_from_link(
