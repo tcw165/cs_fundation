@@ -42,7 +42,7 @@ RETURN c.case_id AS case_id
 MERGE_SITUATION = """
 MERGE (c:Case {case_id: $case_id})
 MERGE (s:Situation {situation_id: $situation_id, version: $version})
-SET s.desc = $desc,
+ON CREATE SET s.desc = $desc,
     s.kind = $kind,
     s.potential_factors = $potential_factors,
     s.original_ask = $original_ask

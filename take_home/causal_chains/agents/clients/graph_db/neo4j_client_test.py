@@ -107,6 +107,9 @@ def test_merge_situation_writes_node_fields():
     client.merge_situation(NOW_ID, 1, "now", CLEAR_ID, "start", ["blockade"], "")
     query, params = driver.calls[0]
     assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
+    assert "ON CREATE SET s.desc = $desc" in query
+    assert "s.kind = $kind" in query
+    assert "\nSET s." not in query
     assert "MERGE (s)-[:BELONGS_TO]->(c)" in query
     assert params == {
         "situation_id": str(NOW_ID),
