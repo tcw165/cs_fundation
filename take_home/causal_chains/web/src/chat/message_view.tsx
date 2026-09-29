@@ -30,7 +30,7 @@ export function MessageView({
     case "deeplink":
       return <DeeplinkMessage item={item} on_open_link={on_open_link} />;
     case "heartbeat":
-      return <HeartbeatMessage />;
+      return null;
   }
 }
 
@@ -93,14 +93,5 @@ function DeeplinkMessage({
       <span className="deeplink-card-kicker">{href}</span>
       <span className="deeplink-card-title">{title || "Open causal chain"}</span>
     </button>
-  );
-}
-
-function HeartbeatMessage() {
-  return (
-    <p className="heartbeat" role="status">
-      <span className="heartbeat-dot" />
-      working through the chain
-    </p>
   );
 }

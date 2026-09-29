@@ -154,23 +154,6 @@
   white-space: pre-wrap;
 }
 
-.heartbeat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: var(--faint);
-  font-size: 0.85rem;
-}
-
-.heartbeat-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--teal);
-  box-shadow: 0 0 10px var(--teal);
-}
-
 .deeplink-card-kicker {
   color: var(--teal);
   font-size: 0.72rem;

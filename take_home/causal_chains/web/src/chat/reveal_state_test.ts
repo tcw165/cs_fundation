@@ -30,12 +30,18 @@ describe("reveal_reducer", () => {
     expect(state.animating_id).toBe("b");
   });
 
-  it("collapses consecutive heartbeats into one queued beat", () => {
+  it("drops heartbeats so they never appear in the transcript", () => {
     let state = reveal_reducer(initial_reveal_state, {
       type: "enqueue",
       item: heartbeat("h1"),
     });
+    state = reveal_reducer(state, { type: "enqueue", item: markdown("a", "one") });
     state = reveal_reducer(state, { type: "enqueue", item: heartbeat("h2") });
-    expect(state.pending.map((item) => item.message_id)).toEqual(["h2"]);
+    expect(state.pending.map((item) => item.message_id)).toEqual(["a"]);
+    state = reveal_reducer(state, { type: "start" });
+    expect(state.shown.map((item) => item.message_id)).toEqual(["a"]);
+    expect(state.log.some((entry) => entry.kind === "agent" && entry.item.type === "heartbeat")).toBe(
+      false,
+    );
   });
 });
