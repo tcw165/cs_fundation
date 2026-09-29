@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CausalChain, DeeplinkCard } from "./chain_port";
-import { chain_for_card } from "./chain_select";
+import { chain_for_card, chain_for_focus } from "./chain_select";
 
 const now_id = "11111111-1111-4111-8111-111111111111";
 const other_id = "33333333-3333-4333-8333-333333333333";
@@ -29,5 +29,26 @@ describe("chain_for_card", () => {
     };
     const chains = [chain(now_id, "now"), chain(other_id, "other")];
     expect(chain_for_card(chains, card)).toEqual(chains[0]);
+  });
+
+  it("finds a chain from an edge focus", () => {
+    const chains = [chain(now_id, "now")];
+    chains[0]?.links.push({
+      from_situation_id: now_id,
+      from_version: 1,
+      to_situation_id: other_id,
+      to_version: 1,
+      p: "0.2000",
+      inputs: [],
+    });
+    expect(
+      chain_for_focus(chains, {
+        kind: "edge",
+        from_situation_id: now_id,
+        from_version: 1,
+        to_situation_id: other_id,
+        to_version: 1,
+      }),
+    ).toBe(chains[0]);
   });
 });

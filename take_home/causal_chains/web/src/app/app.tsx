@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { ChainCanvas } from "../chain/chain_canvas";
 import type { ChainPort } from "../chain/chain_port";
-import { card_from_focus, folded_panel, panel_from_link, type PanelState } from "../chain/panel_state";
+import { folded_panel, panel_from_link, type PanelState } from "../chain/panel_state";
 import { Thread } from "../chat/thread";
 import type { ChatPort } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
@@ -73,14 +73,13 @@ export function App({
     }
   }, [session.state.shown]);
 
-  const card = card_from_focus(panel.focus);
   return (
     <main className="app">
       <AppShell
         server={server}
         panel={
-          panel.open && card !== null ? (
-            <ChainCanvas card={card} chain_port={chain_port} />
+          panel.open && panel.focus !== null ? (
+            <ChainCanvas focus={panel.focus} chain_port={chain_port} />
           ) : null
         }
       >

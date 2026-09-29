@@ -1,5 +1,4 @@
 import { parse_deeplink } from "./deeplink";
-import type { DeeplinkCard } from "./chain_port";
 
 export type FocusTarget =
   | {
@@ -63,30 +62,5 @@ export function panel_from_link(link: string): PanelState | null {
       to_situation_id: parsed.to_situation_id,
       to_version: parsed.to_version,
     },
-  };
-}
-
-export function card_from_focus(focus: FocusTarget | null): DeeplinkCard | null {
-  if (focus === null) {
-    return null;
-  }
-  if (focus.kind === "chain") {
-    return {
-      title: focus.title,
-      root_situation_id: focus.root_situation_id,
-      root_version: focus.root_version,
-    };
-  }
-  if (focus.kind === "situation") {
-    return {
-      title: "",
-      root_situation_id: focus.situation_id,
-      root_version: focus.version,
-    };
-  }
-  return {
-    title: "",
-    root_situation_id: focus.from_situation_id,
-    root_version: focus.from_version,
   };
 }
