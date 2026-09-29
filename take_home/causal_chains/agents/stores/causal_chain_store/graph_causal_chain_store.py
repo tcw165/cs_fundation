@@ -203,6 +203,21 @@ class GraphCausalChainStore(CausalChainStore):
         ]
 
     @override
+    async def reaches_terminal(
+        self,
+        case: Case,
+        start: StartSituation,
+        terminal: TerminalSituation,
+    ) -> bool:
+        return self._graph_db.reaches_terminal(
+            case.case_id,
+            start.situation_id,
+            start.version,
+            terminal.situation_id,
+            terminal.version,
+        )
+
+    @override
     async def get_chains(
         self,
     ) -> list[CausalChain]:

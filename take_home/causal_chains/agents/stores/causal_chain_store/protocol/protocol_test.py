@@ -8,6 +8,7 @@ from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     StartSituation,
+    TerminalSituation,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -58,6 +59,14 @@ class _Both:
         start: StartSituation,
     ) -> list[Situation]:
         return []
+
+    async def reaches_terminal(
+        self,
+        case: Case,
+        start: StartSituation,
+        terminal: TerminalSituation,
+    ) -> bool:
+        return False
 
     async def get_chains(
         self,

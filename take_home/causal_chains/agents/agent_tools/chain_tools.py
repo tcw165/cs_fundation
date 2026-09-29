@@ -198,6 +198,24 @@ async def lookup_leaf_situations(
 
 
 @function_tool
+async def reaches_terminal(
+    ctx: RunContextWrapper[RunContext],
+    case: Case,
+    start: StartSituation,
+    terminal: TerminalSituation,
+) -> bool:
+    """Return whether a leads-to path runs from the start to the terminal.
+
+    Args:
+        ctx: Run context. The causal chain store is on its clients.
+        case: The case both situations belong to.
+        start: The saved start.
+        terminal: The saved terminal.
+    """
+    return await _require_store(ctx).reaches_terminal(case, start, terminal)
+
+
+@function_tool
 async def make_deeplink_widget(
     ctx: RunContextWrapper[RunContext],
     start: StartSituation,

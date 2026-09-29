@@ -47,6 +47,15 @@ class GraphDb(Protocol):
         start_version: int,
     ) -> list[tuple[UUID, int, str]]: ...
 
+    def reaches_terminal(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+        terminal_situation_id: UUID,
+        terminal_version: int,
+    ) -> bool: ...
+
     def list_leads_to(
         self,
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]: ...

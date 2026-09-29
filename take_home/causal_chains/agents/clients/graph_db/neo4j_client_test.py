@@ -185,6 +185,27 @@ def test_list_leaf_situations_walks_from_the_start():
     }
 
 
+def test_reaches_terminal_walks_to_the_terminal():
+    client = Neo4jClient(_Driver([{"reaches": True}]))
+    assert client.reaches_terminal(CLEAR_ID, NOW_ID, 1, RESUMES_ID, 1) is True
+    query, params = client._driver.calls[0]
+    assert "kind: 'start'" in query
+    assert "kind: 'terminal'" in query
+    assert "[:LEADS_TO*1..64]" in query
+    assert params == {
+        "case_id": str(CLEAR_ID),
+        "start_situation_id": str(NOW_ID),
+        "start_version": 1,
+        "terminal_situation_id": str(RESUMES_ID),
+        "terminal_version": 1,
+    }
+
+
+def test_reaches_terminal_is_false_when_the_row_is_missing():
+    client = Neo4jClient(_Driver([]))
+    assert client.reaches_terminal(CLEAR_ID, NOW_ID, 1, RESUMES_ID, 1) is False
+
+
 def test_list_leads_to_reads_versioned_rows():
     client = Neo4jClient(
         _Driver(

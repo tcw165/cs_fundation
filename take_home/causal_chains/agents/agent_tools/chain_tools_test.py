@@ -14,6 +14,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     link_situations,
     lookup_leaf_situations,
     make_deeplink_widget,
+    reaches_terminal,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
@@ -34,6 +35,7 @@ class _Store:
         self.situations: list[tuple[Case, Situation]] = []
         self.links: list[tuple[Case, Situation, Situation, LeadsTo]] = []
         self.leaves: list[Situation] = []
+        self.reaches = False
 
     async def add_case(self, case: Case) -> None:
         self.cases.append(case)
@@ -63,6 +65,14 @@ class _Store:
         start: StartSituation,
     ) -> list[Situation]:
         return list(self.leaves)
+
+    async def reaches_terminal(
+        self,
+        case: Case,
+        start: StartSituation,
+        terminal: TerminalSituation,
+    ) -> bool:
+        return self.reaches
 
     async def get_chains(
         self,
@@ -165,6 +175,18 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     assert link.p == Decimal("0.0800")
     assert store.links == [(case, linked_now, deal, link)]
     assert leaves == [leaf]
+    store.reaches = True
+    connected = _invoke(
+        reaches_terminal,
+        context,
+        {
+            "case": case_payload,
+            "start": now.model_dump(mode="json"),
+            "terminal": terminal.model_dump(mode="json"),
+        },
+    )
+    assert connected is True
+    assert "leads-to path" in reaches_terminal.description
     card = _invoke(
         make_deeplink_widget,
         context,

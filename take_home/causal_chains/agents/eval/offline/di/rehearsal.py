@@ -103,6 +103,32 @@ def rehearse_persistence(
     ) -> list[Situation]:
         return []
 
+    def load_reaches(
+        case: Case,
+        start: StartSituation,
+        terminal: Situation,
+    ) -> bool:
+        outgoing: dict[tuple[UUID, int], list[tuple[UUID, int]]] = {}
+        for stored_case, link in links:
+            if stored_case.case_id != case.case_id:
+                continue
+            key = (link.from_situation_id, link.from_version)
+            outgoing.setdefault(key, []).append(
+                (link.to_situation_id, link.to_version)
+            )
+        goal = (terminal.situation_id, terminal.version)
+        seen: set[tuple[UUID, int]] = set()
+        frontier = [(start.situation_id, start.version)]
+        while frontier:
+            current = frontier.pop()
+            if current in seen:
+                continue
+            if current == goal:
+                return True
+            seen.add(current)
+            frontier.extend(outgoing.get(current, []))
+        return False
+
     def load_chains() -> list[CausalChain]:
         grouped: dict[UUID, list[Situation]] = {}
         for case, situation in situations.values():
@@ -185,6 +211,16 @@ def rehearse_persistence(
         ),
         ignore_extra_args=True,
     ).then_do(load_leaves)
+    decoy.when(
+        _drive(
+            causal_chain_store.reaches_terminal(
+                matchers.Anything(),
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
+        ignore_extra_args=True,
+    ).then_do(load_reaches)
     decoy.when(
         _drive(causal_chain_store.get_chains()),
     ).then_do(load_chains)
