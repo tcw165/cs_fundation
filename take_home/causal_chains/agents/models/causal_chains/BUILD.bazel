@@ -7,6 +7,7 @@ py_library(
     srcs = [
         "case.py",
         "chain_so_far.py",
+        "input_guardrail_decision.py",
         "input_variable.py",
         "leads_to.py",
         "likelihood.py",
@@ -27,6 +28,7 @@ pytest_test(
     srcs = [
         "case_test.py",
         "chain_so_far_test.py",
+        "input_guardrail_decision_test.py",
         "leads_to_test.py",
         "likelihood_test.py",
         "link_inputs_test.py",
