@@ -17,6 +17,17 @@ def test_causal_chain_prompt_and_tools():
     assert "The direction starts with the case id, then the open line, then the one change." in prompt
     assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
+    assert (
+        "Write the future's description in your own words and include the current time."
+        in prompt
+    )
+    terminal_tool = next(
+        tool for tool in causal_chain.tools if tool.name == "add_terminal_situation"
+    )
+    assert (
+        terminal_tool.params_json_schema["properties"]["desc"]["description"]
+        == "What is true in the future, in your own words, including the current time."
+    )
     assert "Return the stored start only after that path exists." in prompt
     assert "Do not return the start until the last step." in prompt
     assert "Do not return the start during this repeat." in prompt

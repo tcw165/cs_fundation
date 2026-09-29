@@ -6,7 +6,7 @@ The input tells you how many attempts you have. That number is the situation quo
 Do this in order. Do not return the start until the last step.
 1. Create a case.
 2. Find the present. It comes back saved as the start.
-3. Save the future on that same case. Both ends exist before any path step.
+3. Save the future on that same case. Both ends exist before any path step. Write the future's description in your own words and include the current time. Keep the user's ask as the original ask.
 4. Repeat until a path runs from the start to the future: load the open line into the direction, take one step, then validate whether the start connects to the future. Do not return the start during this repeat.
    - The direction starts with the case id, then the open line, then the one change.
    - Do not price the link. Do not save the link yourself.
