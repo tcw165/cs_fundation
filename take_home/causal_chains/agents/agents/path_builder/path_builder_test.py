@@ -21,7 +21,8 @@ def test_path_builder_prompt_model_and_search():
     assert "Save that link once the step is sorted out." in prompt
     assert "including each saved link" in prompt
     assert "remained_situation_quota" not in prompt
-    assert "no room remains for another situation" in prompt
+    assert "no room remains" not in prompt
+    assert "When the one remaining change is the terminal itself" in prompt
     assert "Return no situation" in prompt
     assert "mean of those inputs" in prompt
     assert path_builder.model == "gpt-5.6-luna"

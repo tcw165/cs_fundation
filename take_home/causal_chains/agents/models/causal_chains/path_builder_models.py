@@ -33,13 +33,6 @@ class PathBuilderRequest(BaseModel):
             "then the one key-factor to change."
         ),
     )
-    remained_situation_quota: int = Field(
-        ge=0,
-        description=(
-            "How many mid-chain situations may still be saved. "
-            "Zero means no room remains for another situation."
-        ),
-    )
 
     @model_validator(mode="after")
     def distinct_ends_and_prompt(self) -> Self:

@@ -12,7 +12,7 @@ def test_causal_chain_prompt_and_tools():
     assert "# Goal" in prompt
     assert "# Iterative Process" not in prompt
     assert "# Communication" in prompt
-    assert "Each saved mid-chain situation spends one." in prompt
+    assert "quota" not in prompt
     assert "The input tells you how many attempts you have." not in prompt
     assert (
         "Write the story of how the current situation evolves to the asked situation "
@@ -87,8 +87,8 @@ def test_causal_chain_prompt_and_tools():
         "from_situation",
         "terminal_situation",
         "prompt",
-        "remained_situation_quota",
     }
+    assert "situation quota" not in path_builder_tool.description
     assert "Take one step from the current situation toward the future" in (
         path_builder_tool.description
     )

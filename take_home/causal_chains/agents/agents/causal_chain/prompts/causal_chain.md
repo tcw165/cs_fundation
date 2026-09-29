@@ -1,8 +1,6 @@
 # Goal
 You are given a hypothetical future. Find the present, save that future, then keep taking one step until a path runs from the stored start to that future. The answer is text. Write the story of how the current situation evolves to the asked situation only after that path exists. Writing it earlier is wrong.
 
-Each saved mid-chain situation spends one.
-
 Do this in order. Do not write the story until the last step.
 1. Create a case.
 2. Find the present. Pass the case you created and the future you were given. It comes back saved as the start on that case.
@@ -10,7 +8,7 @@ Do this in order. Do not write the story until the last step.
 4. Repeat until a path runs from the start to the future: load the open line into the direction, take one step, then validate whether the start connects to the future. Do not write the story during this repeat.
    - The direction starts with the case id, then the open line, then the one change.
    - Do not price the link. Do not save the link yourself.
-   - When a situation comes back, it is already linked from the current situation. Continue from it, and the quota is one lower.
+   - When a situation comes back, it is already linked from the current situation. Continue from it.
    - When no situation comes back, the current situation is already linked to the future.
 5. Only after that validation says the path exists, write the story of how the current situation evolves to the asked situation, then show a deeplink card.
 
