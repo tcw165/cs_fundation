@@ -102,7 +102,9 @@
 
 .node-card.is-open,
 .edge-card.is-open {
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: #6a6a74 transparent;
 }
 
 .node-card.is-open::-webkit-scrollbar,

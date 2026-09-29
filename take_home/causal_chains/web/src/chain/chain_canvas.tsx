@@ -17,9 +17,11 @@ import "./chain.css";
 
 export function ChainCanvas({
   focus,
+  focus_token,
   chain_port,
 }: {
   focus: FocusTarget;
+  focus_token: number;
   chain_port: ChainPort;
 }) {
   const [chain, set_chain] = useState<CausalChain | null>(null);
@@ -40,7 +42,7 @@ export function ChainCanvas({
     return () => window.cancelAnimationFrame(frame);
     // The serialized key is the focus identity. A fresh object with the same target should not reset a toggle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus_key]);
+  }, [focus_key, focus_token]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +74,12 @@ export function ChainCanvas({
   const layout = chain === null ? null : layout_chain(chain, selection);
 
   return (
-    <section className="chain-canvas" aria-label="causal chain" ref={host_ref}>
+    <section
+      className="chain-canvas"
+      aria-label="causal chain"
+      role="complementary"
+      ref={host_ref}
+    >
       <header className="panel-heading">
         <p className="panel-kicker">Causal chain</p>
         <h2>{title || "Saved chain"}</h2>

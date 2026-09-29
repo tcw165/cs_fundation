@@ -29,7 +29,14 @@ export function AppShell({
       <Rail server={server} panel_open={panel_open} />
       <div className="stage">
         <div className="chat-column">{children}</div>
-        <div className="panel-slot">{panel}</div>
+        <div className="panel-slot">
+          {panel !== null ? (
+            <svg className="panel-connector" viewBox="0 0 170 280" aria-hidden="true">
+              <path d="M0 210 H90 Q140 210 140 160 V36" />
+            </svg>
+          ) : null}
+          {panel}
+        </div>
       </div>
     </div>
   );
@@ -50,6 +57,7 @@ export function App({
 }) {
   const [server, set_server] = useState("loading");
   const [panel, set_panel] = useState<PanelState>(folded_panel);
+  const [focus_token, set_focus_token] = useState(0);
   const opened_links = useRef(new Set<string>());
   const session = use_chat_session(chat_port, conversation_id, timing);
 
@@ -66,12 +74,18 @@ export function App({
         continue;
       }
       opened_links.current.add(item.message_id);
-      const next = panel_from_link(item.link);
-      if (next !== null) {
-        set_panel(next);
-      }
+      open_link(item.link);
     }
   }, [session.state.shown]);
+
+  function open_link(link: string) {
+    const next = panel_from_link(link);
+    if (next === null) {
+      return;
+    }
+    set_focus_token((value) => value + 1);
+    set_panel(next);
+  }
 
   return (
     <main className="app">
@@ -79,18 +93,17 @@ export function App({
         server={server}
         panel={
           panel.open && panel.focus !== null ? (
-            <ChainCanvas focus={panel.focus} chain_port={chain_port} />
+            <ChainCanvas
+              focus={panel.focus}
+              focus_token={focus_token}
+              chain_port={chain_port}
+            />
           ) : null
         }
       >
         <Thread
           session={session}
-          on_open_link={(link) => {
-            const next = panel_from_link(link);
-            if (next !== null) {
-              set_panel(next);
-            }
-          }}
+          on_open_link={open_link}
         />
       </AppShell>
     </main>

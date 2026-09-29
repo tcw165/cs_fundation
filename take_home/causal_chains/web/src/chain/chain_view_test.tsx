@@ -68,7 +68,9 @@ describe("chain canvas", () => {
       },
     ]);
     const chain_port: ChainPort = { get_chains };
-    const { host, root } = render(<ChainCanvas focus={focus} chain_port={chain_port} />);
+    const { host, root } = render(
+      <ChainCanvas focus={focus} focus_token={1} chain_port={chain_port} />,
+    );
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
     await act(async () => {
       await Promise.resolve();

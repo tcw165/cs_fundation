@@ -1,0 +1,5 @@
+filegroup(
+    name = "e2e",
+    srcs = glob(["**/*"]),
+    visibility = ["//visibility:public"],
+)

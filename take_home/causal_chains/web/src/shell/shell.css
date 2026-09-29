@@ -109,7 +109,24 @@
 }
 
 .shell.is-open .panel-slot {
+  position: relative;
   padding: 28px 28px 28px 8px;
+}
+
+.panel-connector {
+  position: absolute;
+  left: -150px;
+  top: 72px;
+  width: 170px;
+  height: 280px;
+  pointer-events: none;
+}
+
+.panel-connector path {
+  fill: none;
+  stroke: #4a4a52;
+  stroke-width: 1.5;
+  stroke-dasharray: 2 7;
 }
 
 @media (prefers-reduced-motion: reduce) {
