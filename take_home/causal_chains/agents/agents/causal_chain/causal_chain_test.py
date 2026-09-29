@@ -37,8 +37,14 @@ def test_causal_chain_prompt_and_tools():
     assert "The only answer is that story" in prompt
     assert "A preamble is not an answer." in prompt
     assert (
+        "Every message is one paragraph followed by `\\n\\n`. "
+        "That includes a preamble, the final answer, and any other text."
+    ) in prompt
+    assert "msg 1" not in prompt
+    assert "The story is one or more messages." in prompt
+    assert (
         "Always write a short preamble before you call a tool. "
-        "Say what you are about to do and why, then a blank line, "
+        "The preamble is one message: say what you are about to do and why, then `\\n\\n`, "
         "so the reader sees it before the tool runs."
     ) in prompt
     assert "# Key Rules" not in prompt
