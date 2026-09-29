@@ -15,6 +15,7 @@ py_library(
         "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/agents/stores/turn_store/protocol",
+        "//take_home/causal_chains/time/protocol",
     ],
 )
 

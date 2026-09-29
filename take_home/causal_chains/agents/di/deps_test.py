@@ -31,3 +31,4 @@ def test_chat_service_holds_the_causal_chain_store():
     container.clients.dynamo_db.override(providers.Object(object()))
     service = container.chat_service()
     assert service._causal_chain_store is container.causal_chain_store()
+    assert service._clock is container.clock()

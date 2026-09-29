@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -20,6 +21,11 @@ from take_home.causal_chains.agents.models.messaging.message import (
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
+
+
+class _FixedClock:
+    def now(self) -> datetime:
+        return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
 
 
 def test_app_agent_runner_streams_one_run(monkeypatch):
@@ -70,6 +76,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
 
     context = RunContext(
         conversation_id="1",
+        clock=_FixedClock(),
         turn_id="t_1",
         run_config=RunConfig(include_traces=True, causal_chain_max_steps=2),
         clients=RunClients(causal_chain_store=object()),
@@ -130,6 +137,7 @@ def test_app_agent_runner_omits_run_traces_by_default(monkeypatch):
         runner = AppAgentRunner(api_key="test", memcache=cache)
         context = RunContext(
             conversation_id="1",
+            clock=_FixedClock(),
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )
@@ -179,6 +187,7 @@ def test_app_agent_runner_cuts_markdown_on_a_blank_line(monkeypatch):
         runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
         context = RunContext(
             conversation_id="1",
+            clock=_FixedClock(),
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )
@@ -227,6 +236,7 @@ def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch)
         runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
         context = RunContext(
             conversation_id="1",
+            clock=_FixedClock(),
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )
@@ -316,6 +326,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
         runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
         context = RunContext(
             conversation_id="1",
+            clock=_FixedClock(),
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )
@@ -384,6 +395,7 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
         runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
         context = RunContext(
             conversation_id="1",
+            clock=_FixedClock(),
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )

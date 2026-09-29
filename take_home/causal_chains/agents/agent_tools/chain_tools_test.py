@@ -1,9 +1,15 @@
 import asyncio
 import json
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
 from agents.tool_context import ToolContext
+
+
+class _FixedClock:
+    def now(self) -> datetime:
+        return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_case,
@@ -120,6 +126,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     store = _Store()
     context = RunContext(
         conversation_id="1",
+        clock=_FixedClock(),
         turn_id="t_1",
         clients=RunClients(causal_chain_store=store),
     )

@@ -11,6 +11,7 @@ from take_home.causal_chains.agents.stores.messaging_store.messaging_store impor
 )
 from take_home.causal_chains.agents.stores.turn_store.ddb_turn_store import DdbTurnStore
 from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
+from take_home.causal_chains.time.utc_clock import UtcClock
 
 
 class AppContainer(containers.DeclarativeContainer):
@@ -39,10 +40,12 @@ class AppContainer(containers.DeclarativeContainer):
         GraphCausalChainStore,
         graph_db=clients.graph_db,
     )
+    clock = providers.Singleton(UtcClock)
     chat_service = providers.Singleton(
         ChatService,
         agent_runner=agent_runner,
         messaging_store=messaging_store,
         turn_store=turn_store,
         causal_chain_store=causal_chain_store,
+        clock=clock,
     )
