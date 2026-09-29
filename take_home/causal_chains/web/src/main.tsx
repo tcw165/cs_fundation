@@ -2,35 +2,31 @@ import "@fontsource/instrument-serif/400.css";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
-import { StrictMode, useMemo } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  AssistantRuntimeProvider,
-  useLocalRuntime,
-} from "@assistant-ui/react";
 
 import { App } from "./app/app";
 import { create_chain_http } from "./chain/chain_http";
 import { create_chat_http } from "./chat/chat_http";
-import { create_chat_model_adapter } from "./chat/chat_model_adapter";
+import { fast_timing, studio_timing } from "./chat/reveal_timing";
 import { create_health_http } from "./health/health_http";
 
 const api_url = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-const conversation_id = "1";
+const pace = new URLSearchParams(window.location.search).get("pace");
+const timing = pace === "fast" ? fast_timing : studio_timing;
 const health_port = create_health_http(api_url);
 const chat_port = create_chat_http(api_url);
 const chain_port = create_chain_http(api_url);
 
 function Root() {
-  const adapter = useMemo(
-    () => create_chat_model_adapter(chat_port, conversation_id),
-    [],
-  );
-  const runtime = useLocalRuntime(adapter);
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <App health_port={health_port} chain_port={chain_port} />
-    </AssistantRuntimeProvider>
+    <App
+      health_port={health_port}
+      chat_port={chat_port}
+      chain_port={chain_port}
+      conversation_id="1"
+      timing={timing}
+    />
   );
 }
 
