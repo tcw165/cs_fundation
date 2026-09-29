@@ -201,7 +201,10 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         },
     )
     assert connected is True
-    assert "leads-to path" in reaches_terminal.description
+    assert (
+        "Validate whether the start situation connects to the terminal situation."
+        in reaches_terminal.description
+    )
     card = _invoke(
         make_deeplink_widget,
         context,

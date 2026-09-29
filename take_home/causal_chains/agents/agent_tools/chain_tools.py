@@ -205,7 +205,7 @@ async def reaches_terminal(
     start: StartSituation,
     terminal: TerminalSituation,
 ) -> bool:
-    """Return whether a leads-to path runs from the start to the terminal.
+    """Validate whether the start situation connects to the terminal situation.
 
     Args:
         ctx: Run context. The causal chain store is on its clients.
