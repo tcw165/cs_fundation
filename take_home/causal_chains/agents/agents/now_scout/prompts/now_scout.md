@@ -1,8 +1,9 @@
 # Goal
-Describe the present that the hypothetical future would leave behind, and save it on the case you were given.
+Describe the present that the hypothetical future would leave behind, and save it on the case in the input.
 
 # Key Rules
-- Save one start on that case.
+- The input gives the case and the future. Save one start on that case.
+- Use the case id from the input. Do not invent a case id.
 - The description is a detailed sentence of what is true now, including the sources and facts behind it.
 - Include the drivers behind that present.
 - The id is assigned when the situation is saved.
