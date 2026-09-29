@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from take_home.causal_chains.agents.models.messaging.deeplink_card import (
+    DEEPLINK_SCHEME,
     DeeplinkCard,
     DeeplinkParam,
 )
@@ -19,25 +20,24 @@ def _card() -> DeeplinkCard:
     return DeeplinkCard(
         title="now",
         subtitle="the present",
-        scheme="",
+        scheme=DEEPLINK_SCHEME,
         route=f"/chain/{CASE_ID}",
         params=[],
     )
 
 
-def test_card_link_keeps_an_in_app_path():
-    assert card_link(_card()) == f"/chain/{CASE_ID}"
+def test_card_link_uses_the_scheme():
+    assert card_link(_card()) == f"{DEEPLINK_SCHEME}://chain/{CASE_ID}"
 
 
-def test_card_link_adds_a_scheme_and_query():
+def test_card_link_adds_a_query():
     card = _card().model_copy(
         update={
-            "scheme": "app",
             "route": "chain/1",
             "params": [DeeplinkParam(name="title", value="now")],
         },
     )
-    assert card_link(card) == "app://chain/1?title=now"
+    assert card_link(card) == f"{DEEPLINK_SCHEME}://chain/1?title=now"
 
 
 def test_deeplink_message_copies_the_card():
@@ -45,7 +45,7 @@ def test_deeplink_message_copies_the_card():
     assert message.role is Role.other
     assert message.title == "now"
     assert message.subtitle == "the present"
-    assert message.link == f"/chain/{CASE_ID}"
+    assert message.link == f"{DEEPLINK_SCHEME}://chain/{CASE_ID}"
     assert message.enabled is True
     restored = message_adapter.validate_python(message.model_dump())
     assert isinstance(restored, DeeplinkCardMessage)

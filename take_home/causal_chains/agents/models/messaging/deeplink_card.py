@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from take_home.causal_chains.agents.models.causal_chains.case import Case
 
@@ -12,6 +14,13 @@ class DeeplinkParam(BaseModel):
     value: str = Field(description="Query parameter value.")
 
 
+class DeeplinkScheme(StrEnum):
+    causal_chains = "causal_chains"
+
+
+DEEPLINK_SCHEME = DeeplinkScheme.causal_chains
+
+
 class DeeplinkCard(BaseModel):
     """A chat card that opens one stored chain."""
 
@@ -19,7 +28,9 @@ class DeeplinkCard(BaseModel):
 
     title: str = Field(description="Short name shown on the card.")
     subtitle: str = Field(description="One sentence under the title.")
-    scheme: str = Field(description="URI scheme. Empty for an in-app path.")
+    scheme: DeeplinkScheme = Field(
+        description='URI scheme. Always "causal_chains".',
+    )
     route: str = Field(
         description="In-app path. A stored chain is /chain/<case_id>. Do not include a version.",
     )
@@ -29,6 +40,12 @@ class DeeplinkCard(BaseModel):
             "Use an empty list for a stored chain."
         ),
     )
+
+    @field_validator("scheme", mode="before")
+    @classmethod
+    def _scheme(cls, value: object) -> DeeplinkScheme:
+        del value
+        return DEEPLINK_SCHEME
 
 
 class DeeplinkRequest(BaseModel):

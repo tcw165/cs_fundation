@@ -345,7 +345,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     card = DeeplinkCard(
         title="now",
         subtitle="the present",
-        scheme="",
+        scheme="causal_chains",
         route=f"/chain/{now_id}",
         params=[],
     )
@@ -432,7 +432,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     assert message.role is Role.other
     assert message.title == "now"
     assert message.subtitle == "the present"
-    assert message.link == f"/chain/{now_id}"
+    assert message.link == f"causal_chains://chain/{now_id}"
     assert message.enabled is True
     assert len(events) == 2
 
@@ -442,7 +442,7 @@ def _collect_widget_turn(monkeypatch, arguments: str | None) -> list[object]:
     card = DeeplinkCard(
         title="now",
         subtitle="the present",
-        scheme="",
+        scheme="causal_chains",
         route=f"/chain/{now_id}",
         params=[],
     )
