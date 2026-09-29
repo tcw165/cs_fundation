@@ -32,3 +32,5 @@ Use this when you need to quickly validate the causal chain core functionality. 
 cd take_home/causal_chains
 just eval-offline 'Republicans win the House but Democrats take the senate during the Midterm.'
 ```
+
+A recorded run of `The Strait of Hormuz is going to open next week.` is in `agents/eval/README.md`.
