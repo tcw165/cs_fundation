@@ -99,7 +99,10 @@ def test_causal_chain_prompt_and_tools():
         tool for tool in causal_chain.tools if tool.name == "now_scout"
     )
     assert "Find the present" in now_scout_tool.description
+    assert "Pass that case and the future you were given." in now_scout_tool.description
     assert "It comes back saved as the start." in now_scout_tool.description
+    assert now_scout_tool.params_json_schema["properties"].keys() == {"case", "future"}
+    assert "Pass the case you created and the future you were given." in prompt
     assert "pricer" not in [tool.name for tool in causal_chain.tools]
     assert "link_situations" not in [tool.name for tool in causal_chain.tools]
     assert causal_chain.tools[-1].name == "make_deeplink_widget"

@@ -12,6 +12,9 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
 )
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
+from take_home.causal_chains.agents.models.causal_chains.now_scout_models import (
+    NowScoutRequest,
+)
 from take_home.causal_chains.agents.models.causal_chains.path_builder_models import (
     PathBuilderRequest,
 )
@@ -33,8 +36,10 @@ causal_chain = Agent[RunContext](
             tool_name="now_scout",
             tool_description=(
                 "Find the present. Use this once, after the case exists. "
+                "Pass that case and the future you were given. "
                 "It comes back saved as the start."
             ),
+            parameters=NowScoutRequest,
         ),
         add_terminal_situation,
         reaches_terminal,

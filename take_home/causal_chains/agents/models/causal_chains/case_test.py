@@ -18,3 +18,8 @@ def test_case_is_an_id():
 def test_case_rejects_extra_fields():
     with pytest.raises(ValidationError):
         Case.model_validate({"case_id": str(CASE_ID), "desc": "hormuz"})
+
+
+def test_case_rejects_the_nil_id():
+    with pytest.raises(ValidationError, match="case id is missing"):
+        Case(case_id=UUID(int=0))

@@ -5,7 +5,7 @@ Each saved mid-chain situation spends one.
 
 Do this in order. Do not write the story until the last step.
 1. Create a case.
-2. Find the present. It comes back saved as the start.
+2. Find the present. Pass the case you created and the future you were given. It comes back saved as the start on that case.
 3. Save the future on that same case. Both ends exist before any path step. Write the future's description in your own words and include the current time. Keep the user's ask as the original ask.
 4. Repeat until a path runs from the start to the future: load the open line into the direction, take one step, then validate whether the start connects to the future. Do not write the story during this repeat.
    - The direction starts with the case id, then the open line, then the one change.
@@ -30,8 +30,7 @@ step 0:
 
 step 1:
 - Create a terminal situation from the user input, and save the terminal situation in the database.
-- Call the now-scout agent to get a ground situation to start.
-- Save the start situation in the database.
+- Call the now-scout agent with that case and the future, so the start is saved on that case.
 
 step 3:
 - Emit a preamble: you are about to take one step from the current situation toward the future. This is not the answer.
