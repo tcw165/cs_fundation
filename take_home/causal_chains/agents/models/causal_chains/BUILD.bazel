@@ -10,6 +10,7 @@ py_library(
         "leads_to.py",
         "likelihood.py",
         "link_inputs.py",
+        "path_builder_models.py",
         "situation.py",
     ],
     imports = ["../../../../.."],
@@ -26,11 +27,13 @@ pytest_test(
         "leads_to_test.py",
         "likelihood_test.py",
         "link_inputs_test.py",
+        "path_builder_models_test.py",
         "situation_test.py",
     ],
     imports = ["../../../../.."],
     deps = [
         ":causal_chains",
+        requirement("openai-agents"),
         requirement("pydantic"),
     ],
 )
