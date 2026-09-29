@@ -2,10 +2,15 @@ import type { ChatItem } from "./chat_item";
 
 export type RevealPhase = "idle" | "animating";
 
+export type TranscriptEntry =
+  | { kind: "user"; id: string; text: string }
+  | { kind: "agent"; item: ChatItem };
+
 export type RevealState = {
   user_texts: string[];
   pending: ChatItem[];
   shown: ChatItem[];
+  log: TranscriptEntry[];
   phase: RevealPhase;
   animating_id: string | null;
   running: boolean;
@@ -16,6 +21,7 @@ export const initial_reveal_state: RevealState = {
   user_texts: [],
   pending: [],
   shown: [],
+  log: [],
   phase: "idle",
   animating_id: null,
   running: false,
@@ -33,7 +39,15 @@ export type RevealAction =
 export function reveal_reducer(state: RevealState, action: RevealAction): RevealState {
   switch (action.type) {
     case "user":
-      return { ...state, user_texts: [...state.user_texts, action.text], error: null };
+      return {
+        ...state,
+        user_texts: [...state.user_texts, action.text],
+        log: [
+          ...state.log,
+          { kind: "user", id: `user-${state.user_texts.length}`, text: action.text },
+        ],
+        error: null,
+      };
     case "enqueue":
       return enqueue_item(state, action.item);
     case "start": {
@@ -48,6 +62,7 @@ export function reveal_reducer(state: RevealState, action: RevealAction): Reveal
         ...state,
         pending: rest,
         shown: [...state.shown, next],
+        log: [...state.log, { kind: "agent", item: next }],
         phase: "animating",
         animating_id: next.message_id,
       };
