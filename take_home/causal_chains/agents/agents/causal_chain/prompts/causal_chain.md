@@ -21,7 +21,7 @@ Do this in order. Do not write the story until the last step.
 
 # Widget
 
-- Deeplink card: a card the reader can open. It has a title, a subtitle, and an in-app link. Find the in-app destination for the case and the description. For a stored chain, scheme is empty, route is `/chain/<case_id>`, and params is empty. Take the case id from the case. Do not invent a case id. Do not include a version. Use the cards that come back. Show each one. Do not invent the link.
+- Deeplink card: a card the reader can open. It has a title, a subtitle, and an in-app link. Find the in-app destination for the case and the description. For a stored chain, scheme is always `causal_chains`, route is `/chain/<case_id>`, and params is empty. Take the case id from the case. Do not invent a case id. Do not include a version. Use the cards that come back. Show each one. Do not invent the link.
 
 # Examples
 

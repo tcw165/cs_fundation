@@ -15,6 +15,7 @@ def test_deeplinks_finder_returns_cards_for_the_case():
     assert "# Examples" not in prompt
     assert "Find the in-app destination for the case and the description." in prompt
     assert "The input is the case and the destination description." in prompt
+    assert "Scheme is always `causal_chains`." in prompt
     assert "route is `/chain/<case_id>`" in prompt
     assert "Take the case id from the case." in prompt
     assert "Do not include a version." in prompt
@@ -24,6 +25,11 @@ def test_deeplinks_finder_returns_cards_for_the_case():
     assert deeplinks_finder.tools == []
     schema = AgentOutputSchema(DeeplinkResult).json_schema()
     assert schema["required"] == list(schema["properties"])
+    card = schema["$defs"]["DeeplinkCard"]
+    assert card["required"] == list(card["properties"])
+    scheme = card["properties"]["scheme"]
+    assert scheme["enum"] == ["causal_chains"]
+    assert scheme["type"] == "string"
     params = schema["$defs"]["DeeplinkCard"]["properties"]["params"]
     assert params["type"] == "array"
     assert params["items"]["$ref"] == "#/$defs/DeeplinkParam"

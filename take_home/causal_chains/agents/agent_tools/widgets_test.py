@@ -5,7 +5,10 @@ from datetime import datetime, timezone
 from agents.tool_context import ToolContext
 
 from take_home.causal_chains.agents.agent_tools.widgets import make_deeplink_widget
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+from take_home.causal_chains.agents.models.messaging.deeplink_card import (
+    DEEPLINK_SCHEME,
+    DeeplinkCard,
+)
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -19,7 +22,7 @@ def _card() -> DeeplinkCard:
     return DeeplinkCard(
         title="now",
         subtitle="the present",
-        scheme="",
+        scheme=DEEPLINK_SCHEME,
         route="/chain/case",
         params=[],
     )
