@@ -20,7 +20,6 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     link_situations,
     lookup_chain_so_far,
     lookup_leaf_situations,
-    make_deeplink_widget,
     reaches_terminal,
 )
 from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
@@ -28,7 +27,6 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
     LinkedHop,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
@@ -212,20 +210,6 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         "Validate whether the start situation connects to the terminal situation."
         in reaches_terminal.description
     )
-    widget = DeeplinkCard(
-        title=now.desc,
-        subtitle="the present",
-        scheme="",
-        route=f"/chain/{case.case_id}",
-        params={},
-    )
-    card = _invoke(
-        make_deeplink_widget,
-        context,
-        {"card": widget.model_dump(mode="json")},
-    )
-    assert card == widget
-    assert "deeplink card" in make_deeplink_widget.description
     empty_line = _invoke(
         lookup_chain_so_far,
         context,

@@ -436,6 +436,108 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     assert len(events) == 2
 
 
+def _collect_widget_turn(monkeypatch, arguments: str | None) -> list[object]:
+    now_id = UUID("11111111-1111-4111-8111-111111111111")
+    card = DeeplinkCard(
+        title="now",
+        subtitle="the present",
+        scheme="",
+        route=f"/chain/{now_id}",
+        params={},
+    )
+    raw_call = {"name": "make_deeplink_widget", "call_id": "call_1"}
+    if arguments is not None:
+        raw_call["arguments"] = arguments
+
+    class FakeDelta:
+        def __init__(self, delta: str) -> None:
+            self.delta = delta
+
+    async def fake_stream():
+        yield SimpleNamespace(
+            type="raw_response_event",
+            data=FakeDelta("before\n\n"),
+        )
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_item",
+                raw_item=SimpleNamespace(**raw_call),
+            ),
+        )
+        yield SimpleNamespace(
+            type="run_item_stream_event",
+            item=SimpleNamespace(
+                type="tool_call_output_item",
+                raw_item={"call_id": "call_1"},
+                output=card,
+            ),
+        )
+        yield SimpleNamespace(
+            type="raw_response_event",
+            data=FakeDelta("after\n\n"),
+        )
+
+    class FakeResult:
+        def stream_events(self):
+            return fake_stream()
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(agent, input, context=None, max_turns=None, run_config=None):
+            return FakeResult()
+
+    monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def collect():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            clock=_FixedClock(),
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        return [event async for event in runner.stream(["hormuz"], context)]
+
+    return asyncio.run(collect())
+
+
+def test_app_agent_runner_holds_a_deeplink_until_the_turn_ends(monkeypatch):
+    events = [
+        event
+        for event in _collect_widget_turn(monkeypatch, arguments=None)
+        if not isinstance(event, HeartbeatMessage)
+    ]
+    assert [type(event) for event in events] == [
+        MarkdownMessage,
+        MarkdownMessage,
+        DeeplinkCardMessage,
+    ]
+    assert [event.text for event in events[:2]] == ["before", "after"]
+
+
+def test_app_agent_runner_shows_a_deeplink_before_later_text(monkeypatch):
+    events = [
+        event
+        for event in _collect_widget_turn(
+            monkeypatch,
+            arguments='{"render_at_end": false}',
+        )
+        if not isinstance(event, HeartbeatMessage)
+    ]
+    assert [type(event) for event in events] == [
+        MarkdownMessage,
+        DeeplinkCardMessage,
+        MarkdownMessage,
+    ]
+    assert events[0].text == "before"
+    assert events[2].text == "after"
+
+
 def test_app_agent_runner_traces_the_model_run(monkeypatch):
     opened: list[tuple[str, str | None, dict[str, str] | None]] = []
     active = {"value": False}
