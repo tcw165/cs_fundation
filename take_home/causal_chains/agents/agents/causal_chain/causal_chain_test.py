@@ -11,10 +11,16 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.model == "gpt-5.6-luna"
     assert causal_chain.output_type is StartSituation
     assert "# Goal" in prompt
-    assert "# Iterative Process" in prompt
+    assert "# Iterative Process" not in prompt
     assert "# Communication" in prompt
-    assert "Create a case first." in prompt
+    assert "That number is the situation quota." in prompt
+    assert "The direction starts with the case id, then the open line, then the one change." in prompt
+    assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
+    assert "Return the stored start only after that path exists." in prompt
+    assert "Do not return the start until the last step." in prompt
+    assert "Do not return the start during this repeat." in prompt
+    assert "A preamble is not an answer." in prompt
     assert (
         "Always write a short preamble before you call a tool. "
         "Say what you are about to do and why, then a blank line, "
@@ -27,6 +33,12 @@ def test_causal_chain_prompt_and_tools():
     assert "path-builder" not in before_examples
     assert "now-scout" in examples
     assert "path-builder" in examples
+    assert (
+        "step 3:\n"
+        "- Emit a preamble: you are about to take one step from the current situation toward the future. "
+        "This is not the answer.\n\n"
+        "step 4:\n"
+    ) in examples
     for tool_name in (
         "now_scout",
         "path_builder",
@@ -62,12 +74,17 @@ def test_causal_chain_prompt_and_tools():
         "prompt",
         "remained_situation_quota",
     }
-    assert "Explore the next mid-chain situation from the current one" in (
+    assert "Take one step from the current situation toward the future" in (
         path_builder_tool.description
     )
     assert "Either link the current situation to the terminal" in (
         path_builder_tool.description
     )
+    now_scout_tool = next(
+        tool for tool in causal_chain.tools if tool.name == "now_scout"
+    )
+    assert "Find the present" in now_scout_tool.description
+    assert "It comes back saved as the start." in now_scout_tool.description
     assert "pricer" not in [tool.name for tool in causal_chain.tools]
     assert "link_situations" not in [tool.name for tool in causal_chain.tools]
     assert causal_chain.tools[-1].name == "make_deeplink_widget"

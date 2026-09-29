@@ -33,9 +33,8 @@ causal_chain = Agent[RunContext](
         now_scout.as_tool(
             tool_name="now_scout",
             tool_description=(
-                "Discover the present so the chain has a start. "
-                "Use this once, after the case exists and before the future is saved. "
-                "Save the present on that case and return the start, including its id and drivers."
+                "Find the present. Use this once, after the case exists. "
+                "It comes back saved as the start."
             ),
         ),
         add_terminal_situation,
@@ -44,8 +43,10 @@ causal_chain = Agent[RunContext](
         path_builder.as_tool(
             tool_name="path_builder",
             tool_description=(
-                "Explore the next mid-chain situation from the current one, "
-                "to grow the path toward the future. "
+                "Take one step from the current situation toward the future. "
+                "Use this after both ends exist, and again until a path runs from the start to the future. "
+                "Pass the current situation, the saved future, a direction, and the situation quota that remains. "
+                "The direction starts with the case id, then the open line, then the one change. "
                 "Either link the current situation to the terminal, "
                 "or save one next situation and link the current situation to it."
             ),
