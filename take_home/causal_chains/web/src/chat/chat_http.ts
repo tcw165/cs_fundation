@@ -153,7 +153,6 @@ function decode_sse_event(event_name: string, data: string): Message {
   if (event_name === "heartbeat") {
     return {
       type: "heartbeat",
-      message_id: text_field(payload, "message_id"),
       role: "meta",
     };
   }

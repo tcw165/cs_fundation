@@ -7,7 +7,6 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
     MessagingStore,
 )
 from take_home.causal_chains.agents.models.messaging.message import (
-    HeartbeatMessage,
     MarkdownMessage,
     Role,
 )
@@ -79,17 +78,14 @@ def test_append_and_list_messages_by_conversation():
             link="/chain/now",
             enabled=True,
         )
-        beat = HeartbeatMessage(message_id="m_4")
         await store.append("1", hello)
         await store.append("2", other)
         await store.append("1", card)
-        await store.append("1", beat)
         listed = await store.list_messages("1")
         conversation = database.get_item("conversation", {"conversation_id": "1"})
-        return listed, conversation, hello, card, beat
+        return listed, conversation, hello, card
 
-    listed, conversation, hello, card, beat = asyncio.run(exercise())
-    assert listed == [hello, card, beat]
-    assert beat.role is Role.meta
+    listed, conversation, hello, card = asyncio.run(exercise())
+    assert listed == [hello, card]
     assert conversation is not None
     assert "ttl" not in conversation

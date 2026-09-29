@@ -37,7 +37,7 @@ describe("create_chat_model_adapter", () => {
           role: "agent",
           text: "one",
         };
-        yield { type: "heartbeat", message_id: "m_beat", role: "meta" };
+        yield { type: "heartbeat", role: "meta" };
         yield {
           type: "markdown",
           message_id: "m_b",

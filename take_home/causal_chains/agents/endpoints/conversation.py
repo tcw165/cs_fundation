@@ -58,11 +58,12 @@ async def turn_sse(
 ) -> StreamingResponse:
     turn = await container.turn_store().get_turn(turn_id)
     stored = await container.messaging_store().list_messages(conversation_id)
+    from_message = None if turn is None else turn.from_message
     anchored = next(
         (
             message
             for message in stored
-            if message.message_id == (None if turn is None else turn.from_message)
+            if getattr(message, "message_id", None) == from_message
         ),
         None,
     )
@@ -82,7 +83,7 @@ async def turn_sse(
             RunConfig(include_traces=include_traces),
         ):
             if not passed:
-                if message.message_id == after_message:
+                if getattr(message, "message_id", None) == after_message:
                     passed = True
                 continue
             yield format_sse(message)

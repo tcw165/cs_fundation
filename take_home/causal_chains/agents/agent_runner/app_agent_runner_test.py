@@ -334,6 +334,7 @@ def test_app_agent_runner_emits_a_heartbeat_while_the_model_is_slow(monkeypatch)
     assert beats
     assert all(event.role is Role.meta for event in beats)
     assert all(event.type == "heartbeat" for event in beats)
+    assert all(not hasattr(event, "message_id") for event in beats)
     markdown = [event for event in events if isinstance(event, MarkdownMessage)]
     assert [event.text for event in markdown] == ["oil "]
     assert events.index(beats[0]) < events.index(markdown[0])
