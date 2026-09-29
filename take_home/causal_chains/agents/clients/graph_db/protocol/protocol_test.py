@@ -59,6 +59,16 @@ class _Both:
     ) -> list[tuple[UUID, int, str]]:
         return []
 
+    def reaches_terminal(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+        terminal_situation_id: UUID,
+        terminal_version: int,
+    ) -> bool:
+        return False
+
     def list_leads_to(
         self,
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:

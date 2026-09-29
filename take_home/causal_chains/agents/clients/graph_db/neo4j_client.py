@@ -47,6 +47,14 @@ REMOVE s.is_root
 MERGE (s)-[:BELONGS_TO]->(c)
 """
 
+REACHES_TERMINAL = """
+MATCH (start:Situation {situation_id: $start_situation_id, version: $start_version, kind: 'start'})
+MATCH (start)-[:BELONGS_TO]->(:Case {case_id: $case_id})
+MATCH (terminal:Situation {situation_id: $terminal_situation_id, version: $terminal_version, kind: 'terminal'})
+MATCH (terminal)-[:BELONGS_TO]->(:Case {case_id: $case_id})
+RETURN EXISTS { MATCH (start)-[:LEADS_TO*1..64]->(terminal) } AS reaches
+"""
+
 LIST_LEAF_SITUATIONS = """
 MATCH (start:Situation {situation_id: $start_situation_id, version: $start_version, kind: 'start'})
 MATCH (start)-[:BELONGS_TO]->(:Case {case_id: $case_id})
@@ -260,6 +268,28 @@ class Neo4jClient(GraphDb):
                 )
             )
         return rows
+
+    @override
+    def reaches_terminal(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+        terminal_situation_id: UUID,
+        terminal_version: int,
+    ) -> bool:
+        with self._driver.session() as session:
+            record = session.run(
+                REACHES_TERMINAL,
+                case_id=str(case_id),
+                start_situation_id=str(start_situation_id),
+                start_version=start_version,
+                terminal_situation_id=str(terminal_situation_id),
+                terminal_version=terminal_version,
+            ).single()
+        if record is None or record["reaches"] is None:
+            return False
+        return bool(record["reaches"])
 
     @override
     def list_leads_to(

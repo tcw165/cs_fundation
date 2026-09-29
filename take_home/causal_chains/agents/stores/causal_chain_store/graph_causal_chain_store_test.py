@@ -9,6 +9,7 @@ from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
     StartSituation,
+    TerminalSituation,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
     GraphCausalChainStore,
@@ -41,6 +42,7 @@ class _FakeGraphDb:
         ] = []
         self._cases: set[UUID] = set()
         self.leaf_rows: list[tuple[UUID, int, str]] = []
+        self.reaches = False
 
     def merge_case(self, case_id: UUID) -> None:
         self.case_calls.append(case_id)
@@ -58,6 +60,16 @@ class _FakeGraphDb:
         start_version: int,
     ) -> list[tuple[UUID, int, str]]:
         return list(self.leaf_rows)
+
+    def reaches_terminal(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+        terminal_situation_id: UUID,
+        terminal_version: int,
+    ) -> bool:
+        return self.reaches
 
     def merge_situation(
         self,
@@ -296,6 +308,29 @@ def test_get_case_and_leaf_lookup():
     assert found == Case(case_id=CASE_ID)
     assert leaves == [Situation(situation_id=LEAF_ID, version=1, desc="leaf")]
     assert missing == "case is missing"
+
+
+def test_reaches_terminal_reads_the_graph():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        case = Case(case_id=CASE_ID)
+        start = StartSituation(
+            situation_id=NOW_ID,
+            version=1,
+            desc="now",
+            potential_factors=["blockade"],
+        )
+        terminal = TerminalSituation(
+            situation_id=DEAL_ID,
+            version=1,
+            desc="the end",
+            original_ask="the ask",
+        )
+        graph_db.reaches = True
+        return await store.reaches_terminal(case, start, terminal)
+
+    assert asyncio.run(exercise()) is True
 
 
 def test_get_chains_returns_empty_when_the_graph_is_empty():
