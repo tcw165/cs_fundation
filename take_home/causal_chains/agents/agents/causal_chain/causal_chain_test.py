@@ -32,6 +32,7 @@ def test_causal_chain_prompt_and_tools():
         "add_start_situation",
         "add_terminal_situation",
         "lookup_leaf_situations",
+        "reaches_terminal",
         "link_situations",
         "make_deeplink_widget",
     ):
@@ -41,10 +42,22 @@ def test_causal_chain_prompt_and_tools():
         "get_case",
         "now_scout",
         "add_terminal_situation",
-        "lookup_leaf_situations",
+        "reaches_terminal",
         "path_builder",
         "pricer",
         "link_situations",
         "make_deeplink_widget",
     ]
+    path_builder_tool = next(
+        tool for tool in causal_chain.tools if tool.name == "path_builder"
+    )
+    assert path_builder_tool.params_json_schema["properties"].keys() == {
+        "from_situation",
+        "terminal_situation",
+        "prompt",
+        "remained_situation_quota",
+    }
+    assert "Explore the next mid-chain situation from the current one" in (
+        path_builder_tool.description
+    )
     assert causal_chain.tools[-1].name == "make_deeplink_widget"
