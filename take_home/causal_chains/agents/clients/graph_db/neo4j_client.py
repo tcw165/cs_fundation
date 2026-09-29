@@ -132,6 +132,12 @@ MATCH (s:Situation)
 DETACH DELETE s
 """
 
+# One relationship registers the type. Deleting it leaves the type in the store.
+ENSURE_LEADS_TO = """
+CREATE (a:_SchemaProbe)-[:LEADS_TO]->(b:_SchemaProbe)
+DETACH DELETE a, b
+"""
+
 LIST_LEADS_TO = """
 MATCH (a)-[r:LEADS_TO]->(b)
 RETURN a.situation_id AS from_situation_id,
@@ -207,6 +213,10 @@ def _input_rows(
 class Neo4jClient(GraphDb):
     def __init__(self, driver: Driver) -> None:
         self._driver = driver
+
+    def ensure_leads_to(self) -> None:
+        with self._driver.session() as session:
+            session.run(ENSURE_LEADS_TO).consume()
 
     @override
     def p_query(self, destination_ids: list[UUID]) -> Decimal:

@@ -12,7 +12,9 @@ from take_home.causal_chains.agents.clients.memcache.span_processor import Memca
 
 def build_graph_db(neo4j_uri: str, neo4j_user: str, neo4j_password: str) -> GraphDb:
     driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
-    return Neo4jClient(driver)
+    client = Neo4jClient(driver)
+    client.ensure_leads_to()
+    return client
 
 
 def build_dynamo_db(

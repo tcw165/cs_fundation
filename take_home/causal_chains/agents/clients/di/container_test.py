@@ -8,8 +8,25 @@ from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import Gr
 
 
 def test_graph_db_singleton_is_a_graph_db(monkeypatch):
-    def fake_driver(uri: str, auth: tuple[str, str]):
-        return object()
+    class _Session:
+        def __enter__(self) -> "_Session":
+            return self
+
+        def __exit__(self, *args: object) -> bool:
+            return False
+
+        def run(self, query: str, **params: object) -> "_Session":
+            return self
+
+        def consume(self) -> None:
+            return None
+
+    class _Driver:
+        def session(self) -> _Session:
+            return _Session()
+
+    def fake_driver(uri: str, auth: tuple[str, str]) -> _Driver:
+        return _Driver()
 
     monkeypatch.setattr(container_module.GraphDatabase, "driver", fake_driver)
     container = ClientsContainer()
