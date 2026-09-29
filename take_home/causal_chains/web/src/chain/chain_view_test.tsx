@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { useState, type ReactNode } from "react";
+import type { ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { act } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -10,16 +10,20 @@ import { describe, expect, it, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { ChainCanvas } from "./chain_canvas";
-import { DeeplinkCardButton } from "./deeplink_card";
-import type { ChainPort, DeeplinkCard } from "./chain_port";
+import type { ChainPort } from "./chain_port";
+import type { FocusTarget } from "./panel_state";
 
-const card: DeeplinkCard = {
-  title: "now",
-  root_situation_id: "11111111-1111-4111-8111-111111111111",
+const now_id = "11111111-1111-4111-8111-111111111111";
+const next_id = "22222222-2222-4222-8222-222222222222";
+
+const focus: FocusTarget = {
+  kind: "chain",
+  root_situation_id: now_id,
   root_version: 1,
+  title: "now",
 };
 
-function render(node: ReactNode): { host: HTMLDivElement; root: Root } {
+function render(node: ReactElement): { host: HTMLDivElement; root: Root } {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -29,33 +33,33 @@ function render(node: ReactNode): { host: HTMLDivElement; root: Root } {
   return { host, root };
 }
 
-function Harness({ chain_port }: { chain_port: ChainPort }) {
-  const [open_card, set_open_card] = useState<DeeplinkCard | null>(null);
-  return (
-    <>
-      <DeeplinkCardButton card={card} on_open={set_open_card} />
-      <ChainCanvas card={open_card} chain_port={chain_port} />
-    </>
-  );
+function y_of(host: HTMLElement, situation_id: string): number {
+  const node = host.querySelector(`[data-situation-id="${situation_id}"]`);
+  return Number(node?.getAttribute("data-y") ?? "0");
 }
 
 describe("chain canvas", () => {
-  it("stays closed until the deeplink card is clicked", async () => {
+  it("opens a situation card and an edge card, pushing the nodes apart", async () => {
     const get_chains = vi.fn<ChainPort["get_chains"]>().mockResolvedValue([
       {
         situations: [
           {
-            situation_id: card.root_situation_id,
+            situation_id: now_id,
             version: 1,
-            desc: "strait shut",
-            potential_factors: ["blockade"],
+            desc: "strait shut for a long stretch of text that should remain readable inside the scrolling card when the situation is expanded beyond the collapsed summary line",
+            potential_factors: ["blockade", "insurance", "naval warning"],
+          },
+          {
+            situation_id: next_id,
+            version: 1,
+            desc: "talks start",
           },
         ],
         links: [
           {
-            from_situation_id: card.root_situation_id,
+            from_situation_id: now_id,
             from_version: 1,
-            to_situation_id: "22222222-2222-4222-8222-222222222222",
+            to_situation_id: next_id,
             to_version: 1,
             p: "0.0800",
             inputs: [{ name: "deal_odds", value: "0.08" }],
@@ -64,28 +68,36 @@ describe("chain canvas", () => {
       },
     ]);
     const chain_port: ChainPort = { get_chains };
-    const closed = render(<ChainCanvas card={null} chain_port={chain_port} />);
-    expect(closed.host.querySelector(".chain-canvas")).toBeNull();
-    expect(get_chains).not.toHaveBeenCalled();
-    act(() => {
-      closed.root.unmount();
-    });
-
-    const { host, root } = render(<Harness chain_port={chain_port} />);
-    expect(host.querySelector(".chain-canvas")).toBeNull();
-    const button = host.querySelector("button");
-    expect(button?.textContent).toContain("now");
-    expect(button?.textContent).toContain(card.root_situation_id);
-    expect(button?.textContent).toContain("1");
+    const { host, root } = render(<ChainCanvas focus={focus} chain_port={chain_port} />);
+    expect(host.querySelector(".chain-canvas")).not.toBeNull();
     await act(async () => {
-      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
     });
     expect(get_chains).toHaveBeenCalledTimes(1);
-    expect(host.textContent).toContain("strait shut");
-    expect(host.textContent).toContain("0.0800");
-    expect(host.textContent).toContain("deal_odds=0.08");
+    expect(host.querySelector(`[data-situation-id="${now_id}"]`)?.getAttribute("data-open")).toBe(
+      "true",
+    );
+    const open_y = y_of(host, next_id);
+    const toggle = host.querySelector(".node-toggle");
+    await act(async () => {
+      toggle?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(host.querySelector(`[data-situation-id="${now_id}"]`)?.getAttribute("data-open")).toBe(
+      "false",
+    );
+    expect(y_of(host, next_id)).toBeLessThan(open_y);
+    const collapsed_y = y_of(host, next_id);
+    const edge = host.querySelector("button[aria-label='Open link 0.0800']");
+    await act(async () => {
+      edge?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(host.textContent).toContain("deal_odds");
+    expect(host.textContent).toContain("very unlikely");
+    expect(y_of(host, next_id)).toBeGreaterThan(collapsed_y);
+    expect(host.querySelector(".edge-card.is-open")).not.toBeNull();
     act(() => {
       root.unmount();
     });
+    host.remove();
   });
 });
