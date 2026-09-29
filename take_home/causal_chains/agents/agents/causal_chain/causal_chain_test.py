@@ -21,7 +21,12 @@ def test_causal_chain_prompt_and_tools():
         "so the reader sees it before the tool runs."
     ) in prompt
     assert "# Key Rules" not in prompt
-    assert "# Examples" not in prompt
+    assert "# Examples" in prompt
+    before_examples, examples = prompt.split("# Examples", 1)
+    assert "now-scout" not in before_examples
+    assert "path-builder" not in before_examples
+    assert "now-scout" in examples
+    assert "path-builder" in examples
     for tool_name in (
         "now_scout",
         "path_builder",
@@ -32,6 +37,7 @@ def test_causal_chain_prompt_and_tools():
         "add_start_situation",
         "add_terminal_situation",
         "lookup_leaf_situations",
+        "lookup_chain_so_far",
         "reaches_terminal",
         "link_situations",
         "make_deeplink_widget",
@@ -43,9 +49,8 @@ def test_causal_chain_prompt_and_tools():
         "now_scout",
         "add_terminal_situation",
         "reaches_terminal",
+        "lookup_chain_so_far",
         "path_builder",
-        "pricer",
-        "link_situations",
         "make_deeplink_widget",
     ]
     path_builder_tool = next(
@@ -60,4 +65,9 @@ def test_causal_chain_prompt_and_tools():
     assert "Explore the next mid-chain situation from the current one" in (
         path_builder_tool.description
     )
+    assert "Either link the current situation to the terminal" in (
+        path_builder_tool.description
+    )
+    assert "pricer" not in [tool.name for tool in causal_chain.tools]
+    assert "link_situations" not in [tool.name for tool in causal_chain.tools]
     assert causal_chain.tools[-1].name == "make_deeplink_widget"
