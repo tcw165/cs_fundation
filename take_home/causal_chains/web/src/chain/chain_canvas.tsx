@@ -1,28 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { chain_for_card } from "./chain_select";
-import type { CausalChain, ChainPort, DeeplinkCard } from "./chain_port";
+import { chain_for_focus } from "./chain_select";
+import type { CausalChain, ChainPort, ChainSituation } from "./chain_port";
+import {
+  edge_key,
+  layout_chain,
+  toggle_selection,
+  type GraphSelection,
+  type LaidEdge,
+  type LaidNode,
+} from "./layout";
+import { likelihood_label, sparkline_points } from "./likelihood";
+import type { FocusTarget } from "./panel_state";
 
 import "./chain.css";
 
 export function ChainCanvas({
-  card,
+  focus,
   chain_port,
 }: {
-  card: DeeplinkCard | null;
+  focus: FocusTarget;
   chain_port: ChainPort;
 }) {
   const [chain, set_chain] = useState<CausalChain | null>(null);
   const [error, set_error] = useState<string | null>(null);
   const [loaded, set_loaded] = useState(false);
+  const [selection, set_selection] = useState<GraphSelection | null>(selection_from_focus(focus));
+  const host_ref = useRef<HTMLElement | null>(null);
+  const focus_key = JSON.stringify(focus);
 
   useEffect(() => {
-    if (card === null) {
-      set_chain(null);
-      set_error(null);
-      set_loaded(false);
-      return;
-    }
+    set_selection(selection_from_focus(focus));
+    const frame = window.requestAnimationFrame(() => {
+      host_ref.current?.querySelector("[data-open='true']")?.scrollIntoView?.({
+        block: "center",
+        behavior: "smooth",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+    // The serialized key is the focus identity. A fresh object with the same target should not reset a toggle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus_key]);
+
+  useEffect(() => {
     let cancelled = false;
     set_chain(null);
     set_error(null);
@@ -33,7 +53,7 @@ export function ChainCanvas({
         if (cancelled) {
           return;
         }
-        set_chain(chain_for_card(chains, card));
+        set_chain(chain_for_focus(chains, focus));
         set_loaded(true);
       })
       .catch((reason: unknown) => {
@@ -46,42 +66,263 @@ export function ChainCanvas({
     return () => {
       cancelled = true;
     };
-  }, [card, chain_port]);
+  }, [chain_port, focus]);
 
-  if (card === null) {
-    return null;
-  }
+  const title = focus.kind === "chain" ? focus.title : "Causal chain";
+  const layout = chain === null ? null : layout_chain(chain, selection);
+
   return (
-    <section className="chain-canvas" aria-label="causal chain">
-      <h2>{card.title}</h2>
-      {error !== null ? <p>{error}</p> : null}
-      {error === null && !loaded ? <p>loading</p> : null}
-      {error === null && loaded && chain === null ? <p>chain not found</p> : null}
-      {chain !== null ? (
-        <>
-          <ul className="chain-situations">
-            {chain.situations.map((situation) => (
-              <li key={`${situation.situation_id}:${situation.version}`}>
-                v{situation.version} {situation.desc}
-              </li>
-            ))}
-          </ul>
-          <ul className="chain-links">
-            {chain.links.map((link) => (
-              <li
-                key={`${link.from_situation_id}:${link.from_version}:${link.to_situation_id}:${link.to_version}`}
+    <section className="chain-canvas" aria-label="causal chain" ref={host_ref}>
+      <header className="panel-heading">
+        <p className="panel-kicker">Causal chain</p>
+        <h2>{title || "Saved chain"}</h2>
+      </header>
+      {error !== null ? <p className="panel-status">{error}</p> : null}
+      {error === null && !loaded ? <p className="panel-status">loading</p> : null}
+      {error === null && loaded && chain === null ? (
+        <p className="panel-status">chain not found</p>
+      ) : null}
+      {chain !== null && layout !== null ? (
+        <div className="graph-scroll">
+          <div className="graph-canvas" style={{ width: layout.width, height: layout.height }}>
+            <svg className="graph-edges" viewBox={`0 0 ${layout.width} ${layout.height}`}>
+              {layout.edges.map((edge) => (
+                <path key={edge.key} className="graph-edge" d={edge_path(edge)} />
+              ))}
+            </svg>
+            {layout.nodes.map((node) => {
+              const situation = chain.situations.find(
+                (item) => item.situation_id === node.situation_id && item.version === node.version,
+              );
+              if (situation === undefined) {
+                return null;
+              }
+              return (
+                <SituationCard
+                  key={node.key}
+                  node={node}
+                  situation={situation}
+                  incoming_p={incoming_probability(chain, node)}
+                  on_toggle={() =>
+                    set_selection((current) =>
+                      toggle_selection(current, {
+                        kind: "situation",
+                        situation_id: node.situation_id,
+                        version: node.version,
+                      }),
+                    )
+                  }
+                />
+              );
+            })}
+            {layout.edges.map((edge) => (
+              <button
+                key={`${edge.key}:hit`}
+                type="button"
+                className="edge-hit"
+                style={{ left: (edge.x1 + edge.x2) / 2, top: (edge.y1 + edge.y2) / 2 }}
+                aria-label={`Open link ${edge.p}`}
+                aria-expanded={edge.expanded}
+                onClick={() =>
+                  set_selection((current) =>
+                    toggle_selection(current, {
+                      kind: "edge",
+                      from_situation_id: edge.from_situation_id,
+                      from_version: edge.from_version,
+                      to_situation_id: edge.to_situation_id,
+                      to_version: edge.to_version,
+                    }),
+                  )
+                }
               >
-                {link.p}
-                {link.inputs.length === 0
-                  ? ""
-                  : ` ${link.inputs
-                      .map((input) => `${input.name}=${input.value}`)
-                      .join(", ")}`}
-              </li>
+                {edge.p}
+              </button>
             ))}
-          </ul>
-        </>
+            {layout.edges.map((edge) => {
+              const link = chain.links.find((item) => edge_key(item) === edge.key);
+              if (!edge.expanded || edge.card === null || link === undefined) {
+                return null;
+              }
+              return (
+                <article
+                  key={`${edge.key}:card`}
+                  className="edge-card is-open"
+                  style={{
+                    transform: `translate(${edge.card.x}px, ${edge.card.y}px)`,
+                    width: edge.card.width,
+                    height: edge.card.height,
+                  }}
+                >
+                  <p className="panel-kicker">Leads to</p>
+                  <p className="edge-p">{edge.p}</p>
+                  <p className="edge-likelihood">{likelihood_label(edge.p)}</p>
+                  <div className="edge-gauge" aria-hidden="true">
+                    <Gauge p={edge.p} />
+                  </div>
+                  <dl className="edge-inputs">
+                    {link.inputs.map((input) => (
+                      <div key={input.name}>
+                        <dt>{input.name}</dt>
+                        <dd>{input.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
     </section>
   );
+}
+
+function SituationCard({
+  node,
+  situation,
+  incoming_p,
+  on_toggle,
+}: {
+  node: LaidNode;
+  situation: ChainSituation;
+  incoming_p: string | null;
+  on_toggle: () => void;
+}) {
+  const kind = situation_kind(situation);
+  const style = {
+    transform: `translate(${node.x}px, ${node.y}px)`,
+    width: node.width,
+    height: node.height,
+  };
+  const header = (
+    <>
+      <span className={`kind-pill is-${kind}`}>{kind}</span>
+      <span className="node-version">v{situation.version}</span>
+      <strong className="node-title">{short_title(situation.desc)}</strong>
+    </>
+  );
+  if (!node.expanded) {
+    return (
+      <button
+        type="button"
+        className="node-card"
+        style={style}
+        data-situation-id={node.situation_id}
+        data-y={node.y}
+        data-open="false"
+        aria-expanded={false}
+        onClick={on_toggle}
+      >
+        {header}
+        <Sparkline seed={node.key} />
+        {incoming_p !== null ? <span className="node-p">{incoming_p}</span> : null}
+      </button>
+    );
+  }
+  return (
+    <article
+      className="node-card is-open"
+      style={style}
+      data-situation-id={node.situation_id}
+      data-y={node.y}
+      data-open="true"
+    >
+      <button type="button" className="node-toggle" aria-expanded onClick={on_toggle}>
+        {header}
+      </button>
+      <div className="node-detail">
+        <p>{situation.desc}</p>
+        {situation.potential_factors !== undefined ? (
+          <>
+            <h3>Potential factors</h3>
+            <ul>
+              {situation.potential_factors.map((factor) => (
+                <li key={factor}>{factor}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {situation.original_ask !== undefined ? (
+          <>
+            <h3>Original ask</h3>
+            <p>{situation.original_ask}</p>
+          </>
+        ) : null}
+        <dl className="node-meta">
+          <div>
+            <dt>situation_id</dt>
+            <dd>{situation.situation_id}</dd>
+          </div>
+          <div>
+            <dt>version</dt>
+            <dd>{situation.version}</dd>
+          </div>
+        </dl>
+        <Sparkline seed={node.key} />
+      </div>
+    </article>
+  );
+}
+
+function Sparkline({ seed }: { seed: string }) {
+  return (
+    <svg className="node-spark" viewBox="0 0 240 36" aria-hidden="true">
+      <polyline points={sparkline_points(seed)} />
+    </svg>
+  );
+}
+
+function Gauge({ p }: { p: string }) {
+  const value = Math.min(1, Math.max(0, Number(p) || 0));
+  const angle = Math.PI * (1 - value);
+  const x = 60 + Math.cos(angle) * 42;
+  const y = 58 - Math.sin(angle) * 42;
+  return (
+    <svg viewBox="0 0 120 70">
+      <path d="M18 58 A 42 42 0 0 1 102 58" fill="none" stroke="#2a2a30" strokeWidth="8" />
+      <path d="M18 58 A 42 42 0 0 1 102 58" fill="none" stroke="#c6f25a" strokeWidth="8" strokeDasharray={`${value * 132} 132`} />
+      <circle cx={x} cy={y} r="4" fill="#f4f4f5" />
+    </svg>
+  );
+}
+
+function edge_path(edge: LaidEdge): string {
+  const mid_y = (edge.y1 + edge.y2) / 2;
+  return `M ${edge.x1} ${edge.y1} C ${edge.x1} ${mid_y}, ${edge.x2} ${mid_y}, ${edge.x2} ${edge.y2}`;
+}
+
+function selection_from_focus(focus: FocusTarget): GraphSelection | null {
+  if (focus.kind === "chain") {
+    return {
+      kind: "situation",
+      situation_id: focus.root_situation_id,
+      version: focus.root_version,
+    };
+  }
+  return focus;
+}
+
+function situation_kind(situation: ChainSituation): "start" | "step" | "terminal" {
+  if (situation.potential_factors !== undefined) {
+    return "start";
+  }
+  if (situation.original_ask !== undefined) {
+    return "terminal";
+  }
+  return "step";
+}
+
+function short_title(desc: string): string {
+  const sentence = desc.split(/[.;]/)[0] ?? desc;
+  if (sentence.length <= 88) {
+    return sentence;
+  }
+  return `${sentence.slice(0, 85)}…`;
+}
+
+function incoming_probability(chain: CausalChain, node: LaidNode): string | null {
+  const link = chain.links.find(
+    (item) => item.to_situation_id === node.situation_id && item.to_version === node.version,
+  );
+  return link?.p ?? null;
 }
