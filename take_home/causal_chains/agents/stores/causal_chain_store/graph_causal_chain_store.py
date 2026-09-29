@@ -326,7 +326,7 @@ class GraphCausalChainStore(CausalChainStore):
             ) in self._graph_db.list_leads_to()
         ]
         chains: list[CausalChain] = []
-        for case_situations in grouped.values():
+        for case_id, case_situations in grouped.items():
             keys = {
                 _key(situation.situation_id, situation.version)
                 for situation in case_situations
@@ -337,5 +337,8 @@ class GraphCausalChainStore(CausalChainStore):
                 if _key(link.from_situation_id, link.from_version) in keys
                 and _key(link.to_situation_id, link.to_version) in keys
             ]
-            chains.extend(chains_for(case_situations, case_links))
+            chains.extend(
+                chain.model_copy(update={"case_id": case_id})
+                for chain in chains_for(case_situations, case_links)
+            )
         return chains
