@@ -53,9 +53,10 @@ def test_format_sse_deeplink():
 
 
 def test_format_sse_heartbeat():
-    line = format_sse(HeartbeatMessage(message_id="m_3"))
+    line = format_sse(HeartbeatMessage())
     assert line.startswith("event: heartbeat\n")
     assert "meta" in line
+    assert "message_id" not in line
 
 
 class _ChainStore:

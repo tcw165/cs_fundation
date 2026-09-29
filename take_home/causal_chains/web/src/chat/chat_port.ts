@@ -23,7 +23,6 @@ export type DeeplinkCardMessage = {
 
 export type HeartbeatMessage = {
   type: "heartbeat";
-  message_id: string;
   role: "meta";
 };
 

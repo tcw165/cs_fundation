@@ -70,7 +70,7 @@ _HEARTBEAT_INTERVAL_S = 3.0
 
 
 def _heartbeat() -> HeartbeatMessage:
-    return HeartbeatMessage(message_id=str(uuid.uuid4()))
+    return HeartbeatMessage()
 
 
 def _markdown(text: str) -> MarkdownMessage:

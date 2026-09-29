@@ -21,7 +21,9 @@ class MarkdownMessage(BaseMessage):
     text: str
 
 
-class HeartbeatMessage(BaseMessage):
+class HeartbeatMessage(BaseModel):
+    """A stream keepalive. It is not stored."""
+
     type: Literal["heartbeat"] = "heartbeat"
     role: Literal[Role.meta] = Role.meta
 

@@ -36,9 +36,10 @@ def test_deeplink_message_parses():
 
 
 def test_heartbeat_message_parses():
-    message = HeartbeatMessage(message_id="m_3")
+    message = HeartbeatMessage()
     restored = message_adapter.validate_python(message.model_dump())
     assert restored == message
     assert isinstance(restored, HeartbeatMessage)
+    assert "message_id" not in message.model_dump()
     assert restored.role is Role.meta
     assert restored.type == "heartbeat"

@@ -115,13 +115,13 @@ describe("parse_sse_stream", () => {
     const events = [];
     for await (const event of parse_sse_stream(
       sse_stream([
-        'event: heartbeat\ndata: {"message_id":"m_beat","role":"meta"}\n\n',
+        'event: heartbeat\ndata: {"role":"meta"}\n\n',
       ]),
     )) {
       events.push(event);
     }
     expect(events).toEqual([
-      { type: "heartbeat", message_id: "m_beat", role: "meta" },
+      { type: "heartbeat", role: "meta" },
     ]);
   });
 });
