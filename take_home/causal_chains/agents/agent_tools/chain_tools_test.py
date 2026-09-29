@@ -12,9 +12,14 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_terminal_situation,
     get_case,
     link_situations,
+    lookup_chain_so_far,
     lookup_leaf_situations,
     make_deeplink_widget,
     reaches_terminal,
+)
+from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
+    ChainSoFar,
+    LinkedHop,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
@@ -36,6 +41,7 @@ class _Store:
         self.links: list[tuple[Case, Situation, Situation, LeadsTo]] = []
         self.leaves: list[Situation] = []
         self.reaches = False
+        self.line: ChainSoFar | None = None
 
     async def add_case(self, case: Case) -> None:
         self.cases.append(case)
@@ -73,6 +79,15 @@ class _Store:
         terminal: TerminalSituation,
     ) -> bool:
         return self.reaches
+
+    async def lookup_chain_so_far(
+        self,
+        case: Case,
+        start: StartSituation,
+    ) -> ChainSoFar:
+        if self.line is None:
+            return ChainSoFar(start=start)
+        return self.line
 
     async def get_chains(
         self,
@@ -197,3 +212,25 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     assert card.root_situation_id == now.situation_id
     assert card.root_version == now.version
     assert "deeplink card" in make_deeplink_widget.description
+    empty_line = _invoke(
+        lookup_chain_so_far,
+        context,
+        {"case": case_payload, "start": now.model_dump(mode="json")},
+    )
+    assert isinstance(empty_line, ChainSoFar)
+    assert empty_line.hops == []
+    mid = Situation(situation_id=deal.situation_id, version=deal.version, desc=deal.desc)
+    store.line = ChainSoFar(
+        start=now,
+        hops=[LinkedHop(situation=mid, link=link)],
+    )
+    linked_line = _invoke(
+        lookup_chain_so_far,
+        context,
+        {"case": case_payload, "start": now.model_dump(mode="json")},
+    )
+    assert isinstance(linked_line, ChainSoFar)
+    assert linked_line.hops[0].situation.desc == deal.desc
+    assert linked_line.hops[0].link.to_situation_id == deal.situation_id
+    assert "open line" in lookup_chain_so_far.description
+    assert "saved link" in lookup_chain_so_far.description

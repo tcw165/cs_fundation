@@ -5,6 +5,10 @@ from uuid import UUID
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.case import Case
+from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
+    ChainSoFar,
+    LinkedHop,
+)
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
@@ -215,6 +219,62 @@ class GraphCausalChainStore(CausalChainStore):
             start.version,
             terminal.situation_id,
             terminal.version,
+        )
+
+    @override
+    async def lookup_chain_so_far(
+        self,
+        case: Case,
+        start: StartSituation,
+    ) -> ChainSoFar:
+        row = self._graph_db.lookup_chain_so_far(
+            case.case_id,
+            start.situation_id,
+            start.version,
+        )
+        if row is None:
+            raise ValueError("start is missing")
+        start_row, hop_rows, link_rows = row
+        start_id, start_version, start_desc, factors = start_row
+        hops: list[LinkedHop] = []
+        for hop_row, link_row in zip(hop_rows, link_rows, strict=True):
+            situation_id, version, desc = hop_row
+            (
+                from_situation_id,
+                from_version,
+                to_situation_id,
+                to_version,
+                p,
+                inputs,
+            ) = link_row
+            hops.append(
+                LinkedHop(
+                    situation=Situation(
+                        situation_id=situation_id,
+                        version=version,
+                        desc=desc,
+                    ),
+                    link=LeadsTo(
+                        from_situation_id=from_situation_id,
+                        from_version=from_version,
+                        to_situation_id=to_situation_id,
+                        to_version=to_version,
+                        p=p,
+                        inputs=[
+                            InputVariable(name=name, value=value)
+                            for name, value in inputs
+                        ],
+                    ),
+                )
+            )
+        return ChainSoFar(
+            start=StartSituation(
+                situation_id=start_id,
+                version=start_version,
+                desc=start_desc,
+                potential_factors=factors,
+            ),
+            hops=hops,
         )
 
     @override

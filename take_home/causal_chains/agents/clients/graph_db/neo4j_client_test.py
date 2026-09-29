@@ -202,6 +202,80 @@ def test_reaches_terminal_walks_to_the_terminal():
     }
 
 
+def test_lookup_chain_so_far_reads_the_open_line():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "start_situation_id": str(NOW_ID),
+                    "start_version": 1,
+                    "start_desc": "now",
+                    "potential_factors": ["blockade"],
+                    "hops": [],
+                    "links": [],
+                }
+            ]
+        )
+    )
+    assert client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1) == (
+        (NOW_ID, 1, "now", ["blockade"]),
+        [],
+        [],
+    )
+    query, params = client._driver.calls[0]
+    assert f"[:LEADS_TO*0..{LEADS_TO_HOP_LIMIT}]" in query
+    assert "kind <> 'terminal'" in query
+    assert params == {
+        "case_id": str(CLEAR_ID),
+        "start_situation_id": str(NOW_ID),
+        "start_version": 1,
+    }
+
+
+def test_lookup_chain_so_far_reads_one_hop():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "start_situation_id": str(NOW_ID),
+                    "start_version": 1,
+                    "start_desc": "now",
+                    "potential_factors": ["blockade"],
+                    "hops": [
+                        {
+                            "situation_id": str(RESUMES_ID),
+                            "version": 1,
+                            "desc": "talks open",
+                        }
+                    ],
+                    "links": [
+                        {
+                            "from_situation_id": str(NOW_ID),
+                            "from_version": 1,
+                            "to_situation_id": str(RESUMES_ID),
+                            "to_version": 1,
+                            "p": 0.5,
+                            "inputs": [{"name": "deal_odds", "value": 0.5}],
+                        }
+                    ],
+                }
+            ]
+        )
+    )
+    start_row, hops, links = client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1)
+    assert start_row[0] == NOW_ID
+    assert hops == [(RESUMES_ID, 1, "talks open")]
+    assert links[0][0] == NOW_ID
+    assert links[0][2] == RESUMES_ID
+    assert links[0][4] == Decimal("0.5000")
+    assert links[0][5] == [("deal_odds", Decimal("0.5000"))]
+
+
+def test_lookup_chain_so_far_is_missing_when_the_row_is_missing():
+    client = Neo4jClient(_Driver([]))
+    assert client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1) is None
+
+
 def test_reaches_terminal_is_false_when_the_row_is_missing():
     client = Neo4jClient(_Driver([]))
     assert client.reaches_terminal(CLEAR_ID, NOW_ID, 1, RESUMES_ID, 1) is False

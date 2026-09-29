@@ -5,6 +5,7 @@ from agents import RunContextWrapper, function_tool
 from pydantic import BaseModel
 
 from take_home.causal_chains.agents.models.causal_chains.case import Case
+from take_home.causal_chains.agents.models.causal_chains.chain_so_far import ChainSoFar
 from take_home.causal_chains.agents.models.causal_chains.input_variable import (
     InputVariable,
     probability,
@@ -213,6 +214,24 @@ async def reaches_terminal(
         terminal: The saved terminal.
     """
     return await _require_store(ctx).reaches_terminal(case, start, terminal)
+
+
+@function_tool
+async def lookup_chain_so_far(
+    ctx: RunContextWrapper[RunContext],
+    case: Case,
+    start: StartSituation,
+) -> ChainSoFar:
+    """Load the open line from the present through the current situation, including each saved link.
+
+    The terminal is not included. An empty hop list means nothing is linked yet.
+
+    Args:
+        ctx: Run context. The causal chain store is on its clients.
+        case: The case to read.
+        start: The saved start to walk from.
+    """
+    return await _require_store(ctx).lookup_chain_so_far(case, start)
 
 
 @function_tool

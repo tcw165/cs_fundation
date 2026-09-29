@@ -56,6 +56,42 @@ MATCH (terminal)-[:BELONGS_TO]->(:Case {{case_id: $case_id}})
 RETURN EXISTS {{ MATCH (start)-[:LEADS_TO*1..{LEADS_TO_HOP_LIMIT}]->(terminal) }} AS reaches
 """
 
+CHAIN_SO_FAR = f"""
+MATCH (start:Situation {{situation_id: $start_situation_id, version: $start_version, kind: 'start'}})
+MATCH (start)-[:BELONGS_TO]->(:Case {{case_id: $case_id}})
+OPTIONAL MATCH path = (start)-[:LEADS_TO*0..{LEADS_TO_HOP_LIMIT}]->(current)
+WHERE current.kind <> 'terminal'
+  AND NOT EXISTS {{
+    MATCH (current)-[:LEADS_TO]->(next)
+    WHERE next.kind <> 'terminal'
+  }}
+  AND ALL(n IN nodes(path) WHERE n.kind <> 'terminal')
+  AND EXISTS {{ MATCH (current)-[:BELONGS_TO]->(:Case {{case_id: $case_id}}) }}
+RETURN start.situation_id AS start_situation_id,
+    start.version AS start_version,
+    start.desc AS start_desc,
+    start.potential_factors AS potential_factors,
+    CASE
+        WHEN path IS NULL THEN []
+        ELSE [n IN nodes(path)[1..] | {{
+            situation_id: n.situation_id,
+            version: n.version,
+            desc: n.desc
+        }}]
+    END AS hops,
+    CASE
+        WHEN path IS NULL THEN []
+        ELSE [r IN relationships(path) | {{
+            from_situation_id: r.from_situation_id,
+            from_version: r.from_version,
+            to_situation_id: r.to_situation_id,
+            to_version: r.to_version,
+            p: r.p,
+            inputs: r.inputs
+        }}]
+    END AS links
+"""
+
 LIST_LEAF_SITUATIONS = """
 MATCH (start:Situation {situation_id: $start_situation_id, version: $start_version, kind: 'start'})
 MATCH (start)-[:BELONGS_TO]->(:Case {case_id: $case_id})
@@ -115,6 +151,45 @@ def _strings(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value]
+
+
+def _hop_rows(
+    value: object,
+) -> list[tuple[UUID, int, str]]:
+    if not isinstance(value, list):
+        return []
+    rows: list[tuple[UUID, int, str]] = []
+    for item in value:
+        if isinstance(item, dict):
+            rows.append(
+                (
+                    UUID(str(item["situation_id"])),
+                    int(item["version"]),
+                    str(item["desc"]),
+                )
+            )
+    return rows
+
+
+def _link_rows(
+    value: object,
+) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
+    if not isinstance(value, list):
+        return []
+    rows: list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]] = []
+    for item in value:
+        if isinstance(item, dict):
+            rows.append(
+                (
+                    UUID(str(item["from_situation_id"])),
+                    int(item["from_version"]),
+                    UUID(str(item["to_situation_id"])),
+                    int(item["to_version"]),
+                    _decimal(item["p"]),
+                    _input_rows(item["inputs"]),
+                )
+            )
+    return rows
 
 
 def _input_rows(
@@ -291,6 +366,37 @@ class Neo4jClient(GraphDb):
         if record is None or record["reaches"] is None:
             return False
         return bool(record["reaches"])
+
+    @override
+    def lookup_chain_so_far(
+        self,
+        case_id: UUID,
+        start_situation_id: UUID,
+        start_version: int,
+    ) -> tuple[
+        tuple[UUID, int, str, list[str]],
+        list[tuple[UUID, int, str]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+    ] | None:
+        with self._driver.session() as session:
+            record = session.run(
+                CHAIN_SO_FAR,
+                case_id=str(case_id),
+                start_situation_id=str(start_situation_id),
+                start_version=start_version,
+            ).single()
+        if record is None:
+            return None
+        return (
+            (
+                UUID(str(record["start_situation_id"])),
+                int(record["start_version"]),
+                str(record["start_desc"]),
+                _strings(record["potential_factors"]),
+            ),
+            _hop_rows(record["hops"]),
+            _link_rows(record["links"]),
+        )
 
     @override
     def list_leads_to(
