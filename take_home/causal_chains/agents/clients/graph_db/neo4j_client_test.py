@@ -225,6 +225,9 @@ def test_lookup_chain_so_far_reads_the_open_line():
     query, params = client._driver.calls[0]
     assert f"[:LEADS_TO*0..{LEADS_TO_HOP_LIMIT}]" in query
     assert "kind <> 'terminal'" in query
+    assert "r.from_situation_id" not in query
+    assert "r.inputs" not in query
+    assert "properties(relationships(path)[i])" in query
     assert params == {
         "case_id": str(CLEAR_ID),
         "start_situation_id": str(NOW_ID),
@@ -254,8 +257,10 @@ def test_lookup_chain_so_far_reads_one_hop():
                             "from_version": 1,
                             "to_situation_id": str(RESUMES_ID),
                             "to_version": 1,
-                            "p": 0.5,
-                            "inputs": [{"name": "deal_odds", "value": 0.5}],
+                            "props": {
+                                "p": 0.5,
+                                "inputs": [{"name": "deal_odds", "value": 0.5}],
+                            },
                         }
                     ],
                 }
@@ -290,8 +295,10 @@ def test_list_leads_to_reads_versioned_rows():
                     "from_version": 1,
                     "to_situation_id": str(CLEAR_ID),
                     "to_version": 1,
-                    "p": 0.5,
-                    "inputs": [{"name": "deal_odds", "value": 0.5}],
+                    "props": {
+                        "p": 0.5,
+                        "inputs": [{"name": "deal_odds", "value": 0.5}],
+                    },
                 }
             ]
         )
@@ -306,7 +313,9 @@ def test_list_leads_to_reads_versioned_rows():
             [("deal_odds", Decimal("0.5000"))],
         ),
     ]
-    assert "MATCH ()-[r:LEADS_TO]->()" in client._driver.calls[0][0]
+    assert "MATCH (a)-[r:LEADS_TO]->(b)" in client._driver.calls[0][0]
+    assert "r.from_situation_id" not in client._driver.calls[0][0]
+    assert "properties(r)" in client._driver.calls[0][0]
 
 
 def test_clear_deletes_situations():

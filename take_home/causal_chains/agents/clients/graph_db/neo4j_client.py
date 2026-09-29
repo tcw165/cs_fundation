@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import override
 from uuid import UUID
@@ -81,13 +82,12 @@ RETURN start.situation_id AS start_situation_id,
     END AS hops,
     CASE
         WHEN path IS NULL THEN []
-        ELSE [r IN relationships(path) | {{
-            from_situation_id: r.from_situation_id,
-            from_version: r.from_version,
-            to_situation_id: r.to_situation_id,
-            to_version: r.to_version,
-            p: r.p,
-            inputs: r.inputs
+        ELSE [i IN range(0, size(relationships(path)) - 1) | {{
+            from_situation_id: nodes(path)[i].situation_id,
+            from_version: nodes(path)[i].version,
+            to_situation_id: nodes(path)[i + 1].situation_id,
+            to_version: nodes(path)[i + 1].version,
+            props: properties(relationships(path)[i])
         }}]
     END AS links
 """
@@ -133,13 +133,12 @@ DETACH DELETE s
 """
 
 LIST_LEADS_TO = """
-MATCH ()-[r:LEADS_TO]->()
-RETURN r.from_situation_id AS from_situation_id,
-    r.from_version AS from_version,
-    r.to_situation_id AS to_situation_id,
-    r.to_version AS to_version,
-    r.p AS p,
-    r.inputs AS inputs
+MATCH (a)-[r:LEADS_TO]->(b)
+RETURN a.situation_id AS from_situation_id,
+    a.version AS from_version,
+    b.situation_id AS to_situation_id,
+    b.version AS to_version,
+    properties(r) AS props
 """
 
 
@@ -178,15 +177,16 @@ def _link_rows(
         return []
     rows: list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]] = []
     for item in value:
-        if isinstance(item, dict):
+        if isinstance(item, Mapping):
+            props = item["props"]
             rows.append(
                 (
                     UUID(str(item["from_situation_id"])),
                     int(item["from_version"]),
                     UUID(str(item["to_situation_id"])),
                     int(item["to_version"]),
-                    _decimal(item["p"]),
-                    _input_rows(item["inputs"]),
+                    _decimal(props["p"]),
+                    _input_rows(props["inputs"]),
                 )
             )
     return rows
@@ -404,19 +404,7 @@ class Neo4jClient(GraphDb):
     ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_LEADS_TO))
-        rows: list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]] = []
-        for record in records:
-            rows.append(
-                (
-                    UUID(str(record["from_situation_id"])),
-                    int(record["from_version"]),
-                    UUID(str(record["to_situation_id"])),
-                    int(record["to_version"]),
-                    _decimal(record["p"]),
-                    _input_rows(record["inputs"]),
-                )
-            )
-        return rows
+        return _link_rows(records)
 
     @override
     def clear(self) -> None:
