@@ -1,10 +1,21 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from take_home.causal_chains.agents.models.causal_chains.case import Case
 
 
+class DeeplinkParam(BaseModel):
+    """One query parameter on a deeplink."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(description="Query parameter name.")
+    value: str = Field(description="Query parameter value.")
+
+
 class DeeplinkCard(BaseModel):
     """A chat card that opens one stored chain."""
+
+    model_config = ConfigDict(extra="forbid")
 
     title: str = Field(description="Short name shown on the card.")
     subtitle: str = Field(description="One sentence under the title.")
@@ -12,13 +23,18 @@ class DeeplinkCard(BaseModel):
     route: str = Field(
         description="In-app path. A stored chain is /chain/<case_id>. Do not include a version.",
     )
-    params: dict[str, str] = Field(
-        description="Query parameters. Empty for a stored chain.",
+    params: list[DeeplinkParam] = Field(
+        description=(
+            "Query parameters as name and value pairs. "
+            "Use an empty list for a stored chain."
+        ),
     )
 
 
 class DeeplinkRequest(BaseModel):
     """The case to open, and what the reader should see there."""
+
+    model_config = ConfigDict(extra="forbid")
 
     case: Case = Field(
         description=(
@@ -34,5 +50,7 @@ class DeeplinkRequest(BaseModel):
 
 class DeeplinkResult(BaseModel):
     """Cards for that destination."""
+
+    model_config = ConfigDict(extra="forbid")
 
     deeplinks: list[DeeplinkCard]

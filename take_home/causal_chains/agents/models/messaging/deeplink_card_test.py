@@ -17,7 +17,7 @@ def _card() -> DeeplinkCard:
         subtitle="the present",
         scheme="",
         route=f"/chain/{CASE_ID}",
-        params={},
+        params=[],
     )
 
 
@@ -28,7 +28,7 @@ def test_deeplink_card_fields():
         "subtitle": "the present",
         "scheme": "",
         "route": f"/chain/{CASE_ID}",
-        "params": {},
+        "params": [],
     }
     assert card.__class__.model_fields["route"].description == (
         "In-app path. A stored chain is /chain/<case_id>. Do not include a version."

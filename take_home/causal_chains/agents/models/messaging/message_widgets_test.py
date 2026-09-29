@@ -1,6 +1,9 @@
 from uuid import UUID
 
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+from take_home.causal_chains.agents.models.messaging.deeplink_card import (
+    DeeplinkCard,
+    DeeplinkParam,
+)
 from take_home.causal_chains.agents.models.messaging.message import Role, message_adapter
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
     DeeplinkCardMessage,
@@ -18,7 +21,7 @@ def _card() -> DeeplinkCard:
         subtitle="the present",
         scheme="",
         route=f"/chain/{CASE_ID}",
-        params={},
+        params=[],
     )
 
 
@@ -28,7 +31,11 @@ def test_card_link_keeps_an_in_app_path():
 
 def test_card_link_adds_a_scheme_and_query():
     card = _card().model_copy(
-        update={"scheme": "app", "route": "chain/1", "params": {"title": "now"}},
+        update={
+            "scheme": "app",
+            "route": "chain/1",
+            "params": [DeeplinkParam(name="title", value="now")],
+        },
     )
     assert card_link(card) == "app://chain/1?title=now"
 

@@ -21,7 +21,7 @@ def _card() -> DeeplinkCard:
         subtitle="the present",
         scheme="",
         route="/chain/case",
-        params={},
+        params=[],
     )
 
 

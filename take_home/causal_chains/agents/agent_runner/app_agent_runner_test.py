@@ -346,7 +346,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
         subtitle="the present",
         scheme="",
         route=f"/chain/{now_id}",
-        params={},
+        params=[],
     )
 
     class FakeDelta:
@@ -443,7 +443,7 @@ def _collect_widget_turn(monkeypatch, arguments: str | None) -> list[object]:
         subtitle="the present",
         scheme="",
         route=f"/chain/{now_id}",
-        params={},
+        params=[],
     )
     raw_call = {"name": "make_deeplink_widget", "call_id": "call_1"}
     if arguments is not None:

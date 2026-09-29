@@ -1,0 +1,29 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "deeplinks_finder",
+    srcs = ["deeplinks_finder.py"],
+    data = ["//take_home/causal_chains/agents/agents/deeplinks_finder/prompts:deeplinks_finder.md"],
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models",
+        "//take_home/causal_chains/agents/models/messaging",
+        requirement("openai-agents"),
+        requirement("pydantic"),
+    ],
+)
+
+pytest_test(
+    name = "deeplinks_finder_test",
+    srcs = ["deeplinks_finder_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/deeplinks_finder/prompts:deeplinks_finder.md"],
+    imports = ["../../../../.."],
+    deps = [
+        ":deeplinks_finder",
+        "//take_home/causal_chains/agents/models/messaging",
+        requirement("openai-agents"),
+    ],
+)
