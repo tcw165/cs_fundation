@@ -2,9 +2,12 @@ import {
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useAuiState,
 } from "@assistant-ui/react";
 
 import { DeeplinkCardPart } from "../chain/deeplink_card";
+import { MicIcon, SendIcon } from "../shell/icons";
+import { Suggestions } from "./suggestions";
 
 import "./thread.css";
 
@@ -33,12 +36,11 @@ function AssistantMessage() {
 }
 
 export function Thread() {
+  const empty = useAuiState((state) => state.thread.messages.length === 0);
   return (
     <ThreadPrimitive.Root className="thread">
       <ThreadPrimitive.Viewport className="thread-viewport">
-        <ThreadPrimitive.Empty>
-          Ask about a causal chain.
-        </ThreadPrimitive.Empty>
+        {empty ? <h2 className="play-title">What's the play?</h2> : null}
         <ThreadPrimitive.Messages
           components={{
             UserMessage,
@@ -49,10 +51,20 @@ export function Thread() {
       <ComposerPrimitive.Root className="composer">
         <ComposerPrimitive.Input
           className="composer-input"
-          placeholder="Message"
+          placeholder="Short $NVDA if chance of China-Taiwan war goes to over 90%"
+          rows={1}
+          aria-label="Message"
         />
-        <ComposerPrimitive.Send className="composer-send">Send</ComposerPrimitive.Send>
+        <div className="composer-tools">
+          <span className="composer-mic" aria-hidden="true">
+            <MicIcon />
+          </span>
+          <ComposerPrimitive.Send className="composer-send" aria-label="Send">
+            <SendIcon />
+          </ComposerPrimitive.Send>
+        </div>
       </ComposerPrimitive.Root>
+      {empty ? <Suggestions /> : null}
     </ThreadPrimitive.Root>
   );
 }
