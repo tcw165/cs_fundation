@@ -5,6 +5,7 @@ from uuid import UUID
 from neo4j import Driver
 
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
+from take_home.causal_chains.agents.constants.graph import LEADS_TO_HOP_LIMIT
 
 _P_SCALE = Decimal("0.0001")
 
@@ -47,12 +48,12 @@ REMOVE s.is_root
 MERGE (s)-[:BELONGS_TO]->(c)
 """
 
-REACHES_TERMINAL = """
-MATCH (start:Situation {situation_id: $start_situation_id, version: $start_version, kind: 'start'})
-MATCH (start)-[:BELONGS_TO]->(:Case {case_id: $case_id})
-MATCH (terminal:Situation {situation_id: $terminal_situation_id, version: $terminal_version, kind: 'terminal'})
-MATCH (terminal)-[:BELONGS_TO]->(:Case {case_id: $case_id})
-RETURN EXISTS { MATCH (start)-[:LEADS_TO*1..64]->(terminal) } AS reaches
+REACHES_TERMINAL = f"""
+MATCH (start:Situation {{situation_id: $start_situation_id, version: $start_version, kind: 'start'}})
+MATCH (start)-[:BELONGS_TO]->(:Case {{case_id: $case_id}})
+MATCH (terminal:Situation {{situation_id: $terminal_situation_id, version: $terminal_version, kind: 'terminal'}})
+MATCH (terminal)-[:BELONGS_TO]->(:Case {{case_id: $case_id}})
+RETURN EXISTS {{ MATCH (start)-[:LEADS_TO*1..{LEADS_TO_HOP_LIMIT}]->(terminal) }} AS reaches
 """
 
 LIST_LEAF_SITUATIONS = """
