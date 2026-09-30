@@ -1,5 +1,15 @@
 import type { Message, Role } from "./chat_port";
 
+let heartbeat_serial = 0;
+
+function heartbeat_message_id(message_id: string | undefined): string {
+  if (message_id) {
+    return message_id;
+  }
+  heartbeat_serial += 1;
+  return `heartbeat-${heartbeat_serial}`;
+}
+
 export type ChatItem =
   | {
       type: "markdown";
@@ -40,7 +50,7 @@ export function chat_item_from_message(message: Message): ChatItem {
     case "heartbeat":
       return {
         type: "heartbeat",
-        message_id: message.message_id,
+        message_id: heartbeat_message_id(message.message_id),
         role: "meta",
       };
   }

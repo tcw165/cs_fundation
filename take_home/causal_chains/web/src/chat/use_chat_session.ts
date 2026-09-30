@@ -24,7 +24,10 @@ export function use_chat_session(
   const animating = state.shown.find((item) => item.message_id === state.animating_id) ?? null;
 
   const finish = useCallback(() => {
-    if (finished_id.current === state.animating_id) {
+    if (
+      state.animating_id != null &&
+      finished_id.current === state.animating_id
+    ) {
       return;
     }
     finished_id.current = state.animating_id;
