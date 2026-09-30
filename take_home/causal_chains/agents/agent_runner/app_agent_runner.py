@@ -26,7 +26,6 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Role,
 )
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
-    DeeplinkCardMessage,
     deeplink_message,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
@@ -85,8 +84,38 @@ def _markdown(text: str) -> MarkdownMessage:
     )
 
 
-def _render_at_end(item: object) -> bool:
+def _tool_call_name(item: object) -> str:
+    name = _raw_field(item, "name")
+    if isinstance(name, str) and name:
+        return name
+    function = _raw_field(item, "function")
+    if isinstance(function, dict):
+        nested = function.get("name")
+    else:
+        nested = getattr(function, "name", None)
+    return str(nested or "tool")
+
+
+def _tool_call_id(item: object) -> str | None:
+    for field_name in ("call_id", "id"):
+        value = _raw_field(item, field_name)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def _tool_call_arguments(item: object) -> object:
     raw = _raw_field(item, "arguments")
+    if isinstance(raw, str) and raw.strip():
+        return raw
+    function = _raw_field(item, "function")
+    if isinstance(function, dict):
+        return function.get("arguments")
+    return getattr(function, "arguments", None)
+
+
+def _render_at_end(item: object) -> bool:
+    raw = _tool_call_arguments(item)
     if not isinstance(raw, str) or not raw.strip():
         return True
     try:
@@ -231,9 +260,11 @@ class AppAgentRunner(AgentRunner):
                     ),
                 )
                 results.append(result)
+                # Call id to tool name for this turn. The output event only has the id.
                 tool_names: dict[str, str] = {}
                 render_later: dict[str, bool] = {}
-                pending: list[DeeplinkCardMessage] = []
+                # Messages held until the story is finished, then sent in order.
+                tail_messages: list[Message] = []
                 buffer = ""
                 async for event in result.stream_events():
                     event_type = getattr(event, "type", "")
@@ -249,11 +280,10 @@ class AppAgentRunner(AgentRunner):
                         and getattr(item, "type", "") == "tool_call_item"
                     ):
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
-                        name = _raw_field(item, "name")
-                        call_id = _raw_field(item, "call_id")
-                        tool_name = str(name or "tool")
+                        tool_name = _tool_call_name(item)
+                        call_id = _tool_call_id(item)
                         logger().info(f"tool call {tool_name}")
-                        if isinstance(call_id, str):
+                        if call_id is not None:
                             tool_names[call_id] = tool_name
                             if tool_names[call_id] == "show_deeplink_widget":
                                 render_later[call_id] = _render_at_end(item)
@@ -271,16 +301,16 @@ class AppAgentRunner(AgentRunner):
                         )
                         if render_later.get(str(call_id), True):
                             logger().info("deeplink queued")
-                            pending.append(message)
+                            tail_messages.append(message)
                         else:
                             logger().info("deeplink sent")
                             await send.send(message)
                 tail = buffer.strip()
                 buffer = await _emit_paragraphs(send, buffer, rest=True)
                 logger().info(
-                    f"agent run end pending_deeplinks={len(pending)} tail_flushed={bool(tail)}",
+                    f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
                 )
-                for message in pending:
+                for message in tail_messages:
                     await send.send(message)
                 self._memcache.flush()
         except InputGuardrailTripwireTriggered:
