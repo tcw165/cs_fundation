@@ -9,7 +9,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     lookup_chain_so_far,
     reaches_terminal,
 )
-from take_home.causal_chains.agents.agent_tools.widgets import make_deeplink_widget
+from take_home.causal_chains.agents.agent_tools.widgets import show_deeplink_widget
 from take_home.causal_chains.agents.agents.deeplinks_finder.deeplinks_finder import (
     deeplinks_finder,
 )
@@ -76,7 +76,7 @@ causal_chain = Agent[RunContext](
             ),
             parameters=DeeplinkRequest,
         ),
-        make_deeplink_widget,
+        show_deeplink_widget,
     ],
     input_guardrails=[input_guardrail],
     output_type=str,

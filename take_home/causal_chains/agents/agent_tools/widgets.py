@@ -5,7 +5,7 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 @function_tool
-async def make_deeplink_widget(
+async def show_deeplink_widget(
     ctx: RunContextWrapper[RunContext],
     card: DeeplinkCard,
     render_at_end: bool = True,
