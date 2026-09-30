@@ -264,8 +264,10 @@ class AppAgentRunner(AgentRunner):
                             _card_from_output(getattr(item, "output", None)),
                         )
                         if render_later.get(str(call_id), True):
+                            logger().info("deeplink queued")
                             pending.append(message)
                         else:
+                            logger().info("deeplink sent")
                             await send.send(message)
                 buffer = await _emit_paragraphs(send, buffer, rest=True)
                 for message in pending:
