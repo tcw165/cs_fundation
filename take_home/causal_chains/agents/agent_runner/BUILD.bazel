@@ -32,6 +32,7 @@ pytest_test(
         "//take_home/causal_chains/agents/agents/input_guardrail",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
+        "//take_home/causal_chains/agents/observability:observability",
         requirement("anyio"),
     ],
 )

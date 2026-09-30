@@ -245,8 +245,10 @@ class AppAgentRunner(AgentRunner):
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
                         name = _raw_field(item, "name")
                         call_id = _raw_field(item, "call_id")
+                        tool_name = str(name or "tool")
+                        logger().info(f"tool call {tool_name}")
                         if isinstance(call_id, str):
-                            tool_names[call_id] = str(name or "tool")
+                            tool_names[call_id] = tool_name
                             if tool_names[call_id] == "make_deeplink_widget":
                                 render_later[call_id] = _render_at_end(item)
                         continue
