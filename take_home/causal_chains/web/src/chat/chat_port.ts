@@ -25,6 +25,7 @@ export type DeeplinkCardMessage = {
 export type HeartbeatMessage = {
   type: "heartbeat";
   role: "meta";
+  message_id?: string;
 };
 
 export type Message = MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage;

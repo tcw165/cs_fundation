@@ -21,4 +21,12 @@ describe("chat_item_from_message", () => {
       { type: "heartbeat", message_id: "m3", role: "meta" },
     ]);
   });
+
+  it("gives each heartbeat without an id its own message id", () => {
+    const first = chat_item_from_message({ type: "heartbeat", role: "meta" });
+    const second = chat_item_from_message({ type: "heartbeat", role: "meta" });
+    expect(first.message_id).toBeTruthy();
+    expect(second.message_id).toBeTruthy();
+    expect(first.message_id).not.toBe(second.message_id);
+  });
 });
