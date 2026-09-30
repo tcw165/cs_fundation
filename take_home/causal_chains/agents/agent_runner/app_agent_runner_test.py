@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from uuid import UUID
@@ -31,6 +32,7 @@ from take_home.causal_chains.agents.models.messaging.message_widgets import (
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
+from take_home.causal_chains.agents.observability.logging import bind_session_logger
 
 
 class _FixedClock:
@@ -277,11 +279,29 @@ def test_app_agent_runner_flushes_a_preamble_when_a_tool_call_starts(monkeypatch
         )
         return [event async for event in runner.stream(["hormuz"], context)]
 
-    events = asyncio.run(collect())
+    records: list[logging.LogRecord] = []
+
+    class _ListHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    handler = _ListHandler()
+    named = logging.getLogger("causal_chains")
+    named.setLevel(logging.INFO)
+    named.addHandler(handler)
+    try:
+        with bind_session_logger("1", "t_1"):
+            events = asyncio.run(collect())
+    finally:
+        named.removeHandler(handler)
     assert [event.text for event in events] == [
         "preamble one",
         "preamble two",
         "the story",
+    ]
+    assert "tool call add_case" in [record.getMessage() for record in records]
+    assert "tool call lookup_chain_so_far" in [
+        record.getMessage() for record in records
     ]
     assert all(isinstance(event, MarkdownMessage) for event in events)
     assert len({event.message_id for event in events}) == 3
