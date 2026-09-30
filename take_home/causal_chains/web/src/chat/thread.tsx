@@ -53,7 +53,7 @@ export function Thread({
           className="composer-input"
           aria-label="Message"
           placeholder="Short $NVDA if chance of China-Taiwan war goes to over 90%"
-          rows={1}
+          rows={3}
           value={draft}
           onChange={(event) => set_draft(event.target.value)}
           onKeyDown={(event) => {
