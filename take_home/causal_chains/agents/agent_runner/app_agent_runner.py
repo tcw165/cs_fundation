@@ -275,7 +275,11 @@ class AppAgentRunner(AgentRunner):
                         else:
                             logger().info("deeplink sent")
                             await send.send(message)
+                tail = buffer.strip()
                 buffer = await _emit_paragraphs(send, buffer, rest=True)
+                logger().info(
+                    f"agent run end pending_deeplinks={len(pending)} tail_flushed={bool(tail)}",
+                )
                 for message in pending:
                     await send.send(message)
                 self._memcache.flush()
