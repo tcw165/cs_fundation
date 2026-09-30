@@ -1,4 +1,4 @@
-import { MicIcon, SendIcon } from "../shell/icons";
+import { SendIcon } from "../shell/icons";
 import { MessageView } from "./message_view";
 import { Suggestions } from "./suggestions";
 import type { use_chat_session } from "./use_chat_session";
@@ -64,9 +64,6 @@ export function Thread({
           }}
         />
         <div className="composer-tools">
-          <span className="composer-mic" aria-hidden="true">
-            <MicIcon />
-          </span>
           <button
             type="submit"
             className="composer-send"

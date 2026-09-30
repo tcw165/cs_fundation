@@ -88,15 +88,6 @@
   gap: 4px;
 }
 
-.composer-mic {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-}
-
-.composer-mic svg,
 .composer-send svg {
   width: 18px;
   height: 18px;
