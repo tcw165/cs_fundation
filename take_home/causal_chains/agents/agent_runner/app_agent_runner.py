@@ -18,7 +18,10 @@ from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent
     blocked_input_message,
 )
 from take_home.causal_chains.agents.clients.memcache.protocol.protocol import Memcache
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+from take_home.causal_chains.agents.models.messaging.deeplink_card import (
+    DeeplinkCard,
+    DeeplinkResult,
+)
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -30,6 +33,11 @@ from take_home.causal_chains.agents.models.messaging.message_widgets import (
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.observability.logging import logger
+
+_WIDGET_TOOLS = (
+    "show_deeplink_widget",
+    "deeplinks_finder",
+)
 
 
 def _make_current_time_reminder_message(moment: datetime) -> dict[str, str]:
@@ -133,6 +141,27 @@ def _card_from_output(output: object) -> DeeplinkCard:
     if isinstance(output, str):
         return DeeplinkCard.model_validate_json(output)
     return DeeplinkCard.model_validate(output)
+
+
+def _cards_from_finder_output(output: object) -> list[DeeplinkCard]:
+    if isinstance(output, DeeplinkResult):
+        return list(output.deeplinks)
+    if isinstance(output, str):
+        return list(DeeplinkResult.model_validate_json(output).deeplinks)
+    return list(DeeplinkResult.model_validate(output).deeplinks)
+
+
+def _queue_deeplink(
+    tail_messages: list[Message],
+    seen_links: set[str],
+    card: DeeplinkCard,
+) -> None:
+    message = deeplink_message(card)
+    if message.link in seen_links:
+        return
+    seen_links.add(message.link)
+    logger().info("deeplink queued")
+    tail_messages.append(message)
 
 
 def _ready_paragraphs(buffer: str) -> tuple[list[str], str]:
@@ -265,6 +294,7 @@ class AppAgentRunner(AgentRunner):
                 render_later: dict[str, bool] = {}
                 # Messages held until the story is finished, then sent in order.
                 tail_messages: list[Message] = []
+                seen_links: set[str] = set()
                 buffer = ""
                 async for event in result.stream_events():
                     event_type = getattr(event, "type", "")
@@ -292,17 +322,29 @@ class AppAgentRunner(AgentRunner):
                         event_type == "run_item_stream_event"
                         and getattr(item, "type", "") == "tool_call_output_item"
                     ):
-                        call_id = _raw_field(item, "call_id")
-                        if tool_names.get(str(call_id)) != "show_deeplink_widget":
+                        call_id = _tool_call_id(item) or ""
+                        tool_name = tool_names.get(call_id)
+                        if tool_name not in _WIDGET_TOOLS:
                             continue
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
-                        message = deeplink_message(
-                            _card_from_output(getattr(item, "output", None)),
+                        output = getattr(item, "output", None)
+                        cards = (
+                            _cards_from_finder_output(output)
+                            if tool_name == "deeplinks_finder"
+                            else [_card_from_output(output)]
                         )
-                        if render_later.get(str(call_id), True):
-                            logger().info("deeplink queued")
-                            tail_messages.append(message)
-                        else:
+                        hold = (
+                            tool_name == "deeplinks_finder"
+                            or render_later.get(call_id, True)
+                        )
+                        for card in cards:
+                            if hold:
+                                _queue_deeplink(tail_messages, seen_links, card)
+                                continue
+                            message = deeplink_message(card)
+                            if message.link in seen_links:
+                                continue
+                            seen_links.add(message.link)
                             logger().info("deeplink sent")
                             await send.send(message)
                 tail = buffer.strip()
