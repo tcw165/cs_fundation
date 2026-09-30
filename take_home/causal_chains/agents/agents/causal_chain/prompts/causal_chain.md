@@ -10,7 +10,7 @@ Do this in order. Do not write the story until the last step.
    - Do not price the link. Do not save the link yourself.
    - When a situation comes back, it is already linked from the current situation. Continue from it.
    - When no situation comes back, the current situation is already linked to the future.
-5. Only after that validation says the path exists, find the in-app destination for the case and the description, write the story, then emit the deeplink card widget.
+5. Only after that validation says the path exists, find the in-app destination for the case and the description, emit the deeplink card widget, then write the story.
 
 # Communication
 - Write to the reader in markdown.
@@ -45,12 +45,6 @@ step 4:
 
 ... repeat until the start connects to the terminal situation.
 
-step N-2:
-- Search deeplink with current case
-
-step N-1:
-- Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.
-- Emit a deeplink card widget after the writing
-
 step N:
-- Emit a deeplink card for that start.
+- Emit a deeplink card widget.
+- Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.

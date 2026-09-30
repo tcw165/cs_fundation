@@ -128,13 +128,9 @@ def test_causal_chain_prompt_and_tools():
     assert "Find the in-app destination for the case and the description." in prompt
     assert "route is `/chain/<case_id>`" in prompt
     assert (
-        "step N-2:\n"
-        "- Search deeplink with current case\n\n"
-        "step N-1:\n"
-        "- Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.\n"
-        "- Emit a deeplink card widget after the writing\n\n"
         "step N:\n"
-        "- Emit a deeplink card for that start.\n"
+        "- Emit a deeplink card widget.\n"
+        "- Only after the start connects to the terminal, write the story of how the current situation evolves to the asked situation. This is the answer.\n"
     ) in prompt
     finder = next(tool for tool in causal_chain.tools if tool.name == "deeplinks_finder")
     assert finder.params_json_schema["properties"].keys() == {"case", "destination_desc"}
