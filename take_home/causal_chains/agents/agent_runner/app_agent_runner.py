@@ -284,8 +284,12 @@ class AppAgentRunner(AgentRunner):
                     await send.send(message)
                 self._memcache.flush()
         except InputGuardrailTripwireTriggered:
+            logger().info("input guardrail triggered")
             self._memcache.flush()
             await send.send(_markdown(blocked_input_message))
+        except Exception:
+            logger().exception("agent run failed")
+            raise
         finally:
             stop.set()
             await send.aclose()
