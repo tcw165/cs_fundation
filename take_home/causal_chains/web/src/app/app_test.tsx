@@ -12,7 +12,6 @@ import { describe, expect, it } from "vitest";
 import type { ChainPort } from "../chain/chain_port";
 import type { ChatPort, Message } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
-import type { HealthPort } from "../health/health_port";
 import { App } from "./app";
 
 const now_id = "11111111-1111-4111-8111-111111111111";
@@ -73,10 +72,8 @@ describe("app chat", () => {
         },
       ],
     };
-    const health_port: HealthPort = { get_health: async () => ({ status: "ok" }) };
     const { host, root } = render(
       <App
-        health_port={health_port}
         chain_port={chain_port}
         chat_port={chat_port}
         conversation_id="1"

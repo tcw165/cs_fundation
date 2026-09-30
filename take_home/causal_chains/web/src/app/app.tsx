@@ -7,26 +7,20 @@ import { Thread } from "../chat/thread";
 import type { ChatPort } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
 import { use_chat_session } from "../chat/use_chat_session";
-import type { HealthPort } from "../health/health_port";
-import { Rail } from "../shell/rail";
-
 import "../theme/tokens.css";
 import "../shell/shell.css";
 import "./app.css";
 
 export function AppShell({
-  server,
   panel,
   children,
 }: {
-  server: string;
   panel: ReactNode;
   children: ReactNode;
 }) {
   const panel_open = panel !== null;
   return (
     <div className={panel_open ? "shell is-open" : "shell"}>
-      <Rail server={server} panel_open={panel_open} />
       <div className="stage">
         <div className="chat-column">{children}</div>
         <div className="panel-slot">{panel}</div>
@@ -44,29 +38,19 @@ function panel_for(link: string, title?: string): PanelState | null {
 }
 
 export function App({
-  health_port,
   chain_port,
   chat_port,
   conversation_id,
   timing,
 }: {
-  health_port: HealthPort;
   chain_port: ChainPort;
   chat_port: ChatPort;
   conversation_id: string;
   timing: RevealTiming;
 }) {
-  const [server, set_server] = useState("loading");
   const [panel, set_panel] = useState<PanelState>(folded_panel);
   const opened_links = useRef(new Set<string>());
   const session = use_chat_session(chat_port, conversation_id, timing);
-
-  useEffect(() => {
-    health_port
-      .get_health()
-      .then((report) => set_server(report.status))
-      .catch(() => set_server("down"));
-  }, [health_port]);
 
   useEffect(() => {
     for (const item of session.state.shown) {
@@ -84,7 +68,6 @@ export function App({
   return (
     <main className="app">
       <AppShell
-        server={server}
         panel={
           panel.open && panel.focus !== null ? (
             <ChainCanvas focus={panel.focus} chain_port={chain_port} />

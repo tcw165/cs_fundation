@@ -9,19 +9,15 @@ import { App } from "./app/app";
 import { create_chain_http } from "./chain/chain_http";
 import { create_chat_http } from "./chat/chat_http";
 import { fast_timing, studio_timing } from "./chat/reveal_timing";
-import { create_health_http } from "./health/health_http";
-
 const api_url = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const pace = new URLSearchParams(window.location.search).get("pace");
 const timing = pace === "fast" ? fast_timing : studio_timing;
-const health_port = create_health_http(api_url);
 const chat_port = create_chat_http(api_url);
 const chain_port = create_chain_http(api_url);
 
 function Root() {
   return (
     <App
-      health_port={health_port}
       chat_port={chat_port}
       chain_port={chain_port}
       conversation_id="1"
