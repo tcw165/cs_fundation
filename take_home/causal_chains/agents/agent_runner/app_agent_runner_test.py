@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -20,7 +21,10 @@ from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent
     blocked_input_message,
 )
 from take_home.causal_chains.agents.clients.memcache.memcache import InMemoryMemcache
-from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
+from take_home.causal_chains.agents.models.messaging.deeplink_card import (
+    DeeplinkCard,
+    DeeplinkResult,
+)
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -561,6 +565,153 @@ def test_app_agent_runner_shows_a_deeplink_before_later_text(monkeypatch):
     ]
     assert events[0].text == "before"
     assert events[2].text == "after"
+
+
+def _saved_chain_card() -> DeeplinkCard:
+    now_id = UUID("11111111-1111-4111-8111-111111111111")
+    return DeeplinkCard(
+        title="now",
+        subtitle="the present",
+        scheme="causal_chains",
+        route=f"/chain/{now_id}",
+        params=[],
+    )
+
+
+def _collect_custom_turn(monkeypatch, steps: list[object]) -> list[object]:
+    class FakeDelta:
+        def __init__(self, delta: str) -> None:
+            self.delta = delta
+
+    async def fake_stream():
+        for step in steps:
+            yield step
+
+    class FakeResult:
+        def stream_events(self):
+            return fake_stream()
+
+        def cancel(self) -> None:
+            return None
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(agent, input, context=None, max_turns=None, run_config=None):
+            return FakeResult()
+
+    monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def collect():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            clock=_FixedClock(),
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        return [event async for event in runner.stream(["hormuz"], context)]
+
+    return [
+        event
+        for event in asyncio.run(collect())
+        if not isinstance(event, HeartbeatMessage)
+    ]
+
+
+def test_app_agent_runner_shows_a_finder_card_from_a_function_call(monkeypatch):
+    card = _saved_chain_card()
+    call_id = "call_4LWe5OK3oVJ3r6lngJsJTI"
+    events = _collect_custom_turn(
+        monkeypatch,
+        [
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_item",
+                    raw_item={
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": "deeplinks_finder",
+                            "arguments": json.dumps(
+                                {
+                                    "case": {
+                                        "case_id": "11111111-1111-4111-8111-111111111111",
+                                    },
+                                    "destination_desc": "the saved chain",
+                                },
+                            ),
+                        },
+                    },
+                ),
+            ),
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_output_item",
+                    raw_item={"id": call_id},
+                    output=DeeplinkResult(deeplinks=[card]),
+                ),
+            ),
+        ],
+    )
+    cards = [event for event in events if isinstance(event, DeeplinkCardMessage)]
+    assert len(cards) == 1
+    assert cards[0].title == "now"
+    assert cards[0].link == "causal_chains://chain/11111111-1111-4111-8111-111111111111"
+
+
+def test_app_agent_runner_shows_one_card_when_finder_and_widget_match(monkeypatch):
+    card = _saved_chain_card()
+    events = _collect_custom_turn(
+        monkeypatch,
+        [
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_item",
+                    raw_item={
+                        "id": "call_finder",
+                        "type": "function",
+                        "function": {
+                            "name": "deeplinks_finder",
+                            "arguments": "{}",
+                        },
+                    },
+                ),
+            ),
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_output_item",
+                    raw_item={"id": "call_finder"},
+                    output=DeeplinkResult(deeplinks=[card]),
+                ),
+            ),
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_item",
+                    raw_item=SimpleNamespace(
+                        name="show_deeplink_widget",
+                        call_id="call_widget",
+                    ),
+                ),
+            ),
+            SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_output_item",
+                    raw_item={"call_id": "call_widget"},
+                    output=card,
+                ),
+            ),
+        ],
+    )
+    cards = [event for event in events if isinstance(event, DeeplinkCardMessage)]
+    assert len(cards) == 1
+    assert cards[0].link == "causal_chains://chain/11111111-1111-4111-8111-111111111111"
 
 
 def test_app_agent_runner_traces_the_model_run(monkeypatch):
