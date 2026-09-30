@@ -17,6 +17,7 @@ py_library(
         "//take_home/causal_chains/agents/http_models",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
+        "//take_home/causal_chains/agents/observability:observability",
         requirement("fastapi"),
     ],
 )
