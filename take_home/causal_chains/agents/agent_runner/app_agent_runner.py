@@ -30,6 +30,7 @@ from take_home.causal_chains.agents.models.messaging.message_widgets import (
     deeplink_message,
 )
 from take_home.causal_chains.agents.models.run_context import RunContext
+from take_home.causal_chains.agents.observability.logging import logger
 
 
 def _make_current_time_reminder_message(moment: datetime) -> dict[str, str]:
@@ -211,6 +212,9 @@ class AppAgentRunner(AgentRunner):
                 metadata={"turn_id": context.turn_id},
             ):
                 user_ask = "\n".join(inputs)
+                logger().info(
+                    f"agent run start turn_id={context.turn_id} ask_len={len(user_ask)}",
+                )
                 result = Runner.run_streamed(
                     causal_chain,
                     input=user_ask,

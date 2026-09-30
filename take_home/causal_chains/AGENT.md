@@ -16,6 +16,10 @@ Keep models, protocols, and implementations apart.
 - The implementation lives in `xxx/`, next to that protocol package.
 - Every model has a docstring.
 
+### Logging
+
+Log messages use f-strings: `logger().info(f"tool call {tool_name}")`. Do not use `%` formatting.
+
 ## AI agents
 
 - Agents live under `agents/agents/`.
