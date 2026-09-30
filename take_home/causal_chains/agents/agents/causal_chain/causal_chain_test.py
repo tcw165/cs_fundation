@@ -76,7 +76,7 @@ def test_causal_chain_prompt_and_tools():
         "lookup_chain_so_far",
         "reaches_terminal",
         "link_situations",
-        "make_deeplink_widget",
+        "show_deeplink_widget",
         "deeplinks_finder",
     ):
         assert tool_name not in prompt
@@ -89,7 +89,7 @@ def test_causal_chain_prompt_and_tools():
         "lookup_chain_so_far",
         "path_builder",
         "deeplinks_finder",
-        "make_deeplink_widget",
+        "show_deeplink_widget",
     ]
     path_builder_tool = next(
         tool for tool in causal_chain.tools if tool.name == "path_builder"
@@ -118,7 +118,7 @@ def test_causal_chain_prompt_and_tools():
     assert "link_situations" not in [tool.name for tool in causal_chain.tools]
     assert [tool.name for tool in causal_chain.tools[-2:]] == [
         "deeplinks_finder",
-        "make_deeplink_widget",
+        "show_deeplink_widget",
     ]
     assert [guardrail.name for guardrail in causal_chain.input_guardrails] == [
         "input_guardrail",

@@ -390,7 +390,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
             type="run_item_stream_event",
             item=SimpleNamespace(
                 type="tool_call_item",
-                raw_item=SimpleNamespace(name="make_deeplink_widget", call_id="call_1"),
+                raw_item=SimpleNamespace(name="show_deeplink_widget", call_id="call_1"),
             ),
         )
         yield SimpleNamespace(
@@ -470,7 +470,7 @@ def _collect_widget_turn(monkeypatch, arguments: str | None) -> list[object]:
         route=f"/chain/{now_id}",
         params=[],
     )
-    raw_call = {"name": "make_deeplink_widget", "call_id": "call_1"}
+    raw_call = {"name": "show_deeplink_widget", "call_id": "call_1"}
     if arguments is not None:
         raw_call["arguments"] = arguments
 

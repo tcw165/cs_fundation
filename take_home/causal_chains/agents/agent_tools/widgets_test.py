@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from agents.tool_context import ToolContext
 
-from take_home.causal_chains.agents.agent_tools.widgets import make_deeplink_widget
+from take_home.causal_chains.agents.agent_tools.widgets import show_deeplink_widget
 from take_home.causal_chains.agents.models.messaging.deeplink_card import (
     DEEPLINK_SCHEME,
     DeeplinkCard,
@@ -38,10 +38,10 @@ def _invoke(arguments: dict[str, object]) -> DeeplinkCard:
     )
 
     async def exercise() -> object:
-        return await make_deeplink_widget.on_invoke_tool(
+        return await show_deeplink_widget.on_invoke_tool(
             ToolContext(
                 context=context,
-                tool_name=make_deeplink_widget.name,
+                tool_name=show_deeplink_widget.name,
                 tool_call_id="call_1",
                 tool_arguments=payload,
             ),
@@ -53,10 +53,10 @@ def _invoke(arguments: dict[str, object]) -> DeeplinkCard:
     return result
 
 
-def test_make_deeplink_widget_returns_the_card():
+def test_show_deeplink_widget_returns_the_card():
     card = _card()
     assert _invoke({"card": card.model_dump(mode="json")}) == card
-    assert "deeplink card" in make_deeplink_widget.description
-    rendered = make_deeplink_widget.params_json_schema["properties"]["render_at_end"]
+    assert "deeplink card" in show_deeplink_widget.description
+    rendered = show_deeplink_widget.params_json_schema["properties"]["render_at_end"]
     assert rendered["default"] is True
     assert "after the rest of this turn" in rendered["description"]

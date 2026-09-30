@@ -255,7 +255,7 @@ class AppAgentRunner(AgentRunner):
                         logger().info(f"tool call {tool_name}")
                         if isinstance(call_id, str):
                             tool_names[call_id] = tool_name
-                            if tool_names[call_id] == "make_deeplink_widget":
+                            if tool_names[call_id] == "show_deeplink_widget":
                                 render_later[call_id] = _render_at_end(item)
                         continue
                     if (
@@ -263,7 +263,7 @@ class AppAgentRunner(AgentRunner):
                         and getattr(item, "type", "") == "tool_call_output_item"
                     ):
                         call_id = _raw_field(item, "call_id")
-                        if tool_names.get(str(call_id)) != "make_deeplink_widget":
+                        if tool_names.get(str(call_id)) != "show_deeplink_widget":
                             continue
                         buffer = await _emit_paragraphs(send, buffer, rest=True)
                         message = deeplink_message(
