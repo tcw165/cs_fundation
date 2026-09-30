@@ -32,6 +32,8 @@ services:
     depends_on:
       dynamodb_init:
         condition: service_completed_successfully
+      graph_init:
+        condition: service_completed_successfully
 
   web:
     build:
