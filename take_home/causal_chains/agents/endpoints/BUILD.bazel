@@ -14,6 +14,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/chat_service",
         "//take_home/causal_chains/agents/di",
+        "//take_home/causal_chains/agents/endpoints/models",
         "//take_home/causal_chains/agents/http_models",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",

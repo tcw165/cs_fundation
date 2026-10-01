@@ -8,6 +8,9 @@ from fastapi.responses import StreamingResponse
 
 from take_home.causal_chains.agents.chat_service.chat_service import format_sse
 from take_home.causal_chains.agents.di.deps import AppContainerDep
+from take_home.causal_chains.agents.endpoints.models.post_message_response import (
+    PostMessageResponse,
+)
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
@@ -21,12 +24,15 @@ from take_home.causal_chains.agents.observability.logging import bind_session_lo
 router = APIRouter()
 
 
-@router.post("/conversation/{conversation_id}/messages", response_model=Turn)
+@router.post(
+    "/conversation/{conversation_id}/messages",
+    response_model=PostMessageResponse,
+)
 async def post_message(
     conversation_id: str,
     body: PostMessageBody,
     container: AppContainerDep,
-) -> Turn:
+) -> PostMessageResponse:
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),
         conversation_id=conversation_id,
@@ -43,7 +49,7 @@ async def post_message(
         from_message=message.message_id,
     )
     await container.turn_store().put_turn(turn)
-    return turn
+    return PostMessageResponse(turn=turn, received_message=message)
 
 
 def _passed_cursor(

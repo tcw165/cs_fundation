@@ -11,18 +11,59 @@ from take_home.causal_chains.agents.main_app import create_app
 class _FakeDynamoDb:
     def __init__(self) -> None:
         self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
-        self.put_item("conversation", {"conversation_id": "1", "messages": []})
 
     def put_item(self, table_name: str, item: dict[str, object]) -> None:
         if table_name == "turn":
             key = (("turn_id", item["turn_id"]),)
         else:
-            key = (("conversation_id", item["conversation_id"]),)
+            key = (("PK", item["PK"]), ("SK", item["SK"]))
         self._items[(table_name, key)] = item
 
     def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
         stored_key = tuple(sorted(key.items()))
         return self._items.get((table_name, stored_key))
+
+    def query(
+        self,
+        table_name: str,
+        key_name: str,
+        key_value: str,
+        sk_name: str,
+        sk_prefix: str,
+        limit: int,
+        exclusive_start_sk: str | None = None,
+    ) -> tuple[list[dict[str, object]], str | None]:
+        rows = [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name
+            and item.get(key_name) == key_value
+            and str(item.get(sk_name, "")).startswith(sk_prefix)
+        ]
+        rows.sort(key=lambda row: str(row.get(sk_name, "")))
+        if exclusive_start_sk is not None:
+            rows = [
+                row
+                for row in rows
+                if str(row.get(sk_name, "")) > exclusive_start_sk
+            ]
+        page = rows[:limit]
+        if len(page) < limit or not page:
+            return page, None
+        return page, str(page[-1][sk_name])
+
+    def query_index(
+        self,
+        table_name: str,
+        index_name: str,
+        key_name: str,
+        key_value: str,
+    ) -> list[dict[str, object]]:
+        return [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name and item.get(key_name) == key_value
+        ]
 
 
 class _SyncAsgiTransport(httpx.BaseTransport):
@@ -49,6 +90,7 @@ class _SyncAsgiTransport(httpx.BaseTransport):
 def test_query_hello_prints_markdown_and_done(monkeypatch):
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
+    container.config.user_uuid.from_value("user-1")
     container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
     transport = _SyncAsgiTransport(create_app(container))
     original_client = httpx.Client
@@ -86,8 +128,11 @@ def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
         def raise_for_status(self) -> None:
             return None
 
-        def json(self) -> dict[str, str]:
-            return {"turn_id": "t_1", "from_message": "m_1"}
+        def json(self) -> dict[str, object]:
+            return {
+                "turn": {"turn_id": "t_1", "from_message": "m_1"},
+                "received_message": {"kind": "markdown", "text": "hello"},
+            }
 
         def iter_text(self):
             for index, chunk in enumerate(chunks):

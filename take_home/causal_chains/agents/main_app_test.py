@@ -92,14 +92,14 @@ def test_post_message_and_sse_with_stub_runner():
     created = client.post("/conversation/1/messages", json={"text": "hello"})
     assert created.status_code == 200
     body = created.json()
-    assert body["status"] == "queued"
-    assert body["from_message"]
-    turn_id = body["turn_id"]
+    assert body["turn"]["status"] == "queued"
+    assert body["received_message"]["text"] == "hello"
+    turn_id = body["turn"]["turn_id"]
     missing = client.get(f"/conversation/1/turn/{turn_id}/sse")
     assert missing.status_code == 422
     stream = client.get(
         f"/conversation/1/turn/{turn_id}/sse",
-        params={"after_message": body["from_message"]},
+        params={"after_message": body["turn"]["from_message"]},
     )
     assert stream.status_code == 200
     assert "event: markdown" in stream.text
