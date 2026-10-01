@@ -69,6 +69,23 @@
   color: #dedee3;
 }
 
+.message-time {
+  display: block;
+  margin-top: 6px;
+  color: var(--faint);
+  font-size: 0.72rem;
+}
+
+.message-user .message-time {
+  text-align: right;
+}
+
+.message-separator {
+  height: 1px;
+  margin: 18px 0;
+  background: #3a3a40;
+}
+
 .composer {
   position: absolute;
   left: 0;

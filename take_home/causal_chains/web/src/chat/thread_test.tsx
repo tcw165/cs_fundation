@@ -252,6 +252,45 @@ describe("thread composer", () => {
     expect(host.textContent).toContain("saved");
     expect(host.textContent).toContain("later");
     expect(host.querySelectorAll(".message-assistant")).toHaveLength(2);
+    expect(host.querySelectorAll("time")).toHaveLength(1);
+    expect(host.querySelector("time")?.getAttribute("datetime")).toBe(
+      "2026-09-30T00:00:02+00:00",
+    );
+    expect(host.querySelector(".message-separator")).toBeNull();
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("separates a message that is more than five minutes later", async () => {
+    const first: Message = {
+      kind: "markdown",
+      message_id: "m_user",
+      role: "user",
+      text: "earlier",
+      created_timestamp: "2026-10-01T07:00:00.000Z",
+    };
+    const second: Message = {
+      kind: "markdown",
+      message_id: "m_a",
+      role: "agent",
+      text: "saved",
+      created_timestamp: "2026-10-01T07:06:00.000Z",
+    };
+    const chat_port: ChatPort = {
+      post_message: async () => {
+        throw new Error("unused");
+      },
+      list_messages: async () => ({ messages: [first, second], next_cursor: null }),
+      subscribe_turn: async function* () {},
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.querySelectorAll(".message-separator")).toHaveLength(1);
+    expect(host.querySelectorAll("time")).toHaveLength(2);
     act(() => {
       root.unmount();
     });
