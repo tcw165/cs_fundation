@@ -23,15 +23,12 @@ export function overlay_thumb_box(
 }
 
 function place(node: HTMLElement, thumb: HTMLDivElement): boolean {
-  const style = getComputedStyle(node);
-  const track_top = Number.parseFloat(style.paddingTop) || 0;
-  const track_bottom = Number.parseFloat(style.paddingBottom) || 0;
   const box = overlay_thumb_box(
     node.scrollTop,
     node.scrollHeight,
     node.clientHeight,
-    track_top,
-    node.clientHeight - track_top - track_bottom,
+    0,
+    node.clientHeight,
   );
   if (box === null) {
     thumb.classList.remove("is-on");

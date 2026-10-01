@@ -83,7 +83,7 @@ export function Thread({
     }
     const apply = () => {
       const bottom = 24;
-      const gap = 16;
+      const gap = 12;
       const fade = Number.parseFloat(
         getComputedStyle(thread).getPropertyValue("--composer-fade"),
       );
