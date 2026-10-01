@@ -163,18 +163,22 @@ async def _read_sse(
 def test_post_message_stores_the_anchored_turn():
     async def exercise():
         container, _runner, store, turn_store = _services()
-        turn = await post_message("1", PostMessageBody(text="hello"), container)
+        posted = await post_message("1", PostMessageBody(text="hello"), container)
         stored = (await store.list_messages("1", 20)).messages
-        saved = await turn_store.get_turn(turn.turn_id)
-        return turn, stored, saved
+        saved = await turn_store.get_turn(posted.turn.turn_id)
+        return posted, stored, saved
 
-    turn, stored, saved = asyncio.run(exercise())
+    posted, stored, saved = asyncio.run(exercise())
+    turn = posted.turn
     assert turn.status is TurnStatus.queued
+    assert isinstance(posted.received_message, MarkdownMessage)
+    assert posted.received_message.text == "hello"
     assert len(stored) == 1
     assert isinstance(stored[0], MarkdownMessage)
     assert stored[0].role is Role.user
     assert stored[0].text == "hello"
     assert turn.from_message == stored[0].message_id
+    assert posted.received_message.message_id == stored[0].message_id
     assert saved is not None
     assert saved.from_message == stored[0].message_id
     assert saved.status is TurnStatus.queued
@@ -183,23 +187,23 @@ def test_post_message_stores_the_anchored_turn():
 def test_sse_forwards_runner_messages_after_the_cursor():
     async def exercise():
         container, runner, _store, turn_store = _services()
-        turn = await post_message("1", PostMessageBody(text="hello"), container)
-        everything = await _read_sse(container, turn.turn_id, "")
-        saved = await turn_store.get_turn(turn.turn_id)
-        replay = await _read_sse(container, turn.turn_id, "")
+        posted = await post_message("1", PostMessageBody(text="hello"), container)
+        everything = await _read_sse(container, posted.turn.turn_id, "")
+        saved = await turn_store.get_turn(posted.turn.turn_id)
+        replay = await _read_sse(container, posted.turn.turn_id, "")
 
         user_container, user_runner, _store_again, _turns_again = _services()
         queued = await post_message("1", PostMessageBody(text="hello"), user_container)
         from_user = await _read_sse(
             user_container,
-            queued.turn_id,
-            queued.from_message,
+            queued.turn.turn_id,
+            queued.turn.from_message,
             include_traces=True,
         )
 
         skip_container, _skip_runner, _skip_store, _skip_turns = _services()
         later = await post_message("1", PostMessageBody(text="hello"), skip_container)
-        skipped = await _read_sse(skip_container, later.turn_id, "m_a")
+        skipped = await _read_sse(skip_container, later.turn.turn_id, "m_a")
         return (
             everything,
             replay,
@@ -208,7 +212,7 @@ def test_sse_forwards_runner_messages_after_the_cursor():
             saved,
             runner,
             user_runner,
-            queued.from_message,
+            queued.turn.from_message,
         )
 
     (

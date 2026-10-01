@@ -14,13 +14,13 @@ def post_and_read(
     )
     created.raise_for_status()
     body = created.json()
-    turn_id = body["turn_id"]
+    turn_id = body["turn"]["turn_id"]
     with client.stream(
         "GET",
         f"{base_url}/conversation/{conversation_id}/turn/{turn_id}/sse",
         params={
             "include_traces": True,
-            "after_message": body["from_message"],
+            "after_message": body["turn"]["from_message"],
         },
     ) as response:
         response.raise_for_status()
