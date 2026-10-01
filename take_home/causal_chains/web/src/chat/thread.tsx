@@ -83,14 +83,17 @@ export function Thread({
     }
     const apply = () => {
       const bottom = 24;
-      const tuck = 36;
+      const gap = 16;
+      const fade = Number.parseFloat(
+        getComputedStyle(thread).getPropertyValue("--composer-fade"),
+      );
       const bar = viewport.offsetWidth - viewport.clientWidth;
       thread.style.setProperty("--scrollbar-size", `${bar}px`);
       thread.style.setProperty("--composer-bottom", `${bottom}px`);
       thread.style.setProperty("--composer-height", `${composer.offsetHeight}px`);
       thread.style.setProperty(
         "--composer-cover",
-        `${composer.offsetHeight + bottom - tuck}px`,
+        `${composer.offsetHeight + bottom + fade + gap}px`,
       );
     };
     apply();
