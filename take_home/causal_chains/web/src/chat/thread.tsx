@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { MicIcon, SendIcon } from "../shell/icons";
+import { MicIcon, SendIcon, StopIcon } from "../shell/icons";
 import { format_message_time, message_marks, type MessageMark } from "./message_time";
 import { MessageView } from "./message_view";
 import type { TranscriptEntry } from "./reveal_state";
@@ -62,6 +62,8 @@ export function Thread({
 }) {
   const { state, draft, set_draft, send, finish, timing, user_interaction_state, stop } =
     session;
+  const show_stop =
+    user_interaction_state.text_input_state === "SEND_ENABLED_WITH_STOP_BUTTON";
   const send_disabled =
     user_interaction_state.text_input_state === "SEND_DISABLED" ||
     user_interaction_state.text_input_state === "DISABLED" ||
@@ -162,6 +164,9 @@ export function Thread({
         ref={composer_ref}
         onSubmit={(event) => {
           event.preventDefault();
+          if (show_stop) {
+            return;
+          }
           void send(draft);
         }}
       >
@@ -180,7 +185,9 @@ export function Thread({
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
-                void send(draft);
+                if (!show_stop) {
+                  void send(draft);
+                }
               }
             }}
           />
@@ -189,19 +196,25 @@ export function Thread({
           <span className="composer-mic" aria-hidden="true">
             <MicIcon />
           </span>
-          <button
-            type="submit"
-            className="composer-send"
-            aria-label="Send"
-            disabled={send_disabled}
-          >
-            <SendIcon />
-          </button>
-          {user_interaction_state.text_input_state === "SEND_ENABLED_WITH_STOP_BUTTON" ? (
-            <button type="button" aria-label="Stop" onClick={stop}>
-              Stop
+          {show_stop ? (
+            <button
+              type="button"
+              className="composer-send"
+              aria-label="Stop"
+              onClick={stop}
+            >
+              <StopIcon />
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="submit"
+              className="composer-send"
+              aria-label="Send"
+              disabled={send_disabled}
+            >
+              <SendIcon />
+            </button>
+          )}
         </div>
       </form>
       {empty ? <Suggestions on_pick={set_draft} /> : null}

@@ -116,8 +116,13 @@ describe("thread composer", () => {
     const before = host.querySelector("textarea");
     expect(before?.getAttribute("placeholder")).toContain("NVDA");
     expect(host.querySelector("[aria-label='Stop']")).toBeNull();
+    expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
     await send(host, "hello");
-    expect(host.querySelector("[aria-label='Stop']")).not.toBeNull();
+    const stop = host.querySelector("[aria-label='Stop']");
+    expect(stop).not.toBeNull();
+    expect(stop?.classList.contains("composer-send")).toBe(true);
+    expect(stop?.querySelector("rect")).not.toBeNull();
+    expect(host.querySelector("[aria-label='Send']")).toBeNull();
     expect(host.textContent).toContain("Looking up the chain");
     expect(host.querySelector("textarea")?.getAttribute("placeholder")).toBe(
       "Ask about a chain",
