@@ -167,7 +167,7 @@ export function Thread({
       <div className="thread-viewport overlay-scroll" ref={viewport_ref}>
         {marks.map((mark, index) => {
           const entry = state.log[index];
-          if (entry === undefined) {
+          if (entry === undefined || (entry.kind === "agent" && entry.item.kind === "heartbeat")) {
             return null;
           }
           const timestamp = timestamps[index] ?? null;
