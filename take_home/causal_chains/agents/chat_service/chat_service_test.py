@@ -4,8 +4,9 @@ from datetime import datetime, timezone
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import (
     ChatService,
-    format_sse,
     can_store_message,
+    format_sse,
+    update_turn,
 )
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
@@ -178,6 +179,33 @@ def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
         from_message=message.message_id,
     )
     return message, turn
+
+
+def test_update_turn_completes_or_fails():
+    async def succeed():
+        store = InMemoryTurnStore()
+        _message, turn = _user_turn()
+        async with update_turn(store, turn):
+            running = await store.get_turn(turn.turn_id)
+        finished = await store.get_turn(turn.turn_id)
+        return running, finished
+
+    async def fail():
+        store = InMemoryTurnStore()
+        _message, turn = _user_turn("m_fail")
+        turn = turn.model_copy(update={"turn_id": "t_fail"})
+        try:
+            async with update_turn(store, turn):
+                raise RuntimeError("boom")
+        except RuntimeError:
+            return await store.get_turn(turn.turn_id)
+        return None
+
+    running, finished = asyncio.run(succeed())
+    failed = asyncio.run(fail())
+    assert running is not None and running.status is TurnStatus.running
+    assert finished is not None and finished.status is TurnStatus.completed
+    assert failed is not None and failed.status is TurnStatus.failed
 
 
 def test_run_turn_yields_runner_messages_and_completes():
