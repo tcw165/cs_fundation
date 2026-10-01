@@ -1,6 +1,7 @@
 import type {
   ChatPort,
   ConversationMessagesResponse,
+  MessagePage,
   PostMessageResponse,
 } from "./chat_port";
 
@@ -21,10 +22,34 @@ export function create_chat_http(api_url: string): ChatPort {
       }
       return (await response.json()) as PostMessageResponse;
     },
+    list_messages: ({ conversation_id, limit, cursor, abort_signal }) => {
+      return read_message_page(api_url, conversation_id, limit, cursor, abort_signal);
+    },
     subscribe_turn: ({ conversation_id, turn_id, abort_signal }) => {
       return read_turn_sse(api_url, conversation_id, turn_id, abort_signal);
     },
   };
+}
+
+async function read_message_page(
+  api_url: string,
+  conversation_id: string,
+  limit: number,
+  cursor: string | undefined,
+  abort_signal?: AbortSignal,
+): Promise<MessagePage> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor !== undefined) {
+    params.set("cursor", cursor);
+  }
+  const response = await fetch(
+    `${api_url}/conversation/${conversation_id}/messages?${params}`,
+    { signal: abort_signal },
+  );
+  if (!response.ok) {
+    throw new Error(`list_messages failed: ${response.status}`);
+  }
+  return (await response.json()) as MessagePage;
 }
 
 async function* read_turn_sse(

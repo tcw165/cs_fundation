@@ -109,6 +109,39 @@ describe("create_chat_http", () => {
     );
     vi.unstubAllGlobals();
   });
+
+  it("reads one message page", async () => {
+    const fetch_mock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        messages: [
+          {
+            kind: "markdown",
+            message_id: "m_1",
+            role: "user",
+            text: "earlier",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+          },
+        ],
+        next_cursor: "MSG#1",
+      }),
+    });
+    vi.stubGlobal("fetch", fetch_mock);
+    const abort_signal = new AbortController().signal;
+    const page = await create_chat_http("http://agents:8000").list_messages({
+      conversation_id: "1",
+      limit: 20,
+      cursor: "MSG#0",
+      abort_signal,
+    });
+    expect(page.next_cursor).toBe("MSG#1");
+    expect(page.messages[0]).toMatchObject({ message_id: "m_1", text: "earlier" });
+    expect(fetch_mock).toHaveBeenCalledWith(
+      "http://agents:8000/conversation/1/messages?limit=20&cursor=MSG%230",
+      { signal: abort_signal },
+    );
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("parse_sse_stream", () => {

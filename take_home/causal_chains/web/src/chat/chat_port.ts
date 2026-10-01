@@ -78,7 +78,20 @@ export type PostMessageResponse = {
   received_message: Message;
 };
 
+export type MessagePage = {
+  messages: Message[];
+  next_cursor: string | null;
+};
+
+export type ListMessagesReq = {
+  conversation_id: string;
+  limit: number;
+  cursor?: string;
+  abort_signal?: AbortSignal;
+};
+
 export type ChatPort = {
   post_message: (req: PostMessageReq) => Promise<PostMessageResponse>;
   subscribe_turn: (req: SubscribeReq) => AsyncIterable<ConversationMessagesResponse>;
+  list_messages: (req: ListMessagesReq) => Promise<MessagePage>;
 };

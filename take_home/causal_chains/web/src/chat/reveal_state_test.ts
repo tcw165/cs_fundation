@@ -44,4 +44,24 @@ describe("reveal_reducer", () => {
     state = reveal_reducer(state, { type: "enqueue", item: heartbeat("h2") });
     expect(state.pending.map((item) => item.message_id)).toEqual(["h2"]);
   });
+
+  it("shows stored history without queueing an animation", () => {
+    const user: ChatItem = {
+      kind: "markdown",
+      message_id: "u",
+      role: "user",
+      text: "earlier",
+      created_timestamp: "2026-09-30T00:00:00+00:00",
+    };
+    let state = reveal_reducer(initial_reveal_state, { type: "restore", item: user });
+    state = reveal_reducer(state, { type: "restore", item: markdown("a", "saved") });
+    state = reveal_reducer(state, { type: "restore", item: heartbeat("h") });
+    state = reveal_reducer(state, { type: "restore", item: markdown("a", "saved") });
+    expect(state.pending).toEqual([]);
+    expect(state.phase).toBe("idle");
+    expect(state.log).toEqual([
+      { kind: "user", id: "u", text: "earlier" },
+      { kind: "agent", item: markdown("a", "saved") },
+    ]);
+  });
 });

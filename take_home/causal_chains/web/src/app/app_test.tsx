@@ -70,6 +70,7 @@ describe("app chat", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
         yield page([
           {
