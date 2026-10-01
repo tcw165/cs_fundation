@@ -24,7 +24,15 @@ py_library(
 
 pytest_test(
     name = "models_test",
-    srcs = ["models_test.py"],
+    srcs = [
+        "conversation_messages_response_test.py",
+        "conversation_response_test.py",
+        "post_message_response_test.py",
+        "text_input_state_test.py",
+        "thinking_state_test.py",
+        "turn_descriptor_test.py",
+        "user_interaction_state_test.py",
+    ],
     imports = ["../../../../../"],
     deps = [
         ":models",
