@@ -16,7 +16,13 @@ export function Thread({
   session: Session;
   on_open_link: (link: string, title?: string) => void;
 }) {
-  const { state, draft, set_draft, send, finish, timing } = session;
+  const { state, draft, set_draft, send, finish, timing, user_interaction_state, stop } =
+    session;
+  const send_disabled =
+    user_interaction_state.text_input_state === "SEND_DISABLED" ||
+    user_interaction_state.text_input_state === "DISABLED" ||
+    user_interaction_state.text_input_state === "HIDDEN" ||
+    draft.trim() === "";
   const empty = state.log.length === 0;
   const thread_ref = useRef<HTMLElement | null>(null);
   const viewport_ref = useRef<HTMLDivElement | null>(null);
@@ -82,20 +88,26 @@ export function Thread({
           void send(draft);
         }}
       >
-        <textarea
-          className="composer-input"
-          aria-label="Message"
-          placeholder="Short $NVDA if chance of China-Taiwan war goes to over 90%"
-          rows={3}
-          value={draft}
-          onChange={(event) => set_draft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void send(draft);
-            }
-          }}
-        />
+        {user_interaction_state.thinking_state === null ? null : (
+          <p className="composer-thinking">{user_interaction_state.thinking_state.text}</p>
+        )}
+        {user_interaction_state.text_input_state === "HIDDEN" ? null : (
+          <textarea
+            className="composer-input"
+            aria-label="Message"
+            placeholder={user_interaction_state.text_input_placeholder}
+            disabled={user_interaction_state.text_input_state === "DISABLED"}
+            rows={3}
+            value={draft}
+            onChange={(event) => set_draft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void send(draft);
+              }
+            }}
+          />
+        )}
         <div className="composer-tools">
           <span className="composer-mic" aria-hidden="true">
             <MicIcon />
@@ -104,10 +116,15 @@ export function Thread({
             type="submit"
             className="composer-send"
             aria-label="Send"
-            disabled={state.running || draft.trim() === ""}
+            disabled={send_disabled}
           >
             <SendIcon />
           </button>
+          {user_interaction_state.text_input_state === "SEND_ENABLED_WITH_STOP_BUTTON" ? (
+            <button type="button" aria-label="Stop" onClick={stop}>
+              Stop
+            </button>
+          ) : null}
         </div>
       </form>
       {empty ? <Suggestions on_pick={set_draft} /> : null}
