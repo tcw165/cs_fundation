@@ -2,7 +2,7 @@
   --scroll-gap: 8px;
   --composer-bottom: 24px;
   --composer-height: 120px;
-  --composer-fade: 108px;
+  --composer-fade: 28px;
   position: relative;
   width: min(540px, calc(100% - 48px));
   height: 100%;
