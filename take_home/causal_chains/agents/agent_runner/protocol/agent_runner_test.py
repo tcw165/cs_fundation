@@ -38,7 +38,7 @@ def test_agent_runner_event_and_context():
         text="hi",
         created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
     )
-    assert event.type == "markdown"
+    assert event.kind == "markdown"
     context = RunContext(
         conversation_id="1",
         clock=_FixedClock(),

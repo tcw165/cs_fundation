@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
 
+import pytest
+from pydantic import ValidationError
+
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -46,4 +49,17 @@ def test_heartbeat_message_parses():
     assert isinstance(restored, HeartbeatMessage)
     assert "message_id" not in message.model_dump()
     assert restored.role is Role.meta
-    assert restored.type == "heartbeat"
+    assert restored.kind == "heartbeat"
+
+
+def test_payload_that_says_type_does_not_parse():
+    with pytest.raises(ValidationError):
+        message_adapter.validate_python(
+            {
+                "type": "markdown",
+                "message_id": "m_1",
+                "role": "user",
+                "text": "hello",
+                "created_timestamp": "2026-09-30T00:00:00Z",
+            }
+        )

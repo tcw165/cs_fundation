@@ -12,20 +12,23 @@ from take_home.causal_chains.agents.models.messaging.protocol.message_base impor
 
 
 class MarkdownMessage(BaseMessage):
-    type: Literal["markdown"] = "markdown"
-    text: str
+    kind: Literal["markdown"] = Field(default="markdown", description="A markdown chat message.")
+    text: str = Field(..., description="The message text.")
 
 
 class HeartbeatMessage(BaseModel):
     """A stream keepalive. It is not stored."""
 
-    type: Literal["heartbeat"] = "heartbeat"
-    role: Literal[Role.meta] = Role.meta
+    kind: Literal["heartbeat"] = Field(
+        default="heartbeat",
+        description="A stream keepalive. It is not stored.",
+    )
+    role: Literal[Role.meta] = Field(default=Role.meta, description="Always meta.")
 
 
 Message = Annotated[
     Union[MarkdownMessage, DeeplinkCardMessage, HeartbeatMessage],
-    Field(discriminator="type"),
+    Field(discriminator="kind"),
 ]
 
 message_adapter: TypeAdapter[
