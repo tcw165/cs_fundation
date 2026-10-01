@@ -12,6 +12,9 @@ from take_home.causal_chains.agents.endpoints.models.conversation_response impor
 from take_home.causal_chains.agents.endpoints.models.turn_descriptor import (
     TurnDescriptor,
 )
+from take_home.causal_chains.agents.endpoints.models.post_message_response import (
+    PostMessageResponse,
+)
 from take_home.causal_chains.agents.endpoints.models.text_input_state import (
     TextInputState,
 )
@@ -113,3 +116,15 @@ def test_conversation_response_defaults_preview_messages_and_omits_stored_fields
     assert dumped["status"] == ConversationStatus.OPEN
     for stored_field in ("title", "memory", "followup_questions", "entry_context", "active_plan"):
         assert stored_field not in dumped
+
+
+def test_post_message_response_round_trips_the_message_and_turn():
+    message = _markdown()
+    turn = Turn(
+        turn_id="t_1",
+        conversation_id="1",
+        status=TurnStatus.queued,
+        from_message=message.message_id,
+    )
+    response = PostMessageResponse(turn=turn, received_message=message)
+    assert PostMessageResponse.model_validate(response.model_dump()) == response
