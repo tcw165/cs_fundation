@@ -21,10 +21,19 @@ describe("create_chat_http", () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          turn_id: "t_8f3a",
-          conversation_id: "1",
-          status: "queued",
-          from_message: "m_user",
+          turn: {
+            turn_id: "t_8f3a",
+            conversation_id: "1",
+            status: "queued",
+            from_message: "m_user",
+          },
+          received_message: {
+            kind: "markdown",
+            message_id: "m_user",
+            role: "user",
+            text: "hello",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+          },
         }),
       })
       .mockResolvedValueOnce({
@@ -36,16 +45,21 @@ describe("create_chat_http", () => {
     vi.stubGlobal("fetch", fetch_mock);
     const abort_signal = new AbortController().signal;
     const chat_port = create_chat_http("http://agents:8000");
-    const turn = await chat_port.post_message({
+    const posted = await chat_port.post_message({
       conversation_id: "1",
       text: "hello",
       abort_signal,
     });
-    expect(turn).toEqual({
+    expect(posted.turn).toEqual({
       turn_id: "t_8f3a",
       conversation_id: "1",
       status: "queued",
       from_message: "m_user",
+    });
+    expect(posted.received_message).toMatchObject({
+      kind: "markdown",
+      message_id: "m_user",
+      text: "hello",
     });
     expect(fetch_mock).toHaveBeenCalledWith(
       "http://agents:8000/conversation/1/messages",
@@ -59,8 +73,8 @@ describe("create_chat_http", () => {
     const events = [];
     for await (const event of chat_port.subscribe_turn({
       conversation_id: "1",
-      turn_id: turn.turn_id,
-      after_message: turn.from_message,
+      turn_id: posted.turn.turn_id,
+      after_message: posted.turn.from_message,
       abort_signal,
     })) {
       events.push(event);

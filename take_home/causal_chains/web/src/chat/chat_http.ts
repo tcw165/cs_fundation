@@ -1,8 +1,8 @@
 import type {
   ChatPort,
   Message,
+  PostMessageResponse,
   Role,
-  Turn,
 } from "./chat_port";
 
 export function create_chat_http(api_url: string): ChatPort {
@@ -20,7 +20,7 @@ export function create_chat_http(api_url: string): ChatPort {
       if (!response.ok) {
         throw new Error(`post_message failed: ${response.status}`);
       }
-      return (await response.json()) as Turn;
+      return (await response.json()) as PostMessageResponse;
     },
     subscribe_turn: ({ conversation_id, turn_id, after_message, abort_signal }) => {
       return read_turn_sse(

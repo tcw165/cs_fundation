@@ -10,7 +10,7 @@ export function create_chat_model_adapter(
 ): ChatModelAdapter {
   return {
     async *run({ messages, abortSignal }) {
-      const turn = await chat_port.post_message({
+      const posted = await chat_port.post_message({
         conversation_id,
         text: last_user_text(messages),
         abort_signal: abortSignal,
@@ -19,8 +19,8 @@ export function create_chat_model_adapter(
       const cards: DeeplinkCard[] = [];
       for await (const event of chat_port.subscribe_turn({
         conversation_id,
-        turn_id: turn.turn_id,
-        after_message: turn.from_message,
+        turn_id: posted.turn.turn_id,
+        after_message: posted.turn.from_message,
         abort_signal: abortSignal,
       })) {
         if (event.kind === "heartbeat") {

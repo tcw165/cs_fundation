@@ -23,10 +23,19 @@ describe("create_chat_model_adapter", () => {
       post_message: async ({ text }) => {
         posted.push(text);
         return {
-          turn_id: "t_1",
-          conversation_id: "1",
-          status: "queued",
-          from_message: "m_user",
+          turn: {
+            turn_id: "t_1",
+            conversation_id: "1",
+            status: "queued",
+            from_message: "m_user",
+          },
+          received_message: {
+            kind: "markdown",
+            message_id: "m_user",
+            role: "user",
+            text,
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+          },
         };
       },
       subscribe_turn: async function* ({ after_message }): AsyncGenerator<Message> {
@@ -75,10 +84,19 @@ describe("create_chat_model_adapter", () => {
     };
     const chat_port: ChatPort = {
       post_message: async () => ({
-        turn_id: "t_1",
-        conversation_id: "1",
-        status: "queued",
-        from_message: "m_user",
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
@@ -122,10 +140,19 @@ describe("create_chat_model_adapter", () => {
   it("parses a causal_chains:// chain link", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({
-        turn_id: "t_1",
-        conversation_id: "1",
-        status: "queued",
-        from_message: "m_user",
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
@@ -161,10 +188,19 @@ describe("create_chat_model_adapter", () => {
   it("finishes the turn when the stream ends", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({
-        turn_id: "t_1",
-        conversation_id: "1",
-        status: "queued",
-        from_message: "m_user",
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
