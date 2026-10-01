@@ -193,7 +193,9 @@ def _link_rows(
                     UUID(str(item["to_situation_id"])),
                     int(item["to_version"]),
                     _decimal(props["p"]),
-                    _input_rows(props["inputs"]),
+                    _input_rows(
+                        props.get("inputs") if isinstance(props, Mapping) else None
+                    ),
                 )
             )
     return rows
