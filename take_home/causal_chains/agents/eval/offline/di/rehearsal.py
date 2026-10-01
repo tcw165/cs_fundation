@@ -61,17 +61,17 @@ def rehearse_persistence(
     def list_messages(
         conversation_id: str,
         limit: int,
-        cursor: str | None = None,
+        start_message: str | None = None,
     ) -> MessagePage:
         matched = [
             message
             for stored_id, message in messages
             if stored_id == conversation_id
         ]
-        if cursor is not None:
+        if start_message is not None:
             start = 0
             for index, message in enumerate(matched):
-                if message.message_id == cursor:
+                if message.message_id == start_message:
                     start = index + 1
                     break
             matched = matched[start:]

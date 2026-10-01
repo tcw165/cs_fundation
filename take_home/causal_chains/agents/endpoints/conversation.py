@@ -68,12 +68,12 @@ async def get_messages(
     conversation_id: str,
     container: AppContainerDep,
     limit: Annotated[int, Query(ge=1)],
-    cursor: Annotated[str | None, Query()] = None,
+    start_message: Annotated[str | None, Query()] = None,
 ) -> MessagePage:
     return await container.messaging_store().list_messages(
         conversation_id,
         limit,
-        cursor,
+        start_message,
     )
 
 
