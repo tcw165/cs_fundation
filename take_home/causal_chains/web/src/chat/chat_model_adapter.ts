@@ -17,22 +17,23 @@ export function create_chat_model_adapter(
       });
       const paragraphs: string[] = [];
       const cards: DeeplinkCard[] = [];
-      for await (const event of chat_port.subscribe_turn({
+      for await (const snapshot of chat_port.subscribe_turn({
         conversation_id,
         turn_id: posted.turn.turn_id,
-        after_message: posted.turn.from_message,
         abort_signal: abortSignal,
       })) {
-        if (event.kind === "heartbeat") {
-          continue;
-        }
-        if (event.kind === "markdown" && event.role === "agent") {
-          paragraphs.push(event.text);
-          yield assistant_snapshot(paragraphs, cards);
-        }
-        if (event.kind === "deeplink") {
-          cards.push(card_from_link(event.link));
-          yield assistant_snapshot(paragraphs, cards);
+        for (const event of snapshot.messages) {
+          if (event.kind === "heartbeat") {
+            continue;
+          }
+          if (event.kind === "markdown" && event.role === "agent") {
+            paragraphs.push(event.text);
+            yield assistant_snapshot(paragraphs, cards);
+          }
+          if (event.kind === "deeplink") {
+            cards.push(card_from_link(event.link));
+            yield assistant_snapshot(paragraphs, cards);
+          }
         }
       }
     },

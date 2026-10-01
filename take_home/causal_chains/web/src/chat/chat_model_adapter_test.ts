@@ -2,7 +2,20 @@ import type { ChatModelRunOptions, ThreadMessage } from "@assistant-ui/react";
 import { describe, expect, it } from "vitest";
 
 import { create_chat_model_adapter } from "./chat_model_adapter";
-import type { ChatPort, Message } from "./chat_port";
+import type { ChatPort, ConversationMessagesResponse, Message } from "./chat_port";
+
+function page(messages: Message[]): ConversationMessagesResponse {
+  return {
+    conversation_id: "1",
+    messages,
+    user_interaction_state: {
+      text_input_state: "SEND_ENABLED_WITH_STOP_BUTTON",
+      text_input_placeholder: "Ask about a chain",
+      thinking_state: null,
+    },
+    turn: { processing: [], queued: [] },
+  };
+}
 
 function user_message(text: string): ThreadMessage {
   return {
@@ -16,9 +29,9 @@ function user_message(text: string): ThreadMessage {
 }
 
 describe("create_chat_model_adapter", () => {
-  it("sends after_message and yields each agent paragraph", async () => {
+  it("subscribes without after_message and yields each agent paragraph", async () => {
     const posted: string[] = [];
-    const cursors: string[] = [];
+    const turn_ids: string[] = [];
     const chat_port: ChatPort = {
       post_message: async ({ text }) => {
         posted.push(text);
@@ -38,23 +51,26 @@ describe("create_chat_model_adapter", () => {
           },
         };
       },
-      subscribe_turn: async function* ({ after_message }): AsyncGenerator<Message> {
-        cursors.push(after_message);
-        yield {
-          kind: "markdown",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_a",
-          role: "agent",
-          text: "one",
-        };
-        yield { kind: "heartbeat", role: "meta" };
-        yield {
-          kind: "markdown",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_b",
-          role: "agent",
-          text: "two",
-        };
+      subscribe_turn: async function* (req): AsyncGenerator<ConversationMessagesResponse> {
+        turn_ids.push(req.turn_id);
+        expect(req).not.toHaveProperty("after_message");
+        yield page([
+          {
+            kind: "markdown",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_a",
+            role: "agent",
+            text: "one",
+          },
+          { kind: "heartbeat", role: "meta" },
+          {
+            kind: "markdown",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_b",
+            role: "agent",
+            text: "two",
+          },
+        ]);
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
@@ -69,7 +85,7 @@ describe("create_chat_model_adapter", () => {
       snapshots.push(snapshot);
     }
     expect(posted).toEqual(["hello"]);
-    expect(cursors).toEqual(["m_user"]);
+    expect(turn_ids).toEqual(["t_1"]);
     expect(snapshots).toEqual([
       { content: [{ type: "text", text: "one" }] },
       { content: [{ type: "text", text: "one\n\ntwo" }] },
@@ -98,21 +114,23 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
-      subscribe_turn: async function* (): AsyncGenerator<Message> {
-        yield {
-          kind: "markdown",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_a",
-          role: "agent",
-          text: "saved",
-        };
-        yield {
-          kind: "deeplink",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_card",
-          role: "other",
-          link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
-        };
+      subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
+        yield page([
+          {
+            kind: "markdown",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_a",
+            role: "agent",
+            text: "saved",
+          },
+          {
+            kind: "deeplink",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_card",
+            role: "other",
+            link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
+          },
+        ]);
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
@@ -154,14 +172,16 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
-      subscribe_turn: async function* (): AsyncGenerator<Message> {
-        yield {
-          kind: "deeplink",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_card",
-          role: "other",
-          link: "causal_chains://chain?root_situation_id=11111111-1111-4111-8111-111111111111&root_version=1&title=now",
-        };
+      subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
+        yield page([
+          {
+            kind: "deeplink",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_card",
+            role: "other",
+            link: "causal_chains://chain?root_situation_id=11111111-1111-4111-8111-111111111111&root_version=1&title=now",
+          },
+        ]);
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");
@@ -202,14 +222,16 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
-      subscribe_turn: async function* (): AsyncGenerator<Message> {
-        yield {
-          kind: "markdown",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_a",
-          role: "agent",
-          text: "done talking",
-        };
+      subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
+        yield page([
+          {
+            kind: "markdown",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_a",
+            role: "agent",
+            text: "done talking",
+          },
+        ]);
       },
     };
     const adapter = create_chat_model_adapter(chat_port, "1");

@@ -17,7 +17,20 @@ class ResizeObserverStub {
 globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
 
 import type { ChainPort } from "../chain/chain_port";
-import type { ChatPort, Message } from "../chat/chat_port";
+import type { ChatPort, ConversationMessagesResponse, Message } from "../chat/chat_port";
+
+function page(messages: Message[]): ConversationMessagesResponse {
+  return {
+    conversation_id: "1",
+    messages,
+    user_interaction_state: {
+      text_input_state: "ENABLED",
+      text_input_placeholder: "Ask about a chain",
+      thinking_state: null,
+    },
+    turn: null,
+  };
+}
 import type { RevealTiming } from "../chat/reveal_timing";
 import { App } from "./app";
 
@@ -57,22 +70,26 @@ describe("app chat", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
-      subscribe_turn: async function* (): AsyncGenerator<Message> {
-        yield {
-          kind: "markdown",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_a",
-          role: "agent",
-          text: "creating a case",
-        };
-        yield { kind: "heartbeat", message_id: "m_h", role: "meta" };
-        yield {
-          kind: "deeplink",
-          created_timestamp: "2026-09-30T00:00:00+00:00",
-          message_id: "m_d",
-          role: "other",
-          link: `causal_chains://chain?root_situation_id=${now_id}&root_version=1&title=now`,
-        };
+      subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
+        yield page([
+          {
+            kind: "markdown",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_a",
+            role: "agent",
+            text: "creating a case",
+          },
+        ]);
+        yield page([{ kind: "heartbeat", message_id: "m_h", role: "meta" }]);
+        yield page([
+          {
+            kind: "deeplink",
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+            message_id: "m_d",
+            role: "other",
+            link: `causal_chains://chain?root_situation_id=${now_id}&root_version=1&title=now`,
+          },
+        ]);
       },
     };
     const chain_port: ChainPort = {
