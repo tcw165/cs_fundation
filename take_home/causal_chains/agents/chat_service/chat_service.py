@@ -82,5 +82,5 @@ class ChatService:
 def format_sse(
     event: MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage,
 ) -> str:
-    payload = event.model_dump_json(exclude={"type"})
-    return f"event: {event.type}\ndata: {payload}\n\n"
+    payload = event.model_dump_json(exclude={"kind"})
+    return f"event: {event.kind}\ndata: {payload}\n\n"

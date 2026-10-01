@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import Literal
 from urllib.parse import urlencode
 
+from pydantic import Field
+
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
 from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
     BaseMessage,
@@ -13,11 +15,11 @@ from take_home.causal_chains.agents.models.messaging.protocol.message_base impor
 class DeeplinkCardMessage(BaseMessage):
     """A chat message that shows one deeplink card."""
 
-    type: Literal["deeplink"] = "deeplink"
-    title: str
-    subtitle: str
-    link: str
-    enabled: bool
+    kind: Literal["deeplink"] = Field(default="deeplink", description="A deeplink card.")
+    title: str = Field(..., description="Card title.")
+    subtitle: str = Field(..., description="Card subtitle.")
+    link: str = Field(..., description="Link the card opens.")
+    enabled: bool = Field(..., description="Whether the card can be opened.")
 
 
 def card_link(card: DeeplinkCard) -> str:
