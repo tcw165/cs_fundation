@@ -110,7 +110,11 @@ export function use_chat_session(
       running_ref.current = true;
       const controller = new AbortController();
       abort_ref.current = controller;
-      dispatch({ type: "user", text: trimmed });
+      dispatch({
+        type: "user",
+        text: trimmed,
+        created_timestamp: new Date().toISOString(),
+      });
       dispatch({ type: "run", running: true });
       set_draft("");
       try {
