@@ -51,6 +51,7 @@ describe("create_chat_model_adapter", () => {
           },
         };
       },
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (req): AsyncGenerator<ConversationMessagesResponse> {
         turn_ids.push(req.turn_id);
         expect(req).not.toHaveProperty("after_message");
@@ -114,6 +115,7 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
         yield page([
           {
@@ -172,6 +174,7 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
         yield page([
           {
@@ -222,6 +225,7 @@ describe("create_chat_model_adapter", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (): AsyncGenerator<ConversationMessagesResponse> {
         yield page([
           {

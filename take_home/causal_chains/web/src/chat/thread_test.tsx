@@ -5,7 +5,12 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 
-import type { ChatPort, ConversationMessagesResponse, UserInteractionState } from "./chat_port";
+import type {
+  ChatPort,
+  ConversationMessagesResponse,
+  Message,
+  UserInteractionState,
+} from "./chat_port";
 import { fast_timing } from "./reveal_timing";
 import { Thread } from "./thread";
 import { use_chat_session } from "./use_chat_session";
@@ -102,6 +107,7 @@ describe("thread composer", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
         yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", "Looking up the chain"));
       },
@@ -139,6 +145,7 @@ describe("thread composer", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
         yield page(interaction("HIDDEN", null));
       },
@@ -170,6 +177,7 @@ describe("thread composer", () => {
           created_timestamp: "2026-09-30T00:00:00+00:00",
         },
       }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
         yield snapshot;
         yield snapshot;
@@ -194,6 +202,56 @@ describe("thread composer", () => {
     });
     expect(host.querySelectorAll(".message-assistant")).toHaveLength(1);
     expect(host.querySelectorAll(".message-user")).toHaveLength(1);
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("shows stored messages when the chat opens", async () => {
+    const earlier: Message = {
+      kind: "markdown",
+      message_id: "m_user",
+      role: "user",
+      text: "earlier",
+      created_timestamp: "2026-09-30T00:00:00+00:00",
+    };
+    const saved: Message = {
+      kind: "markdown",
+      message_id: "m_a",
+      role: "agent",
+      text: "saved",
+      created_timestamp: "2026-09-30T00:00:01+00:00",
+    };
+    const later: Message = {
+      kind: "markdown",
+      message_id: "m_b",
+      role: "agent",
+      text: "later",
+      created_timestamp: "2026-09-30T00:00:02+00:00",
+    };
+    const pages = [
+      { messages: [earlier, saved], next_cursor: "MSG#1" },
+      { messages: [saved, later], next_cursor: null },
+    ];
+    let index = 0;
+    const chat_port: ChatPort = {
+      post_message: async () => {
+        throw new Error("unused");
+      },
+      list_messages: async () => pages[index++] ?? { messages: [], next_cursor: null },
+      subscribe_turn: async function* () {},
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(host.querySelectorAll(".message-user")).toHaveLength(1);
+    expect(host.textContent).toContain("earlier");
+    expect(host.textContent).toContain("saved");
+    expect(host.textContent).toContain("later");
+    expect(host.querySelectorAll(".message-assistant")).toHaveLength(2);
     act(() => {
       root.unmount();
     });

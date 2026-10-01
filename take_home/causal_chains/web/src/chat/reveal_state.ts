@@ -31,6 +31,7 @@ export const initial_reveal_state: RevealState = {
 export type RevealAction =
   | { type: "user"; text: string }
   | { type: "enqueue"; item: ChatItem }
+  | { type: "restore"; item: ChatItem }
   | { type: "start" }
   | { type: "finish" }
   | { type: "run"; running: boolean }
@@ -50,6 +51,8 @@ export function reveal_reducer(state: RevealState, action: RevealAction): Reveal
       };
     case "enqueue":
       return enqueue_item(state, action.item);
+    case "restore":
+      return restore_item(state, action.item);
     case "start": {
       if (state.phase === "animating" || state.pending.length === 0) {
         return state;
@@ -77,6 +80,32 @@ export function reveal_reducer(state: RevealState, action: RevealAction): Reveal
     case "error":
       return { ...state, error: action.message, running: false };
   }
+}
+
+function restore_item(state: RevealState, item: ChatItem): RevealState {
+  if (item.kind === "heartbeat") {
+    return state;
+  }
+  if (item.kind === "markdown" && item.role === "user") {
+    if (state.log.some((entry) => entry.kind === "user" && entry.id === item.message_id)) {
+      return state;
+    }
+    return {
+      ...state,
+      log: [...state.log, { kind: "user", id: item.message_id, text: item.text }],
+    };
+  }
+  if (
+    state.shown.some((shown) => shown.message_id === item.message_id) ||
+    state.log.some((entry) => entry.kind === "agent" && entry.item.message_id === item.message_id)
+  ) {
+    return state;
+  }
+  return {
+    ...state,
+    shown: [...state.shown, item],
+    log: [...state.log, { kind: "agent", item }],
+  };
 }
 
 function enqueue_item(state: RevealState, item: ChatItem): RevealState {
