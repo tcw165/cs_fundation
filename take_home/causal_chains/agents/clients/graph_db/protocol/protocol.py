@@ -11,9 +11,15 @@ class GraphDb(Protocol):
 
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]: ...
 
-    def merge_case(self, case_id: UUID, conversation_id: str) -> None: ...
+    def merge_case(
+        self,
+        case_id: UUID,
+        conversation_id: str,
+        created_timestamp: str,
+        updated_timestamp: str,
+    ) -> None: ...
 
-    def get_case(self, case_id: UUID) -> tuple[UUID, str] | None: ...
+    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str] | None: ...
 
     def merge_situation(
         self,

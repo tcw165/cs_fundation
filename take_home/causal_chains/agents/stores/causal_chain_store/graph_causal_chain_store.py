@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import datetime
 from typing import override
 from uuid import UUID
 
@@ -140,7 +141,12 @@ class GraphCausalChainStore(CausalChainStore):
         self,
         case: Case,
     ) -> None:
-        self._graph_db.merge_case(case.case_id, case.conversation_id)
+        self._graph_db.merge_case(
+            case.case_id,
+            case.conversation_id,
+            case.created_timestamp.isoformat(),
+            case.updated_timestamp.isoformat(),
+        )
 
     @override
     async def get_case(
@@ -150,8 +156,13 @@ class GraphCausalChainStore(CausalChainStore):
         found = self._graph_db.get_case(case_id)
         if found is None:
             raise ValueError("case is missing")
-        found_id, conversation_id = found
-        return Case(case_id=found_id, conversation_id=conversation_id)
+        found_id, conversation_id, created_timestamp, updated_timestamp = found
+        return Case(
+            case_id=found_id,
+            conversation_id=conversation_id,
+            created_timestamp=datetime.fromisoformat(created_timestamp),
+            updated_timestamp=datetime.fromisoformat(updated_timestamp),
+        )
 
     @override
     async def add_situation(

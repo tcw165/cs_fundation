@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -18,6 +19,7 @@ from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 CASE_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
 
 class _Both:
@@ -36,7 +38,12 @@ class _Both:
         self,
         case_id: UUID,
     ) -> Case:
-        return Case(case_id=case_id, conversation_id="1")
+        return Case(
+            case_id=case_id,
+            conversation_id="1",
+            created_timestamp=CREATED,
+            updated_timestamp=CREATED,
+        )
 
     async def add_situation(
         self,
@@ -99,7 +106,12 @@ def test_causal_chain_store_requires_case_and_situation_methods():
 def test_fake_records_a_situation_and_a_link():
     async def exercise():
         store = _Both()
-        case = Case(case_id=CASE_ID, conversation_id="1")
+        case = Case(
+            case_id=CASE_ID,
+            conversation_id="1",
+            created_timestamp=CREATED,
+            updated_timestamp=CREATED,
+        )
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,

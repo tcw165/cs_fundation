@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from take_home.causal_chains.agents.models.causal_chains.case import Case
@@ -49,7 +50,12 @@ def test_deeplink_card_fields():
 
 def test_deeplink_request_reads_the_case():
     request = DeeplinkRequest(
-        case=Case(case_id=CASE_ID, conversation_id="1"),
+        case=Case(
+            case_id=CASE_ID,
+            conversation_id="1",
+            created_timestamp=datetime(2026, 10, 1, tzinfo=timezone.utc),
+            updated_timestamp=datetime(2026, 10, 1, tzinfo=timezone.utc),
+        ),
         destination_desc="Open the saved chain.",
     )
     assert request.case.case_id == CASE_ID

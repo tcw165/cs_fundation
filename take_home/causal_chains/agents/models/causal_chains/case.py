@@ -1,7 +1,8 @@
+from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Case(BaseModel):
@@ -9,8 +10,10 @@ class Case(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    case_id: UUID
-    conversation_id: str
+    case_id: UUID = Field(..., description="Id assigned when the case is created.")
+    conversation_id: str = Field(..., description="Conversation this case belongs to.")
+    created_timestamp: datetime = Field(..., description="When the case was created.")
+    updated_timestamp: datetime = Field(..., description="When the case was last updated.")
 
     @model_validator(mode="after")
     def assigned_case_id(self) -> Self:
