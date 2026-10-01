@@ -9,6 +9,9 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Message,
     Role,
 )
+from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
+    MessagePage,
+)
 
 
 class _Both:
@@ -22,8 +25,10 @@ class _Both:
     async def list_messages(
         self,
         conversation_id: str,
-    ) -> list[Message]:
-        return []
+        limit: int,
+        cursor: str | None = None,
+    ) -> MessagePage:
+        return MessagePage(messages=[])
 
     async def save_message_with_ttl(
         self,

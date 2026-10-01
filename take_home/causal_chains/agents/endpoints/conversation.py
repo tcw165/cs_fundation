@@ -62,7 +62,9 @@ async def turn_sse(
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
     turn = await container.turn_store().get_turn(turn_id)
-    stored = await container.messaging_store().list_messages(conversation_id)
+    stored = (
+        await container.messaging_store().list_messages(conversation_id, 100)
+    ).messages
     from_message = None if turn is None else turn.from_message
     anchored = next(
         (

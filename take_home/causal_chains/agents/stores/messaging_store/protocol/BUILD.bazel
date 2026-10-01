@@ -3,7 +3,10 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "protocol",
-    srcs = ["messaging_store.py"],
+    srcs = [
+        "message_page.py",
+        "messaging_store.py",
+    ],
     imports = ["../../../../../.."],
     visibility = ["//visibility:public"],
     deps = [

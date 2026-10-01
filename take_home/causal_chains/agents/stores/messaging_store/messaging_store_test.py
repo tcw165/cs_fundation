@@ -43,7 +43,11 @@ class _FakeDynamoDb:
         key_value: str,
         sk_name: str,
         sk_prefix: str,
-    ) -> list[dict[str, object]]:
+        limit: int,
+        exclusive_start_sk: str | None = None,
+    ) -> tuple[list[dict[str, object]], str | None]:
+        if limit < 1:
+            raise ValueError("limit is at least 1")
         rows = [
             item
             for (stored_table, _), item in self._items.items()
@@ -52,7 +56,16 @@ class _FakeDynamoDb:
             and str(item.get(sk_name, "")).startswith(sk_prefix)
         ]
         rows.sort(key=lambda row: str(row.get(sk_name, "")))
-        return rows
+        if exclusive_start_sk is not None:
+            rows = [
+                row
+                for row in rows
+                if str(row.get(sk_name, "")) > exclusive_start_sk
+            ]
+        page = rows[:limit]
+        if len(page) < limit or not page:
+            return page, None
+        return page, str(page[-1][sk_name])
 
     def query_index(
         self,
@@ -75,9 +88,9 @@ def test_messaging_store_impl_is_a_messaging_store():
 def test_list_messages_is_empty_for_seeded_conversation_and_missing_item():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
-        seeded = await store.list_messages("1")
-        missing = await store.list_messages("missing")
-        return seeded, missing
+        seeded = await store.list_messages("1", 20)
+        missing = await store.list_messages("missing", 20)
+        return seeded.messages, missing.messages
 
     seeded, missing = asyncio.run(exercise())
     assert seeded == []
@@ -118,7 +131,7 @@ def test_append_and_list_messages_by_conversation():
         await store.append("1", hello)
         await store.append("2", other)
         await store.append("1", card)
-        listed = await store.list_messages("1")
+        listed = (await store.list_messages("1", 20)).messages
         metadata = database.get_item(
             "conversation",
             {"PK": "CONV#1", "SK": "METADATA"},
@@ -160,7 +173,7 @@ def test_same_id_and_timestamp_replaces_one_message_and_keeps_metadata():
         )
         await store.append("1", first)
         await store.append("1", second)
-        listed = await store.list_messages("1")
+        listed = (await store.list_messages("1", 20)).messages
         metadata = database.get_item(
             "conversation",
             {"PK": "CONV#1", "SK": "METADATA"},
@@ -198,3 +211,36 @@ def test_save_message_with_ttl_sets_time_to_live_and_list_conversations_uses_the
     assert item["time_to_live"] == 1_700_000_000
     assert [conversation.id for conversation in conversations] == ["1"]
     assert conversations[0].user_uuid == "user-1"
+
+
+def test_list_messages_pages_oldest_first_and_a_short_page_has_no_cursor():
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        created = [
+            datetime(2026, 9, 30, 1, tzinfo=timezone.utc),
+            datetime(2026, 9, 30, 2, tzinfo=timezone.utc),
+            datetime(2026, 9, 30, 3, tzinfo=timezone.utc),
+        ]
+        for index, timestamp in enumerate(created):
+            await store.append(
+                "1",
+                MarkdownMessage(
+                    message_id=f"m_{index}",
+                    conversation_id="1",
+                    user_uuid="user-1",
+                    role=Role.user,
+                    text=f"text-{index}",
+                    created_timestamp=timestamp,
+                ),
+            )
+        first = await store.list_messages("1", 2)
+        rest = await store.list_messages("1", 2, first.next_cursor)
+        short = await store.list_messages("1", 5)
+        return first, rest, short
+
+    first, rest, short = asyncio.run(exercise())
+    assert [message.text for message in first.messages] == ["text-0", "text-1"]
+    assert first.next_cursor is not None
+    assert [message.text for message in rest.messages] == ["text-2"]
+    assert rest.next_cursor is None
+    assert short.next_cursor is None

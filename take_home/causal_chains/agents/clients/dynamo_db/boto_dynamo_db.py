@@ -64,16 +64,34 @@ class BotoDynamoDb(DynamoDb):
         key_value: str,
         sk_name: str,
         sk_prefix: str,
-    ) -> list[dict[str, object]]:
-        response = self._client.query(
-            TableName=table_name,
-            KeyConditionExpression=f"{key_name} = :pk AND begins_with({sk_name}, :prefix)",
-            ExpressionAttributeValues={
+        limit: int,
+        exclusive_start_sk: str | None = None,
+    ) -> tuple[list[dict[str, object]], str | None]:
+        if limit < 1:
+            raise ValueError("limit is at least 1")
+        request: dict[str, object] = {
+            "TableName": table_name,
+            "KeyConditionExpression": (
+                f"{key_name} = :pk AND begins_with({sk_name}, :prefix)"
+            ),
+            "ExpressionAttributeValues": {
                 ":pk": self._serializer.serialize(key_value),
                 ":prefix": self._serializer.serialize(sk_prefix),
             },
-        )
-        return self._rows(response)
+            "Limit": limit,
+        }
+        if exclusive_start_sk is not None:
+            request["ExclusiveStartKey"] = {
+                key_name: self._serializer.serialize(key_value),
+                sk_name: self._serializer.serialize(exclusive_start_sk),
+            }
+        rows = self._rows(self._client.query(**request))
+        if len(rows) < limit:
+            return rows, None
+        last_sk = rows[-1].get(sk_name)
+        if not isinstance(last_sk, str):
+            return rows, None
+        return rows, last_sk
 
     @override
     def query_index(

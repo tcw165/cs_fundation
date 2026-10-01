@@ -14,7 +14,9 @@ class DynamoDb(Protocol):
         key_value: str,
         sk_name: str,
         sk_prefix: str,
-    ) -> list[dict[str, object]]: ...
+        limit: int,
+        exclusive_start_sk: str | None = None,
+    ) -> tuple[list[dict[str, object]], str | None]: ...
 
     def query_index(
         self,
