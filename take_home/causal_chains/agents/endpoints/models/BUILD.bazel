@@ -5,6 +5,7 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 py_library(
     name = "models",
     srcs = [
+        "conversation_messages_response.py",
         "text_input_state.py",
         "thinking_state.py",
         "turn_descriptor.py",
@@ -13,6 +14,7 @@ py_library(
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/models/messaging/turn",
         requirement("pydantic"),
     ],
@@ -24,6 +26,7 @@ pytest_test(
     imports = ["../../../../../"],
     deps = [
         ":models",
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/models/messaging/turn",
         requirement("pydantic"),
     ],
