@@ -1,5 +1,8 @@
 .thread {
   --scroll-gap: 8px;
+  --composer-bottom: 24px;
+  --composer-height: 120px;
+  --composer-fade: 108px;
   position: relative;
   width: min(540px, calc(100% - 48px));
   height: 100%;
@@ -11,6 +14,18 @@
   inset: 0;
   overflow-y: auto;
   padding: 28px var(--scroll-gap) var(--composer-cover, 176px) 4px;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - var(--composer-bottom) - var(--composer-height) - var(--composer-fade)),
+    transparent calc(100% - var(--composer-bottom) - var(--composer-height))
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - var(--composer-bottom) - var(--composer-height) - var(--composer-fade)),
+    transparent calc(100% - var(--composer-bottom) - var(--composer-height))
+  );
 }
 
 .thread.is-empty {
