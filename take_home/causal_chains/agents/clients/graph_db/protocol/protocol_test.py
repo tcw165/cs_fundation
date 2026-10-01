@@ -17,10 +17,10 @@ class _Both:
     def broken_outgoing_sums(self) -> list[tuple[UUID, Decimal]]:
         return []
 
-    def merge_case(self, case_id: UUID) -> None:
+    def merge_case(self, case_id: UUID, conversation_id: str) -> None:
         return None
 
-    def get_case(self, case_id: UUID) -> UUID | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str] | None:
         return None
 
     def merge_situation(

@@ -45,7 +45,7 @@ async def add_case(
     Args:
         ctx: Run context. The causal chain store is on its clients.
     """
-    case = Case(case_id=uuid4())
+    case = Case(case_id=uuid4(), conversation_id=ctx.context.conversation_id)
     await _require_store(ctx).add_case(case)
     return case
 

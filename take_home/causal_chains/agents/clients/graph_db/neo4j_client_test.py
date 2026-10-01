@@ -84,14 +84,15 @@ def test_broken_outgoing_sums_reads_fake_rows():
 
 
 def test_merge_case_and_get_case_use_the_case_id():
-    driver = _Driver([{"case_id": str(NOW_ID)}])
+    driver = _Driver([{"case_id": str(NOW_ID), "conversation_id": "1"}])
     client = Neo4jClient(driver)
-    client.merge_case(NOW_ID)
-    assert client.get_case(NOW_ID) == NOW_ID
+    client.merge_case(NOW_ID, "1")
+    assert client.get_case(NOW_ID) == (NOW_ID, "1")
     merge_query, merge_params = driver.calls[0]
     get_query, get_params = driver.calls[1]
     assert "MERGE (c:Case {case_id: $case_id})" in merge_query
-    assert merge_params == {"case_id": str(NOW_ID)}
+    assert "SET c.conversation_id = $conversation_id" in merge_query
+    assert merge_params == {"case_id": str(NOW_ID), "conversation_id": "1"}
     assert "MATCH (c:Case {case_id: $case_id})" in get_query
     assert get_params == {"case_id": str(NOW_ID)}
 
