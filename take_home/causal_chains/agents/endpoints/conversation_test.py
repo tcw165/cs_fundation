@@ -198,12 +198,17 @@ def test_get_messages_returns_one_page():
         await post_message("1", PostMessageBody(text="second"), container)
         page = await get_messages("1", container, limit=1)
         assert page.next_cursor is not None
-        rest = await get_messages("1", container, limit=1, cursor=page.next_cursor)
+        rest = await get_messages("1", container, limit=1, start_message=page.next_cursor)
         assert rest.next_cursor is not None
-        done = await get_messages("1", container, limit=1, cursor=rest.next_cursor)
+        done = await get_messages("1", container, limit=1, start_message=rest.next_cursor)
         whole = await get_messages("1", container, limit=2)
         assert whole.next_cursor is not None
-        after_whole = await get_messages("1", container, limit=2, cursor=whole.next_cursor)
+        after_whole = await get_messages(
+            "1",
+            container,
+            limit=2,
+            start_message=whole.next_cursor,
+        )
         return page, rest, done, whole, after_whole
 
     page, rest, done, whole, after_whole = asyncio.run(exercise())

@@ -19,7 +19,7 @@ class MessagingStore(Protocol):
         self,
         conversation_id: str,
         limit: int,
-        cursor: str | None = None,
+        start_message: str | None = None,
     ) -> MessagePage: ...
 
     async def save_message_with_ttl(
