@@ -16,6 +16,8 @@ class _WithStream:
         if False:
             yield MarkdownMessage(
                 message_id="m_1",
+                conversation_id="1",
+                user_uuid="user-1",
                 role=Role.agent,
                 text="",
                 created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
@@ -34,6 +36,8 @@ def test_agent_runner_is_runtime_checkable():
 def test_agent_runner_event_and_context():
     event = MarkdownMessage(
         message_id="m_1",
+        conversation_id="1",
+        user_uuid="user-1",
         role=Role.agent,
         text="hi",
         created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),

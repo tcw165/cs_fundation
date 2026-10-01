@@ -51,8 +51,22 @@ class _Scripted:
         self.calls += 1
         self.contexts.append(context)
         created = datetime(2026, 9, 30, tzinfo=timezone.utc)
-        yield MarkdownMessage(message_id="m_a", role=Role.agent, text="one", created_timestamp=created)
-        yield MarkdownMessage(message_id="m_b", role=Role.agent, text="two", created_timestamp=created)
+        yield MarkdownMessage(
+            message_id="m_a",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.agent,
+            text="one",
+            created_timestamp=created,
+        )
+        yield MarkdownMessage(
+            message_id="m_b",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.agent,
+            text="two",
+            created_timestamp=created,
+        )
 
 
 class _Container:

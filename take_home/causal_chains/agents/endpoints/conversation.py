@@ -29,6 +29,8 @@ async def post_message(
 ) -> Turn:
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),
+        conversation_id=conversation_id,
+        user_uuid="user-1",
         role=Role.user,
         text=body.text,
         created_timestamp=datetime.now(timezone.utc),

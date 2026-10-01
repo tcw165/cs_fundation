@@ -10,7 +10,10 @@ py_library(
     ],
     imports = ["../../../../../../"],
     visibility = ["//visibility:public"],
-    deps = [requirement("pydantic")],
+    deps = [
+        requirement("openai"),
+        requirement("pydantic"),
+    ],
 )
 
 pytest_test(

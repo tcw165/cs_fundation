@@ -66,6 +66,8 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
     )
     message = MarkdownMessage(
         message_id="m_1",
+        conversation_id="1",
+        user_uuid="user-1",
         role=Role.user,
         text="hormuz",
         created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),

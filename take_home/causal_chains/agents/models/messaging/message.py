@@ -15,6 +15,9 @@ class MarkdownMessage(BaseMessage):
     kind: Literal["markdown"] = Field(default="markdown", description="A markdown chat message.")
     text: str = Field(..., description="The message text.")
 
+    def openai_text(self) -> str:
+        return self.text
+
 
 class HeartbeatMessage(BaseModel):
     """A stream keepalive. It is not stored."""
