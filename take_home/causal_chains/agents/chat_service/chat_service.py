@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from agents import flush_traces, trace
 
@@ -31,6 +32,23 @@ def can_store_message(message: Message) -> bool:
     return message.role is Role.user or message.role is Role.agent
 
 
+@asynccontextmanager
+async def update_turn(turn_store: TurnStore, turn: Turn) -> AsyncIterator[None]:
+    running = turn.model_copy(update={"status": TurnStatus.running})
+    await turn_store.put_turn(running)
+    try:
+        yield
+    except Exception:
+        await turn_store.put_turn(
+            running.model_copy(update={"status": TurnStatus.failed})
+        )
+        raise
+    else:
+        await turn_store.put_turn(
+            running.model_copy(update={"status": TurnStatus.completed})
+        )
+
+
 class ChatService:
     def __init__(
         self,
@@ -52,24 +70,22 @@ class ChatService:
         text: str,
         run_config: RunConfig | None = None,
     ) -> AsyncIterator[Message]:
-        running = turn.model_copy(update={"status": TurnStatus.running})
-        await self._turn_store.put_turn(running)
-        context = RunContext(
-            conversation_id=turn.conversation_id,
-            clock=self._clock,
-            turn_id=turn.turn_id,
-            run_config=run_config or RunConfig(),
-            clients=RunClients(
-                causal_chain_store=self._causal_chain_store,
-            ),
-        )
         try:
-            with trace(
-                workflow_name="chat_service",
-                group_id=turn.conversation_id,
-                metadata={"turn_id": turn.turn_id},
-            ):
-                try:
+            async with update_turn(self._turn_store, turn):
+                context = RunContext(
+                    conversation_id=turn.conversation_id,
+                    clock=self._clock,
+                    turn_id=turn.turn_id,
+                    run_config=run_config or RunConfig(),
+                    clients=RunClients(
+                        causal_chain_store=self._causal_chain_store,
+                    ),
+                )
+                with trace(
+                    workflow_name="chat_service",
+                    group_id=turn.conversation_id,
+                    metadata={"turn_id": turn.turn_id},
+                ):
                     async for message in self._agent_runner.stream([text], context):
                         if can_store_message(message):
                             await self._messaging_store.append(
@@ -77,14 +93,6 @@ class ChatService:
                                 message,
                             )
                         yield message
-                    await self._turn_store.put_turn(
-                        running.model_copy(update={"status": TurnStatus.completed})
-                    )
-                except Exception:
-                    await self._turn_store.put_turn(
-                        running.model_copy(update={"status": TurnStatus.failed})
-                    )
-                    raise
         finally:
             flush_traces()
 
