@@ -6,6 +6,7 @@ import { format_message_time, message_marks, type MessageMark } from "./message_
 import { MessageView } from "./message_view";
 import type { TranscriptEntry } from "./reveal_state";
 import { Suggestions } from "./suggestions";
+import { distance_from_bottom, still_following } from "./thread_follow";
 import type { use_chat_session } from "./use_chat_session";
 
 import "./thread.css";
@@ -74,6 +75,54 @@ export function Thread({
   const thread_ref = useRef<HTMLElement | null>(null);
   const viewport_ref = useRef<HTMLDivElement | null>(null);
   const composer_ref = useRef<HTMLFormElement | null>(null);
+  const follow_ref = useRef(true);
+  const live = state.running || state.phase === "animating";
+  useEffect(() => {
+    if (state.running) {
+      follow_ref.current = true;
+    }
+  }, [state.running]);
+  useEffect(() => {
+    const viewport = viewport_ref.current;
+    if (viewport === null) {
+      return;
+    }
+    const on_scroll = () => {
+      follow_ref.current = still_following(
+        distance_from_bottom(viewport.scrollTop, viewport.scrollHeight, viewport.clientHeight),
+      );
+    };
+    viewport.addEventListener("scroll", on_scroll, { passive: true });
+    return () => viewport.removeEventListener("scroll", on_scroll);
+  }, []);
+  useEffect(() => {
+    const viewport = viewport_ref.current;
+    if (viewport === null || !live) {
+      return;
+    }
+    const pin = () => {
+      if (!follow_ref.current) {
+        return;
+      }
+      viewport.scrollTop = viewport.scrollHeight;
+    };
+    pin();
+    const observer = new ResizeObserver(pin);
+    for (const child of viewport.children) {
+      observer.observe(child);
+    }
+    const mutations = new MutationObserver(() => {
+      for (const child of viewport.children) {
+        observer.observe(child);
+      }
+      pin();
+    });
+    mutations.observe(viewport, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
+  }, [live, state.log.length]);
   useEffect(() => {
     const thread = thread_ref.current;
     const viewport = viewport_ref.current;
