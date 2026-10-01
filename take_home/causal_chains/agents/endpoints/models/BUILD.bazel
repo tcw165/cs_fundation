@@ -4,7 +4,10 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "models",
-    srcs = ["text_input_state.py"],
+    srcs = [
+        "text_input_state.py",
+        "thinking_state.py",
+    ],
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
     deps = [requirement("pydantic")],
