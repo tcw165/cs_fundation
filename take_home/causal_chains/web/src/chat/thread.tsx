@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import { MicIcon, SendIcon } from "../shell/icons";
 import { MessageView } from "./message_view";
 import { Suggestions } from "./suggestions";
@@ -16,10 +18,35 @@ export function Thread({
 }) {
   const { state, draft, set_draft, send, finish, timing } = session;
   const empty = state.log.length === 0;
+  const thread_ref = useRef<HTMLElement | null>(null);
+  const composer_ref = useRef<HTMLFormElement | null>(null);
+  useEffect(() => {
+    const thread = thread_ref.current;
+    const composer = composer_ref.current;
+    if (thread === null || composer === null) {
+      return;
+    }
+    const apply = () => {
+      const bottom = 24;
+      const gap = 16;
+      thread.style.setProperty(
+        "--composer-cover",
+        `${composer.offsetHeight + bottom + gap}px`,
+      );
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <section className="thread" aria-label="chat">
+    <section
+      className={empty ? "thread is-empty" : "thread"}
+      aria-label="chat"
+      ref={thread_ref}
+    >
+      {empty ? <h2 className="play-title">What's the play?</h2> : null}
       <div className="thread-viewport">
-        {empty ? <h2 className="play-title">What's the play?</h2> : null}
         {state.log.map((entry) => {
           if (entry.kind === "user") {
             return (
@@ -44,6 +71,7 @@ export function Thread({
       </div>
       <form
         className="composer"
+        ref={composer_ref}
         onSubmit={(event) => {
           event.preventDefault();
           void send(draft);
