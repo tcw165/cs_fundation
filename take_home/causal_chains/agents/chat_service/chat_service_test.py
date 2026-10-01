@@ -2,7 +2,11 @@ import asyncio
 from datetime import datetime, timezone
 
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
-from take_home.causal_chains.agents.chat_service.chat_service import ChatService, format_sse
+from take_home.causal_chains.agents.chat_service.chat_service import (
+    ChatService,
+    format_sse,
+    can_store_message,
+)
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -25,6 +29,34 @@ from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurn
 class _FixedClock:
     def now(self) -> datetime:
         return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
+
+
+def test_stores_user_and_agent_messages_only():
+    created = datetime(2026, 9, 30, tzinfo=timezone.utc)
+    user = MarkdownMessage(
+        message_id="m_user",
+        conversation_id="1",
+        user_uuid="user-1",
+        role=Role.user,
+        text="hello",
+        created_timestamp=created,
+    )
+    agent = user.model_copy(update={"message_id": "m_agent", "role": Role.agent})
+    other = DeeplinkCardMessage(
+        message_id="m_card",
+        conversation_id="1",
+        user_uuid="user-1",
+        role=Role.other,
+        created_timestamp=created,
+        title="now",
+        subtitle="the present",
+        link="/chain/now",
+        enabled=True,
+    )
+    assert can_store_message(user) is True
+    assert can_store_message(agent) is True
+    assert can_store_message(other) is False
+    assert can_store_message(HeartbeatMessage()) is False
 
 
 def test_format_sse_excludes_type_from_data():
