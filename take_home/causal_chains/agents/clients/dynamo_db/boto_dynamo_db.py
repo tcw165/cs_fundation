@@ -10,6 +10,8 @@ class _LowLevelDynamo(Protocol):
 
     def get_item(self, **kwargs: object) -> dict[str, object]: ...
 
+    def query(self, **kwargs: object) -> dict[str, object]: ...
+
 
 class BotoDynamoDb(DynamoDb):
     def __init__(self, client: _LowLevelDynamo) -> None:
@@ -37,3 +39,56 @@ class BotoDynamoDb(DynamoDb):
             name: self._deserializer.deserialize(value)
             for name, value in raw.items()
         }
+
+    def _rows(self, response: dict[str, object]) -> list[dict[str, object]]:
+        raw_items = response.get("Items", [])
+        if not isinstance(raw_items, list):
+            return []
+        rows: list[dict[str, object]] = []
+        for raw in raw_items:
+            if not isinstance(raw, dict):
+                continue
+            rows.append(
+                {
+                    name: self._deserializer.deserialize(value)
+                    for name, value in raw.items()
+                }
+            )
+        return rows
+
+    @override
+    def query(
+        self,
+        table_name: str,
+        key_name: str,
+        key_value: str,
+        sk_name: str,
+        sk_prefix: str,
+    ) -> list[dict[str, object]]:
+        response = self._client.query(
+            TableName=table_name,
+            KeyConditionExpression=f"{key_name} = :pk AND begins_with({sk_name}, :prefix)",
+            ExpressionAttributeValues={
+                ":pk": self._serializer.serialize(key_value),
+                ":prefix": self._serializer.serialize(sk_prefix),
+            },
+        )
+        return self._rows(response)
+
+    @override
+    def query_index(
+        self,
+        table_name: str,
+        index_name: str,
+        key_name: str,
+        key_value: str,
+    ) -> list[dict[str, object]]:
+        response = self._client.query(
+            TableName=table_name,
+            IndexName=index_name,
+            KeyConditionExpression=f"{key_name} = :value",
+            ExpressionAttributeValues={
+                ":value": self._serializer.serialize(key_value),
+            },
+        )
+        return self._rows(response)
