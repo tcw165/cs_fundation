@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
+from take_home.causal_chains.agents.models.messaging.conversation import Conversation
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
     Message,
@@ -22,6 +23,20 @@ class _Both:
         self,
         conversation_id: str,
     ) -> list[Message]:
+        return []
+
+    async def save_message_with_ttl(
+        self,
+        conversation_id: str,
+        message: Message,
+        time_to_live: int,
+    ) -> None:
+        return None
+
+    async def list_conversations(
+        self,
+        user_uuid: str,
+    ) -> list[Conversation]:
         return []
 
 

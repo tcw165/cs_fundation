@@ -76,15 +76,45 @@ class _ChainStore:
 class _FakeDynamoDb:
     def __init__(self) -> None:
         self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
-        self.put_item("conversation", {"conversation_id": "1", "messages": []})
 
     def put_item(self, table_name: str, item: dict[str, object]) -> None:
-        key = (("conversation_id", item["conversation_id"]),)
+        key = (("PK", item["PK"]), ("SK", item["SK"]))
         self._items[(table_name, key)] = item
 
     def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
         stored_key = tuple(sorted(key.items()))
         return self._items.get((table_name, stored_key))
+
+    def query(
+        self,
+        table_name: str,
+        key_name: str,
+        key_value: str,
+        sk_name: str,
+        sk_prefix: str,
+    ) -> list[dict[str, object]]:
+        rows = [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name
+            and item.get(key_name) == key_value
+            and str(item.get(sk_name, "")).startswith(sk_prefix)
+        ]
+        rows.sort(key=lambda row: str(row.get(sk_name, "")))
+        return rows
+
+    def query_index(
+        self,
+        table_name: str,
+        index_name: str,
+        key_name: str,
+        key_value: str,
+    ) -> list[dict[str, object]]:
+        return [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name and item.get(key_name) == key_value
+        ]
 
 
 def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
@@ -107,7 +137,7 @@ def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
 
 def test_run_turn_yields_runner_messages_and_completes():
     async def exercise():
-        store = MessagingStoreImpl(_FakeDynamoDb())
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
         turn_store = InMemoryTurnStore()
         service = ChatService(
             StubTurnRunner(),
@@ -161,7 +191,7 @@ def test_run_turn_builds_run_clients():
         runner = _Recording()
         service = ChatService(
             runner,
-            MessagingStoreImpl(_FakeDynamoDb()),
+            MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
             InMemoryTurnStore(),
             chain_store,
             clock,
@@ -213,7 +243,7 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
     async def exercise():
         service = ChatService(
             StubTurnRunner(),
-            MessagingStoreImpl(_FakeDynamoDb()),
+            MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
             InMemoryTurnStore(),
             _ChainStore(),
             _FixedClock(),

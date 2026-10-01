@@ -30,6 +30,7 @@ def main(host: str, port: int) -> None:
     set_trace_processors(processors)
     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
     container.config.openai_api_key.from_value(openai_api_key)
+    container.config.user_uuid.from_value("user-1")
     container.config.agent_runner.from_value("openai" if openai_api_key else "stub")
     container.check_dependencies()
     uvicorn.run(create_app(container), host=host, port=port)

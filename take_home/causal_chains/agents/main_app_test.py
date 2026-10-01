@@ -15,18 +15,48 @@ from take_home.causal_chains.agents.models.causal_chains.situation import StartS
 class _FakeDynamoDb:
     def __init__(self) -> None:
         self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
-        self.put_item("conversation", {"conversation_id": "1", "messages": []})
 
     def put_item(self, table_name: str, item: dict[str, object]) -> None:
         if table_name == "turn":
             key = (("turn_id", item["turn_id"]),)
         else:
-            key = (("conversation_id", item["conversation_id"]),)
+            key = (("PK", item["PK"]), ("SK", item["SK"]))
         self._items[(table_name, key)] = item
 
     def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
         stored_key = tuple(sorted(key.items()))
         return self._items.get((table_name, stored_key))
+
+    def query(
+        self,
+        table_name: str,
+        key_name: str,
+        key_value: str,
+        sk_name: str,
+        sk_prefix: str,
+    ) -> list[dict[str, object]]:
+        rows = [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name
+            and item.get(key_name) == key_value
+            and str(item.get(sk_name, "")).startswith(sk_prefix)
+        ]
+        rows.sort(key=lambda row: str(row.get(sk_name, "")))
+        return rows
+
+    def query_index(
+        self,
+        table_name: str,
+        index_name: str,
+        key_name: str,
+        key_value: str,
+    ) -> list[dict[str, object]]:
+        return [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name and item.get(key_name) == key_value
+        ]
 
 
 def _override_dynamo_db(container: AppContainer) -> None:
@@ -43,6 +73,7 @@ def test_health_reports_ready():
 def test_post_message_and_sse_with_stub_runner():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
+    container.config.user_uuid.from_value("user-1")
     _override_dynamo_db(container)
     client = TestClient(create_app(container))
     created = client.post("/conversation/1/messages", json={"text": "hello"})
