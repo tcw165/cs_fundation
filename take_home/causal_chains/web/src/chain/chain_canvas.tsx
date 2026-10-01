@@ -387,10 +387,10 @@ function situation_kind(situation: ChainSituation): "start" | "step" | "terminal
 
 function short_title(desc: string): string {
   const sentence = desc.split(/[.;]/)[0] ?? desc;
-  if (sentence.length <= 88) {
+  if (sentence.length <= 180) {
     return sentence;
   }
-  return `${sentence.slice(0, 85)}…`;
+  return `${sentence.slice(0, 177)}…`;
 }
 
 function incoming_probability(chain: CausalChain, node: LaidNode): string | null {
