@@ -31,6 +31,8 @@ def test_format_sse_excludes_type_from_data():
     line = format_sse(
         MarkdownMessage(
             message_id="m_1",
+            conversation_id="1",
+            user_uuid="user-1",
             role=Role.agent,
             text="oil ",
             created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
@@ -45,6 +47,8 @@ def test_format_sse_deeplink():
     line = format_sse(
         DeeplinkCardMessage(
             message_id="m_2",
+            conversation_id="1",
+            user_uuid="user-1",
             role=Role.other,
             created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
             title="now",
@@ -86,6 +90,8 @@ class _FakeDynamoDb:
 def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
     message = MarkdownMessage(
         message_id=message_id,
+        conversation_id="1",
+        user_uuid="user-1",
         role=Role.user,
         text="hello",
         created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
@@ -144,6 +150,8 @@ def test_run_turn_builds_run_clients():
             if False:
                 yield MarkdownMessage(
                     message_id="m_1",
+                    conversation_id="1",
+                    user_uuid="user-1",
                     role=Role.agent,
                     text="",
                     created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),

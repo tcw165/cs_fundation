@@ -95,6 +95,8 @@ async def run_offline(
     service = container.chat_service()
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),
+        conversation_id="1",
+        user_uuid="user-1",
         role=Role.user,
         text=query,
         created_timestamp=datetime.now(timezone.utc),

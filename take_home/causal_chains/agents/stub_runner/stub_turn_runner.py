@@ -19,10 +19,11 @@ class StubTurnRunner(AgentRunner):
         inputs: list[str],
         context: RunContext,
     ) -> AsyncGenerator[Message]:
-        del context
         text = "\n".join(inputs)
         yield MarkdownMessage(
             message_id=str(uuid.uuid4()),
+            conversation_id=context.conversation_id,
+            user_uuid="user-1",
             role=Role.agent,
             text=f"echo: {text}",
             created_timestamp=datetime.now(timezone.utc),

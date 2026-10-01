@@ -63,18 +63,24 @@ def test_append_and_list_messages_by_conversation():
         store = MessagingStoreImpl(database)
         hello = MarkdownMessage(
             message_id="m_1",
+            conversation_id="1",
+            user_uuid="user-1",
             role=Role.user,
             text="hello",
             created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
         )
         other = MarkdownMessage(
             message_id="m_2",
+            conversation_id="2",
+            user_uuid="user-1",
             role=Role.user,
             text="other",
             created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
         )
         card = DeeplinkCardMessage(
             message_id="m_3",
+            conversation_id="1",
+            user_uuid="user-1",
             role=Role.other,
             created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
             title="now",

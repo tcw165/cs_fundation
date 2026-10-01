@@ -41,7 +41,7 @@ def test_card_link_adds_a_query():
 
 
 def test_deeplink_message_copies_the_card():
-    message = deeplink_message(_card())
+    message = deeplink_message(_card(), "1")
     assert message.role is Role.other
     assert message.title == "now"
     assert message.subtitle == "the present"

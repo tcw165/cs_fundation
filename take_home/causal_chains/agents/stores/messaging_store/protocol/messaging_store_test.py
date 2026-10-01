@@ -42,6 +42,8 @@ def test_messaging_store_requires_append_and_list_messages():
 def test_message_fields_for_store():
     message = MarkdownMessage(
         message_id="m_1",
+        conversation_id="1",
+        user_uuid="user-1",
         role=Role.user,
         text="hello",
         created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),

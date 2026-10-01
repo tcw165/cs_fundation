@@ -84,9 +84,11 @@ def _heartbeat() -> HeartbeatMessage:
     return HeartbeatMessage()
 
 
-def _markdown(text: str) -> MarkdownMessage:
+def _markdown(text: str, conversation_id: str) -> MarkdownMessage:
     return MarkdownMessage(
         message_id=str(uuid.uuid4()),
+        conversation_id=conversation_id,
+        user_uuid="user-1",
         role=Role.agent,
         text=text,
         created_timestamp=datetime.now(timezone.utc),
@@ -156,8 +158,9 @@ def _queue_deeplink(
     tail_messages: list[Message],
     seen_links: set[str],
     card: DeeplinkCard,
+    conversation_id: str,
 ) -> None:
-    message = deeplink_message(card)
+    message = deeplink_message(card, conversation_id)
     if message.link in seen_links:
         return
     seen_links.add(message.link)
@@ -176,6 +179,7 @@ def _ready_paragraphs(buffer: str) -> tuple[list[str], str]:
 async def _emit_paragraphs(
     send: MemoryObjectSendStream[Message],
     buffer: str,
+    conversation_id: str,
     *,
     rest: bool,
 ) -> str:
@@ -184,12 +188,12 @@ async def _emit_paragraphs(
         logger().info(
             f"paragraph chars={len(paragraph)} prefix={paragraph[:80]}",
         )
-        await send.send(_markdown(paragraph))
+        await send.send(_markdown(paragraph, conversation_id))
     if rest and buffer.strip():
         logger().info(
             f"paragraph chars={len(buffer.strip())} prefix={buffer.strip()[:80]}",
         )
-        await send.send(_markdown(buffer))
+        await send.send(_markdown(buffer, conversation_id))
         return ""
     return buffer
 
@@ -303,14 +307,24 @@ class AppAgentRunner(AgentRunner):
                         data = getattr(event, "data", None)
                         if isinstance(data, ResponseTextDeltaEvent):
                             buffer += data.delta
-                            buffer = await _emit_paragraphs(send, buffer, rest=False)
+                            buffer = await _emit_paragraphs(
+                                send,
+                                buffer,
+                                context.conversation_id,
+                                rest=False,
+                            )
                         continue
                     item = getattr(event, "item", None)
                     if (
                         event_type == "run_item_stream_event"
                         and getattr(item, "type", "") == "tool_call_item"
                     ):
-                        buffer = await _emit_paragraphs(send, buffer, rest=True)
+                        buffer = await _emit_paragraphs(
+                            send,
+                            buffer,
+                            context.conversation_id,
+                            rest=True,
+                        )
                         tool_name = _tool_call_name(item)
                         call_id = _tool_call_id(item)
                         logger().info(f"tool call {tool_name}")
@@ -327,7 +341,12 @@ class AppAgentRunner(AgentRunner):
                         tool_name = tool_names.get(call_id)
                         if tool_name not in _WIDGET_TOOLS:
                             continue
-                        buffer = await _emit_paragraphs(send, buffer, rest=True)
+                        buffer = await _emit_paragraphs(
+                            send,
+                            buffer,
+                            context.conversation_id,
+                            rest=True,
+                        )
                         output = getattr(item, "output", None)
                         cards = (
                             _cards_from_finder_output(output)
@@ -340,16 +359,26 @@ class AppAgentRunner(AgentRunner):
                         )
                         for card in cards:
                             if hold:
-                                _queue_deeplink(tail_messages, seen_links, card)
+                                _queue_deeplink(
+                                    tail_messages,
+                                    seen_links,
+                                    card,
+                                    context.conversation_id,
+                                )
                                 continue
-                            message = deeplink_message(card)
+                            message = deeplink_message(card, context.conversation_id)
                             if message.link in seen_links:
                                 continue
                             seen_links.add(message.link)
                             logger().info("deeplink sent")
                             await send.send(message)
                 tail = buffer.strip()
-                buffer = await _emit_paragraphs(send, buffer, rest=True)
+                buffer = await _emit_paragraphs(
+                    send,
+                    buffer,
+                    context.conversation_id,
+                    rest=True,
+                )
                 logger().info(
                     f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
                 )
@@ -359,7 +388,7 @@ class AppAgentRunner(AgentRunner):
         except InputGuardrailTripwireTriggered:
             logger().info("input guardrail triggered")
             self._memcache.flush()
-            await send.send(_markdown(blocked_input_message))
+            await send.send(_markdown(blocked_input_message, context.conversation_id))
         except Exception:
             logger().exception("agent run failed")
             raise

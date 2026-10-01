@@ -21,6 +21,9 @@ class DeeplinkCardMessage(BaseMessage):
     link: str = Field(..., description="Link the card opens.")
     enabled: bool = Field(..., description="Whether the card can be opened.")
 
+    def openai_text(self) -> str:
+        return self.title
+
 
 def card_link(card: DeeplinkCard) -> str:
     """Build the message link from scheme, route, and params."""
@@ -32,10 +35,12 @@ def card_link(card: DeeplinkCard) -> str:
     return f"{base}?{query}" if query else base
 
 
-def deeplink_message(card: DeeplinkCard) -> DeeplinkCardMessage:
+def deeplink_message(card: DeeplinkCard, conversation_id: str) -> DeeplinkCardMessage:
     """Copy the card onto a chat message. enabled is True."""
     return DeeplinkCardMessage(
         message_id=str(uuid.uuid4()),
+        conversation_id=conversation_id,
+        user_uuid="user-1",
         role=Role.other,
         created_timestamp=datetime.now(timezone.utc),
         title=card.title,
