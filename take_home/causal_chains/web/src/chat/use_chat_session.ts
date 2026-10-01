@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { chat_item_from_message } from "./chat_item";
 import type { ChatPort, UserInteractionState } from "./chat_port";
+import { create_message_store } from "./message_store";
 import { initial_reveal_state, reveal_reducer } from "./reveal_state";
 import type { RevealTiming } from "./reveal_timing";
 
@@ -26,6 +27,7 @@ export function use_chat_session(
   const running_ref = useRef(false);
   const abort_ref = useRef<AbortController | null>(null);
   const finished_id = useRef<string | null>(null);
+  const messages_ref = useRef(create_message_store());
 
   useEffect(() => {
     if (state.phase === "idle" && state.pending.length > 0) {
@@ -73,6 +75,7 @@ export function use_chat_session(
           text: trimmed,
           abort_signal: controller.signal,
         });
+        messages_ref.current.remember(posted.received_message);
         for await (const snapshot of chat_port.subscribe_turn({
           conversation_id,
           turn_id: posted.turn.turn_id,
@@ -80,6 +83,9 @@ export function use_chat_session(
         })) {
           set_user_interaction_state(snapshot.user_interaction_state);
           for (const message of snapshot.messages) {
+            if (!messages_ref.current.remember(message)) {
+              continue;
+            }
             dispatch({ type: "enqueue", item: chat_item_from_message(message) });
           }
         }

@@ -151,4 +151,52 @@ describe("thread composer", () => {
     });
     host.remove();
   });
+
+  it("shows a message id once when the stream repeats it", async () => {
+    const snapshot = page(interaction("ENABLED", null));
+    const chat_port: ChatPort = {
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      subscribe_turn: async function* () {
+        yield snapshot;
+        yield snapshot;
+        yield {
+          ...snapshot,
+          messages: [
+            {
+              kind: "markdown",
+              message_id: "m_user",
+              role: "user",
+              text: "hello",
+              created_timestamp: "2026-09-30T00:00:00+00:00",
+            },
+          ],
+        };
+      },
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await send(host, "hello");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    });
+    expect(host.querySelectorAll(".message-assistant")).toHaveLength(1);
+    expect(host.querySelectorAll(".message-user")).toHaveLength(1);
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
 });
