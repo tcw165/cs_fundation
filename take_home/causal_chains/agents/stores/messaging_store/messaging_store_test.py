@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
@@ -64,15 +65,18 @@ def test_append_and_list_messages_by_conversation():
             message_id="m_1",
             role=Role.user,
             text="hello",
+            created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
         )
         other = MarkdownMessage(
             message_id="m_2",
             role=Role.user,
             text="other",
+            created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
         )
         card = DeeplinkCardMessage(
             message_id="m_3",
             role=Role.other,
+            created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
             title="now",
             subtitle="the present",
             link="/chain/now",

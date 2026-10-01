@@ -50,8 +50,9 @@ class _Scripted:
     async def stream(self, inputs: list[str], context: RunContext):
         self.calls += 1
         self.contexts.append(context)
-        yield MarkdownMessage(message_id="m_a", role=Role.agent, text="one")
-        yield MarkdownMessage(message_id="m_b", role=Role.agent, text="two")
+        created = datetime(2026, 9, 30, tzinfo=timezone.utc)
+        yield MarkdownMessage(message_id="m_a", role=Role.agent, text="one", created_timestamp=created)
+        yield MarkdownMessage(message_id="m_b", role=Role.agent, text="two", created_timestamp=created)
 
 
 class _Container:

@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -30,6 +31,7 @@ async def post_message(
         message_id=str(uuid.uuid4()),
         role=Role.user,
         text=body.text,
+        created_timestamp=datetime.now(timezone.utc),
     )
     await container.messaging_store().append(conversation_id, message)
     turn = Turn(

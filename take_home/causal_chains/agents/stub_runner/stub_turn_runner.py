@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import datetime, timezone
 from typing import override
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
@@ -24,4 +25,5 @@ class StubTurnRunner(AgentRunner):
             message_id=str(uuid.uuid4()),
             role=Role.agent,
             text=f"echo: {text}",
+            created_timestamp=datetime.now(timezone.utc),
         )

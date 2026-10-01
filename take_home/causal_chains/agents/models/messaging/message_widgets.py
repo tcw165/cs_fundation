@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Literal
 from urllib.parse import urlencode
 
@@ -31,6 +32,7 @@ def deeplink_message(card: DeeplinkCard) -> DeeplinkCardMessage:
     return DeeplinkCardMessage(
         message_id=str(uuid.uuid4()),
         role=Role.other,
+        created_timestamp=datetime.now(timezone.utc),
         title=card.title,
         subtitle=card.subtitle,
         link=card_link(card),

@@ -14,7 +14,12 @@ class _FixedClock:
 class _WithStream:
     async def stream(self, inputs: list[str], context: RunContext):
         if False:
-            yield MarkdownMessage(message_id="m_1", role=Role.agent, text="")
+            yield MarkdownMessage(
+                message_id="m_1",
+                role=Role.agent,
+                text="",
+                created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+            )
 
 
 class _WithoutStream:
@@ -27,7 +32,12 @@ def test_agent_runner_is_runtime_checkable():
 
 
 def test_agent_runner_event_and_context():
-    event = MarkdownMessage(message_id="m_1", role=Role.agent, text="hi")
+    event = MarkdownMessage(
+        message_id="m_1",
+        role=Role.agent,
+        text="hi",
+        created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+    )
     assert event.type == "markdown"
     context = RunContext(
         conversation_id="1",
