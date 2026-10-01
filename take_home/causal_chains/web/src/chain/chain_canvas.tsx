@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { bind_overlay_scroll, reveal_overlay_scrollbar } from "../theme/overlay_scroll";
 import { chain_for_focus } from "./chain_select";
 import type { CausalChain, ChainPort, ChainSituation } from "./chain_port";
 import {
@@ -31,6 +32,7 @@ export function ChainCanvas({
   const [loaded, set_loaded] = useState(false);
   const [selection, set_selection] = useState<GraphSelection | null>(selection_from_focus(focus));
   const host_ref = useRef<HTMLElement | null>(null);
+  const scroll_ref = useRef<HTMLDivElement | null>(null);
   const chain_ref = useRef<CausalChain | null>(null);
   const focus_key = JSON.stringify(focus);
 
@@ -92,6 +94,15 @@ export function ChainCanvas({
     };
   }, [chain_port, focus]);
 
+  const panel_scrollable = chains.length > 0 || chain !== null;
+  useEffect(() => {
+    const node = scroll_ref.current;
+    if (node === null) {
+      return;
+    }
+    return bind_overlay_scroll(node);
+  }, [panel_scrollable]);
+
   const title =
     focus.kind === "chain" || focus.kind === "case" ? focus.title : "Causal chain";
   const layout = chain === null ? null : layout_chain(chain, selection);
@@ -109,7 +120,7 @@ export function ChainCanvas({
         <p className="panel-status">chain not found</p>
       ) : null}
       {chains.length > 0 || (chain !== null && layout !== null) ? (
-        <div className="graph-scroll">
+        <div className="graph-scroll overlay-scroll" ref={scroll_ref}>
           {overview.nodes.length > 0 ? (
             <svg
               className="case-overview"
@@ -202,7 +213,8 @@ export function ChainCanvas({
               return (
                 <article
                   key={`${edge.key}:card`}
-                  className="edge-card is-open"
+                  className="edge-card is-open overlay-scroll"
+                  onScroll={(event) => reveal_overlay_scrollbar(event.currentTarget)}
                   style={{
                     transform: `translate(${edge.card.x}px, ${edge.card.y}px)`,
                     width: edge.card.width,
@@ -278,7 +290,8 @@ function SituationCard({
   }
   return (
     <article
-      className="node-card is-open"
+      className="node-card is-open overlay-scroll"
+      onScroll={(event) => reveal_overlay_scrollbar(event.currentTarget)}
       style={style}
       data-situation-id={node.situation_id}
       data-y={node.y}

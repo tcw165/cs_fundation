@@ -10,7 +10,6 @@
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable;
   padding: 28px var(--scroll-gap) var(--composer-cover, 176px) 4px;
 }
 
@@ -104,7 +103,7 @@
 .composer {
   position: absolute;
   left: 0;
-  right: calc(var(--scrollbar-size, 15px) + var(--scroll-gap));
+  right: calc(var(--scrollbar-size, 0px) + var(--scroll-gap));
   bottom: 24px;
   z-index: 1;
   display: flex;
