@@ -4,7 +4,10 @@ from typing import Literal
 from urllib.parse import urlencode
 
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
-from take_home.causal_chains.agents.models.messaging.message import BaseMessage, Role
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
+    BaseMessage,
+    Role,
+)
 
 
 class DeeplinkCardMessage(BaseMessage):

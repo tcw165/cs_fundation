@@ -2,6 +2,9 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field, TypeAdapter
 
+from take_home.causal_chains.agents.models.messaging.message_widgets import (
+    DeeplinkCardMessage,
+)
 from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
     BaseMessage,
     Role,
@@ -19,10 +22,6 @@ class HeartbeatMessage(BaseModel):
     type: Literal["heartbeat"] = "heartbeat"
     role: Literal[Role.meta] = Role.meta
 
-
-from take_home.causal_chains.agents.models.messaging.message_widgets import (  # noqa: E402
-    DeeplinkCardMessage,
-)
 
 Message = Annotated[
     Union[MarkdownMessage, DeeplinkCardMessage, HeartbeatMessage],
