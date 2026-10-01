@@ -328,6 +328,32 @@ def test_list_leads_to_reads_versioned_rows():
     assert "properties(r)" in client._driver.calls[0][0]
 
 
+def test_list_leads_to_reads_a_link_that_has_no_inputs():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "from_situation_id": str(NOW_ID),
+                    "from_version": 1,
+                    "to_situation_id": str(CLEAR_ID),
+                    "to_version": 1,
+                    "props": {"p": 0.08},
+                }
+            ]
+        )
+    )
+    assert client.list_leads_to() == [
+        (
+            NOW_ID,
+            1,
+            CLEAR_ID,
+            1,
+            Decimal("0.0800"),
+            [],
+        ),
+    ]
+
+
 def test_ensure_leads_to_registers_the_type_then_deletes_the_probe():
     driver = _Driver([])
     client = Neo4jClient(driver)
