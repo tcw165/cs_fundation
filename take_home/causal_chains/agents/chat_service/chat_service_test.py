@@ -204,12 +204,71 @@ def test_run_turn_yields_runner_messages_and_completes():
     assert isinstance(events[0], MarkdownMessage)
     assert events[0].role is Role.agent
     assert events[0].text == "echo: hello"
-    assert len(stored) == 1
-    assert stored[0].role is Role.user
-    assert stored[0].text == "hello"
+    assert [message.role for message in stored] == [Role.user, Role.agent]
+    assert [message.text for message in stored] == ["hello", "echo: hello"]
     assert saved is not None
-    assert saved.from_message == stored[0].message_id
+    assert saved.from_message == "m_user"
     assert saved.status is TurnStatus.completed
+
+
+def test_run_turn_skips_heartbeats_and_other_roles():
+    class _Mixed:
+        async def stream(self, inputs: list[str], context: RunContext):
+            del inputs, context
+            yield HeartbeatMessage()
+            yield DeeplinkCardMessage(
+                message_id="m_card",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.other,
+                created_timestamp=datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc),
+                title="now",
+                subtitle="the present",
+                link="/chain/now",
+                enabled=True,
+            )
+            yield MarkdownMessage(
+                message_id="m_follow",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.user,
+                text="follow up",
+                created_timestamp=datetime(2026, 9, 30, 0, 2, tzinfo=timezone.utc),
+            )
+            yield MarkdownMessage(
+                message_id="m_answer",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.agent,
+                text="answer",
+                created_timestamp=datetime(2026, 9, 30, 0, 3, tzinfo=timezone.utc),
+            )
+
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        service = ChatService(
+            _Mixed(),
+            store,
+            InMemoryTurnStore(),
+            _ChainStore(),
+            _FixedClock(),
+        )
+        _message, turn = _user_turn()
+        events = [event async for event in service.run_turn(turn, "hello")]
+        stored = (await store.list_messages("1", 20)).messages
+        return events, stored
+
+    events, stored = asyncio.run(exercise())
+    assert [event.kind for event in events] == [
+        "heartbeat",
+        "deeplink",
+        "markdown",
+        "markdown",
+    ]
+    assert [(message.message_id, message.text) for message in stored] == [
+        ("m_follow", "follow up"),
+        ("m_answer", "answer"),
+    ]
 
 
 def test_run_turn_builds_run_clients():
