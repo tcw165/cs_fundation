@@ -71,6 +71,11 @@ class ChatService:
             ):
                 try:
                     async for message in self._agent_runner.stream([text], context):
+                        if can_store_message(message):
+                            await self._messaging_store.append(
+                                turn.conversation_id,
+                                message,
+                            )
                         yield message
                     await self._turn_store.put_turn(
                         running.model_copy(update={"status": TurnStatus.completed})
