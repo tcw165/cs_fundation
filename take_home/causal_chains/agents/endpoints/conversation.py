@@ -6,14 +6,22 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
-from take_home.causal_chains.agents.chat_service.chat_service import format_sse
 from take_home.causal_chains.agents.di.deps import AppContainerDep
+from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
+    ConversationMessagesResponse,
+)
 from take_home.causal_chains.agents.endpoints.models.post_message_response import (
     PostMessageResponse,
+)
+from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
+from take_home.causal_chains.agents.endpoints.models.turn_descriptor import TurnDescriptor
+from take_home.causal_chains.agents.endpoints.models.user_interaction_state import (
+    UserInteractionState,
 )
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
+    Message,
     Role,
 )
 from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
@@ -52,11 +60,8 @@ async def post_message(
     return PostMessageResponse(turn=turn, received_message=message)
 
 
-def _passed_cursor(
-    after_message: str,
-    from_message: str,
-) -> bool:
-    return after_message == "" or after_message == from_message
+def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
+    return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
 
 
 @router.get("/conversation/{conversation_id}/turn/{turn_id}/sse")
@@ -64,7 +69,6 @@ async def turn_sse(
     conversation_id: str,
     turn_id: str,
     container: AppContainerDep,
-    after_message: Annotated[str, Query()],
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
     turn = await container.turn_store().get_turn(turn_id)
@@ -84,22 +88,30 @@ async def turn_sse(
     async def event_stream() -> AsyncIterator[str]:
         if (
             turn is None
-            or turn.conversation_id != conversation_id
+            or conversation_id != "1"
+            or turn.conversation_id != "1"
             or turn.status is not TurnStatus.queued
             or not isinstance(anchored, MarkdownMessage)
         ):
             return
-        passed = _passed_cursor(after_message, turn.from_message)
+        chat_service = container.chat_service()
         with bind_session_logger(conversation_id, turn_id):
-            async for message in container.chat_service().run_turn(
+            async for message in chat_service.run_turn(
                 turn,
                 anchored.text,
                 RunConfig(include_traces=include_traces),
             ):
-                if not passed:
-                    if getattr(message, "message_id", None) == after_message:
-                        passed = True
-                    continue
-                yield format_sse(message)
+                yield format_conversation_sse(_snapshot(message, turn))
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+def _snapshot(message: Message, turn: Turn) -> ConversationMessagesResponse:
+    return ConversationMessagesResponse(
+        conversation_id="1",
+        messages=[message],
+        user_interaction_state=UserInteractionState(
+            text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,
+        ),
+        turn=TurnDescriptor(processing=[turn], queued=[]),
+    )

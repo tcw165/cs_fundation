@@ -18,10 +18,7 @@ def post_and_read(
     with client.stream(
         "GET",
         f"{base_url}/conversation/{conversation_id}/turn/{turn_id}/sse",
-        params={
-            "include_traces": True,
-            "after_message": body["turn"]["from_message"],
-        },
+        params={"include_traces": True},
     ) as response:
         response.raise_for_status()
         for chunk in response.iter_text():
