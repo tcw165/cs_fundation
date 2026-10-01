@@ -1,8 +1,23 @@
 load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
 
 py_library(
     name = "graph",
     srcs = ["graph.py"],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "headers",
+    srcs = ["headers.py"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+)
+
+pytest_test(
+    name = "headers_test",
+    srcs = ["headers_test.py"],
+    imports = ["../../../.."],
+    deps = [":headers"],
 )
