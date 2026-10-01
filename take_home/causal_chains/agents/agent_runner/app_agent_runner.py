@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections.abc import AsyncGenerator
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from typing import override
 import anyio
@@ -89,6 +89,7 @@ def _markdown(text: str) -> MarkdownMessage:
         message_id=str(uuid.uuid4()),
         role=Role.agent,
         text=text,
+        created_timestamp=datetime.now(timezone.utc),
     )
 
 

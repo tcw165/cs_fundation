@@ -3,6 +3,7 @@ import os
 import sys
 import uuid
 from collections.abc import Callable
+from datetime import datetime, timezone
 
 import click
 from agents import set_default_openai_client, set_trace_processors
@@ -96,6 +97,7 @@ async def run_offline(
         message_id=str(uuid.uuid4()),
         role=Role.user,
         text=query,
+        created_timestamp=datetime.now(timezone.utc),
     )
     await message_store.append("1", message)
     turn = Turn(

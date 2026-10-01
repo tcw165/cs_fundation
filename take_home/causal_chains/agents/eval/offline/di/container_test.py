@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -67,6 +68,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         message_id="m_1",
         role=Role.user,
         text="hormuz",
+        created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
     )
     other = message.model_copy(update={"message_id": "m_2"})
     turn = Turn(

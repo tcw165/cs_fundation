@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
@@ -42,6 +44,7 @@ def test_message_fields_for_store():
         message_id="m_1",
         role=Role.user,
         text="hello",
+        created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
     )
     assert message.role is Role.user
     assert message.text == "hello"

@@ -29,7 +29,12 @@ class _FixedClock:
 
 def test_format_sse_excludes_type_from_data():
     line = format_sse(
-        MarkdownMessage(message_id="m_1", role=Role.agent, text="oil "),
+        MarkdownMessage(
+            message_id="m_1",
+            role=Role.agent,
+            text="oil ",
+            created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+        ),
     )
     assert line.startswith("event: markdown\n")
     assert '"type"' not in line.split("data:", 1)[1]
@@ -41,6 +46,7 @@ def test_format_sse_deeplink():
         DeeplinkCardMessage(
             message_id="m_2",
             role=Role.other,
+            created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
             title="now",
             subtitle="the present",
             link="/chain/now",
@@ -82,6 +88,7 @@ def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
         message_id=message_id,
         role=Role.user,
         text="hello",
+        created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
     )
     turn = Turn(
         turn_id="t_1",
@@ -135,7 +142,12 @@ def test_run_turn_builds_run_clients():
         async def stream(self, inputs: list[str], context: RunContext):
             self.contexts.append(context)
             if False:
-                yield MarkdownMessage(message_id="m_1", role=Role.agent, text="")
+                yield MarkdownMessage(
+                    message_id="m_1",
+                    role=Role.agent,
+                    text="",
+                    created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+                )
 
     async def exercise():
         runner = _Recording()
