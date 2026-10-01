@@ -25,6 +25,7 @@
 }
 
 .chain-canvas {
+  position: relative;
   height: 100%;
   min-height: 0;
   display: flex;
@@ -57,6 +58,7 @@
 }
 
 .graph-scroll {
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -132,17 +134,6 @@
 .node-card.is-open,
 .edge-card.is-open {
   overflow-y: auto;
-}
-
-.node-card.is-open::-webkit-scrollbar,
-.edge-card.is-open::-webkit-scrollbar {
-  width: 8px;
-}
-
-.node-card.is-open::-webkit-scrollbar-thumb,
-.edge-card.is-open::-webkit-scrollbar-thumb {
-  background: #3c3c44;
-  border-radius: 8px;
 }
 
 .node-toggle {

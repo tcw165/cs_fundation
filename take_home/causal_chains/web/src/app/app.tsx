@@ -7,6 +7,7 @@ import { Thread } from "../chat/thread";
 import type { ChatPort } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
 import { use_chat_session } from "../chat/use_chat_session";
+import "../theme/overlay_scroll.css";
 import "../theme/tokens.css";
 import "../shell/shell.css";
 import "./app.css";

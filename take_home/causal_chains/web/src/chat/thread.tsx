@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { MicIcon, SendIcon, StopIcon } from "../shell/icons";
+import { bind_overlay_scroll } from "../theme/overlay_scroll";
 import { format_message_time, message_marks, type MessageMark } from "./message_time";
 import { MessageView } from "./message_view";
 import type { TranscriptEntry } from "./reveal_state";
@@ -94,7 +95,11 @@ export function Thread({
     const observer = new ResizeObserver(apply);
     observer.observe(composer);
     observer.observe(viewport);
-    return () => observer.disconnect();
+    const unbind = bind_overlay_scroll(viewport);
+    return () => {
+      observer.disconnect();
+      unbind();
+    };
   }, []);
   const timestamps = state.log.map(entry_timestamp);
   const marks = message_marks(timestamps);
@@ -105,7 +110,7 @@ export function Thread({
       ref={thread_ref}
     >
       {empty ? <h2 className="play-title">What's the play?</h2> : null}
-      <div className="thread-viewport" ref={viewport_ref}>
+      <div className="thread-viewport overlay-scroll" ref={viewport_ref}>
         {marks.map((mark, index) => {
           const entry = state.log[index];
           if (entry === undefined) {
