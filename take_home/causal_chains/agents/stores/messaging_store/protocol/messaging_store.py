@@ -2,6 +2,9 @@ from typing import Protocol, runtime_checkable
 
 from take_home.causal_chains.agents.models.messaging.conversation import Conversation
 from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
+    MessagePage,
+)
 
 
 @runtime_checkable
@@ -15,7 +18,9 @@ class MessagingStore(Protocol):
     async def list_messages(
         self,
         conversation_id: str,
-    ) -> list[Message]: ...
+        limit: int,
+        cursor: str | None = None,
+    ) -> MessagePage: ...
 
     async def save_message_with_ttl(
         self,

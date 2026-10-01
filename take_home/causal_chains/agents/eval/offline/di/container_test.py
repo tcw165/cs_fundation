@@ -90,7 +90,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         await causal_chain_store.add_case(case)
         await causal_chain_store.add_situation(case, root)
         await causal_chain_store.link_situations(case, root, later, link)
-        listed = await messaging_store.list_messages("1")
+        listed = (await messaging_store.list_messages("1", 20)).messages
         missing = await turn_store.get_turn("missing")
         stored_turn = await turn_store.get_turn("t_1")
         chains = await causal_chain_store.get_chains()

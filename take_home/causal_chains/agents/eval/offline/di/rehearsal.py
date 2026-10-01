@@ -22,6 +22,9 @@ from take_home.causal_chains.agents.models.messaging.turn import Turn
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
+from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
+    MessagePage,
+)
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
@@ -57,12 +60,24 @@ def rehearse_persistence(
 
     def list_messages(
         conversation_id: str,
-    ) -> list[Message]:
-        return [
+        limit: int,
+        cursor: str | None = None,
+    ) -> MessagePage:
+        matched = [
             message
             for stored_id, message in messages
             if stored_id == conversation_id
         ]
+        if cursor is not None:
+            start = 0
+            for index, message in enumerate(matched):
+                if message.message_id == cursor:
+                    start = index + 1
+                    break
+            matched = matched[start:]
+        page = matched[:limit]
+        next_cursor = page[-1].message_id if len(page) == limit else None
+        return MessagePage(messages=page, next_cursor=next_cursor)
 
     def remember_turn(
         turn: Turn,

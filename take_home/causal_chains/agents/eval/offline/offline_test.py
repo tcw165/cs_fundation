@@ -146,7 +146,7 @@ def test_offline_turn_saves_the_user_message_and_prints_runner_messages(
 
     async def exercise():
         service, events = await run_offline("hormuz", on_message=printed.append)
-        messages = await service._messaging_store.list_messages("1")
+        messages = (await service._messaging_store.list_messages("1", 20)).messages
         return messages, events
 
     messages, events = asyncio.run(exercise())

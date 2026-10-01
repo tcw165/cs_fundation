@@ -11,6 +11,9 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Message,
     message_adapter,
 )
+from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
+    MessagePage,
+)
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
 )
@@ -38,18 +41,25 @@ class MessagingStoreImpl(MessagingStore):
     async def list_messages(
         self,
         conversation_id: str,
-    ) -> list[Message]:
-        rows = self._dynamo_db.query(
+        limit: int,
+        cursor: str | None = None,
+    ) -> MessagePage:
+        rows, next_cursor = self._dynamo_db.query(
             "conversation",
             "PK",
             f"CONV#{conversation_id}",
             "SK",
             "MSG#",
+            limit,
+            cursor,
         )
-        return [
-            message_adapter.validate_python(row["message_json"])
-            for row in rows
-        ]
+        return MessagePage(
+            messages=[
+                message_adapter.validate_python(row["message_json"])
+                for row in rows
+            ],
+            next_cursor=next_cursor,
+        )
 
     @override
     async def save_message_with_ttl(

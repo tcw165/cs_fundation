@@ -47,7 +47,11 @@ class _FakeDynamoDb:
         key_value: str,
         sk_name: str,
         sk_prefix: str,
-    ) -> list[dict[str, object]]:
+        limit: int,
+        exclusive_start_sk: str | None = None,
+    ) -> tuple[list[dict[str, object]], str | None]:
+        if limit < 1:
+            raise ValueError("limit is at least 1")
         rows = [
             item
             for (stored_table, _), item in self._items.items()
@@ -56,7 +60,16 @@ class _FakeDynamoDb:
             and str(item.get(sk_name, "")).startswith(sk_prefix)
         ]
         rows.sort(key=lambda row: str(row.get(sk_name, "")))
-        return rows
+        if exclusive_start_sk is not None:
+            rows = [
+                row
+                for row in rows
+                if str(row.get(sk_name, "")) > exclusive_start_sk
+            ]
+        page = rows[:limit]
+        if len(page) < limit or not page:
+            return page, None
+        return page, str(page[-1][sk_name])
 
     def query_index(
         self,
@@ -151,7 +164,7 @@ def test_post_message_stores_the_anchored_turn():
     async def exercise():
         container, _runner, store, turn_store = _services()
         turn = await post_message("1", PostMessageBody(text="hello"), container)
-        stored = await store.list_messages("1")
+        stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(turn.turn_id)
         return turn, stored, saved
 
