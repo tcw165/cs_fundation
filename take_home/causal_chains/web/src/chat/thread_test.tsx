@@ -310,4 +310,43 @@ describe("thread composer", () => {
     });
     host.remove();
   });
+
+  it("pins the viewport to the bottom while the turn stream is open", async () => {
+    const chat_port: ChatPort = {
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: async function* () {
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", "Looking up the chain"));
+        await new Promise(() => undefined);
+      },
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    const viewport = host.querySelector(".thread-viewport");
+    if (!(viewport instanceof HTMLDivElement)) {
+      throw new Error("missing viewport");
+    }
+    Object.defineProperty(viewport, "scrollHeight", { configurable: true, get: () => 900 });
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, get: () => 200 });
+    viewport.scrollTop = 10;
+    await send(host, "hello");
+    expect(viewport.scrollTop).toBe(900);
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
 });
