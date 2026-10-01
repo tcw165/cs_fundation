@@ -62,6 +62,35 @@
   overflow: auto;
 }
 
+.case-overview {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 18px;
+}
+
+.overview-edge {
+  stroke: #3a3a42;
+  stroke-width: 1.25;
+  stroke-dasharray: 2 4;
+}
+
+.overview-edge.is-latest {
+  stroke: #c6f25a;
+  stroke-width: 1.6;
+  stroke-dasharray: none;
+}
+
+.overview-node {
+  fill: #2f6b38;
+}
+
+.overview-node.is-latest {
+  fill: #c6f25a;
+  stroke: #f4f4f5;
+  stroke-width: 1.5;
+}
+
 .graph-canvas {
   position: relative;
 }
