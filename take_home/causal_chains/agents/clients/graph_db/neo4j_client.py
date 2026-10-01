@@ -32,12 +32,17 @@ RETURN s.situation_id AS situation_id, total
 
 MERGE_CASE = """
 MERGE (c:Case {case_id: $case_id})
-SET c.conversation_id = $conversation_id
+SET c.conversation_id = $conversation_id,
+    c.created_timestamp = $created_timestamp,
+    c.updated_timestamp = $updated_timestamp
 """
 
 GET_CASE = """
 MATCH (c:Case {case_id: $case_id})
-RETURN c.case_id AS case_id, c.conversation_id AS conversation_id
+RETURN c.case_id AS case_id,
+    c.conversation_id AS conversation_id,
+    c.created_timestamp AS created_timestamp,
+    c.updated_timestamp AS updated_timestamp
 """
 
 MERGE_SITUATION = """
@@ -253,21 +258,45 @@ class Neo4jClient(GraphDb):
         return rows
 
     @override
-    def merge_case(self, case_id: UUID, conversation_id: str) -> None:
+    def merge_case(
+        self,
+        case_id: UUID,
+        conversation_id: str,
+        created_timestamp: str,
+        updated_timestamp: str,
+    ) -> None:
         with self._driver.session() as session:
             session.run(
                 MERGE_CASE,
                 case_id=str(case_id),
                 conversation_id=conversation_id,
+                created_timestamp=created_timestamp,
+                updated_timestamp=updated_timestamp,
             )
 
     @override
-    def get_case(self, case_id: UUID) -> tuple[UUID, str] | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str] | None:
         with self._driver.session() as session:
             record = session.run(GET_CASE, case_id=str(case_id)).single()
-        if record is None or record["case_id"] is None or record["conversation_id"] is None:
+        if record is None:
             return None
-        return UUID(str(record["case_id"])), str(record["conversation_id"])
+        found_id = record["case_id"]
+        conversation_id = record["conversation_id"]
+        created_timestamp = record["created_timestamp"]
+        updated_timestamp = record["updated_timestamp"]
+        if (
+            found_id is None
+            or conversation_id is None
+            or created_timestamp is None
+            or updated_timestamp is None
+        ):
+            return None
+        return (
+            UUID(str(found_id)),
+            str(conversation_id),
+            str(created_timestamp),
+            str(updated_timestamp),
+        )
 
     @override
     def merge_situation(
