@@ -26,6 +26,9 @@ from take_home.causal_chains.agents.models.messaging.message import (
 )
 from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
+    MessagePage,
+)
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.observability.logging import bind_session_logger
 
@@ -58,6 +61,20 @@ async def post_message(
     )
     await container.turn_store().put_turn(turn)
     return PostMessageResponse(turn=turn, received_message=message)
+
+
+@router.get("/conversation/{conversation_id}/messages")
+async def get_messages(
+    conversation_id: str,
+    container: AppContainerDep,
+    limit: Annotated[int, Query(ge=1)],
+    cursor: Annotated[str | None, Query()] = None,
+) -> MessagePage:
+    return await container.messaging_store().list_messages(
+        conversation_id,
+        limit,
+        cursor,
+    )
 
 
 def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:

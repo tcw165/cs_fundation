@@ -2,7 +2,11 @@ import asyncio
 from datetime import datetime, timezone
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
-from take_home.causal_chains.agents.endpoints.conversation import post_message, turn_sse
+from take_home.causal_chains.agents.endpoints.conversation import (
+    get_messages,
+    post_message,
+    turn_sse,
+)
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
     ConversationMessagesResponse,
@@ -185,6 +189,31 @@ def test_post_message_stores_the_anchored_turn():
     assert saved is not None
     assert saved.from_message == stored[0].message_id
     assert saved.status is TurnStatus.queued
+
+
+def test_get_messages_returns_one_page():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        await post_message("1", PostMessageBody(text="first"), container)
+        await post_message("1", PostMessageBody(text="second"), container)
+        page = await get_messages("1", container, limit=1)
+        assert page.next_cursor is not None
+        rest = await get_messages("1", container, limit=1, cursor=page.next_cursor)
+        assert rest.next_cursor is not None
+        done = await get_messages("1", container, limit=1, cursor=rest.next_cursor)
+        whole = await get_messages("1", container, limit=2)
+        assert whole.next_cursor is not None
+        after_whole = await get_messages("1", container, limit=2, cursor=whole.next_cursor)
+        return page, rest, done, whole, after_whole
+
+    page, rest, done, whole, after_whole = asyncio.run(exercise())
+    assert [message.text for message in page.messages] == ["first"]
+    assert [message.text for message in rest.messages] == ["second"]
+    assert done.messages == []
+    assert done.next_cursor is None
+    assert [message.text for message in whole.messages] == ["first", "second"]
+    assert after_whole.messages == []
+    assert after_whole.next_cursor is None
 
 
 def _snapshots(body: str) -> list[ConversationMessagesResponse]:
