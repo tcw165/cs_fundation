@@ -85,15 +85,9 @@ function DeeplinkMessage({
     item.title ||
     (parsed?.route === "chain" ? parsed.title : "") ||
     (parsed === null ? item.link : "Open causal chain");
-  const href =
-    parsed === null
-      ? item.link
-      : parsed.route === "case" || parsed.route === "chain"
-        ? "causal_chains://chain"
-        : `causal_chains://${parsed.route}`;
   return (
     <button type="button" className="deeplink-card" onClick={() => on_open_link(item.link, item.title)}>
-      <span className="deeplink-card-kicker">{href}</span>
+      <span className="deeplink-card-kicker">{item.link}</span>
       <span className="deeplink-card-title">{title || "Open causal chain"}</span>
     </button>
   );
