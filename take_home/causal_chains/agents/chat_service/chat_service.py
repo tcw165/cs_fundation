@@ -7,6 +7,7 @@ from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
     Message,
+    Role,
 )
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
     DeeplinkCardMessage,
@@ -24,6 +25,10 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.time.protocol.protocol import Clock
+
+
+def can_store_message(message: Message) -> bool:
+    return message.role is Role.user or message.role is Role.agent
 
 
 class ChatService:
