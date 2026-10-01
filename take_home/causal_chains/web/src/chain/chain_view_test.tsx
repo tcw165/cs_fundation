@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { ChainCanvas } from "./chain_canvas";
+import { ChainCanvas, chain_poll_ms } from "./chain_canvas";
 import type { ChainPort } from "./chain_port";
 import type { FocusTarget } from "./panel_state";
 
@@ -99,5 +99,43 @@ describe("chain canvas", () => {
       root.unmount();
     });
     host.remove();
+  });
+
+  it("polls again after a failed load and draws the chain when the db returns", async () => {
+    vi.useFakeTimers();
+    const get_chains = vi
+      .fn<ChainPort["get_chains"]>()
+      .mockRejectedValueOnce(new Error("Failed to fetch"))
+      .mockResolvedValueOnce([
+        {
+          situations: [
+            {
+              situation_id: now_id,
+              version: 1,
+              desc: "strait shut",
+              potential_factors: ["blockade"],
+            },
+          ],
+          links: [],
+        },
+      ]);
+    const chain_port: ChainPort = { get_chains };
+    const { host, root } = render(<ChainCanvas focus={focus} chain_port={chain_port} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.textContent).toContain("Failed to fetch");
+    expect(host.querySelector(".graph-canvas")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chain_poll_ms);
+    });
+    expect(get_chains).toHaveBeenCalledTimes(2);
+    expect(host.textContent).not.toContain("Failed to fetch");
+    expect(host.querySelector(".graph-canvas")).not.toBeNull();
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+    vi.useRealTimers();
   });
 });

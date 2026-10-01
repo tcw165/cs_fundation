@@ -15,6 +15,8 @@ import type { FocusTarget } from "./panel_state";
 
 import "./chain.css";
 
+export const chain_poll_ms = 2000;
+
 export function ChainCanvas({
   focus,
   chain_port,
@@ -27,6 +29,7 @@ export function ChainCanvas({
   const [loaded, set_loaded] = useState(false);
   const [selection, set_selection] = useState<GraphSelection | null>(selection_from_focus(focus));
   const host_ref = useRef<HTMLElement | null>(null);
+  const chain_ref = useRef<CausalChain | null>(null);
   const focus_key = JSON.stringify(focus);
 
   useEffect(() => {
@@ -44,27 +47,44 @@ export function ChainCanvas({
 
   useEffect(() => {
     let cancelled = false;
+    let timer = 0;
+    chain_ref.current = null;
     set_chain(null);
     set_error(null);
     set_loaded(false);
-    chain_port
-      .get_chains()
-      .then((chains) => {
-        if (cancelled) {
-          return;
-        }
-        set_chain(chain_for_focus(chains, focus));
-        set_loaded(true);
-      })
-      .catch((reason: unknown) => {
-        if (cancelled) {
-          return;
-        }
-        set_error(reason instanceof Error ? reason.message : "chain failed");
-        set_loaded(true);
-      });
+    const poll = () => {
+      chain_port
+        .get_chains()
+        .then((chains) => {
+          if (cancelled) {
+            return;
+          }
+          const next = chain_for_focus(chains, focus);
+          chain_ref.current = next;
+          set_chain(next);
+          set_error(null);
+          set_loaded(true);
+        })
+        .catch((reason: unknown) => {
+          if (cancelled) {
+            return;
+          }
+          if (chain_ref.current === null) {
+            set_error(reason instanceof Error ? reason.message : "chain failed");
+          }
+          set_loaded(true);
+        })
+        .finally(() => {
+          if (cancelled) {
+            return;
+          }
+          timer = window.setTimeout(poll, chain_poll_ms);
+        });
+    };
+    poll();
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [chain_port, focus]);
 
