@@ -19,16 +19,20 @@ export function Thread({
   const { state, draft, set_draft, send, finish, timing } = session;
   const empty = state.log.length === 0;
   const thread_ref = useRef<HTMLElement | null>(null);
+  const viewport_ref = useRef<HTMLDivElement | null>(null);
   const composer_ref = useRef<HTMLFormElement | null>(null);
   useEffect(() => {
     const thread = thread_ref.current;
+    const viewport = viewport_ref.current;
     const composer = composer_ref.current;
-    if (thread === null || composer === null) {
+    if (thread === null || viewport === null || composer === null) {
       return;
     }
     const apply = () => {
       const bottom = 24;
       const gap = 16;
+      const bar = viewport.offsetWidth - viewport.clientWidth;
+      thread.style.setProperty("--scrollbar-size", `${bar}px`);
       thread.style.setProperty(
         "--composer-cover",
         `${composer.offsetHeight + bottom + gap}px`,
@@ -37,6 +41,7 @@ export function Thread({
     apply();
     const observer = new ResizeObserver(apply);
     observer.observe(composer);
+    observer.observe(viewport);
     return () => observer.disconnect();
   }, []);
   return (
@@ -46,7 +51,7 @@ export function Thread({
       ref={thread_ref}
     >
       {empty ? <h2 className="play-title">What's the play?</h2> : null}
-      <div className="thread-viewport">
+      <div className="thread-viewport" ref={viewport_ref}>
         {state.log.map((entry) => {
           if (entry.kind === "user") {
             return (
