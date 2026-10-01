@@ -28,18 +28,48 @@ class _FixedClock:
 class _FakeDynamoDb:
     def __init__(self) -> None:
         self._items: dict[tuple[str, tuple[tuple[str, object], ...]], dict[str, object]] = {}
-        self.put_item("conversation", {"conversation_id": "1", "messages": []})
 
     def put_item(self, table_name: str, item: dict[str, object]) -> None:
         if table_name == "turn":
             key = (("turn_id", item["turn_id"]),)
         else:
-            key = (("conversation_id", item["conversation_id"]),)
+            key = (("PK", item["PK"]), ("SK", item["SK"]))
         self._items[(table_name, key)] = item
 
     def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
         stored_key = tuple(sorted(key.items()))
         return self._items.get((table_name, stored_key))
+
+    def query(
+        self,
+        table_name: str,
+        key_name: str,
+        key_value: str,
+        sk_name: str,
+        sk_prefix: str,
+    ) -> list[dict[str, object]]:
+        rows = [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name
+            and item.get(key_name) == key_value
+            and str(item.get(sk_name, "")).startswith(sk_prefix)
+        ]
+        rows.sort(key=lambda row: str(row.get(sk_name, "")))
+        return rows
+
+    def query_index(
+        self,
+        table_name: str,
+        index_name: str,
+        key_name: str,
+        key_value: str,
+    ) -> list[dict[str, object]]:
+        return [
+            item
+            for (stored_table, _), item in self._items.items()
+            if stored_table == table_name and item.get(key_name) == key_value
+        ]
 
 
 class _Scripted:
@@ -91,7 +121,7 @@ class _Container:
 
 
 def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurnStore]:
-    store = MessagingStoreImpl(_FakeDynamoDb())
+    store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
     turn_store = InMemoryTurnStore()
     runner = _Scripted()
     service = ChatService(runner, store, turn_store, _ChainStore(), _FixedClock())

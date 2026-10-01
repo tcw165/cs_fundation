@@ -31,6 +31,7 @@ class AppContainer(containers.DeclarativeContainer):
     messaging_store = providers.Singleton(
         MessagingStoreImpl,
         dynamo_db=clients.dynamo_db,
+        user_uuid=config.user_uuid,
     )
     turn_store = providers.Singleton(
         DdbTurnStore,
