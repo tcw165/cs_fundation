@@ -1,7 +1,7 @@
 from typing import override
 
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
-from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 
 
 class InMemoryTurnStore(TurnStore):

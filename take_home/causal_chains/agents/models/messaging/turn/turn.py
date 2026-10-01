@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from take_home.causal_chains.agents.models.messaging.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
 
 
 class Turn(BaseModel):

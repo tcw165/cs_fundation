@@ -14,8 +14,6 @@ py_library(
         "message.py",
         "message_widgets.py",
         "plan.py",
-        "turn.py",
-        "turn_status.py",
     ],
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
@@ -39,8 +37,6 @@ pytest_test(
         "message_test.py",
         "message_widgets_test.py",
         "plan_test.py",
-        "turn_status_test.py",
-        "turn_test.py",
     ],
     imports = ["../../../../../"],
     deps = [

@@ -1,6 +1,6 @@
 from typing import Protocol, runtime_checkable
 
-from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 
 
 @runtime_checkable

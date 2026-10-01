@@ -18,7 +18,7 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.message import Message
-from take_home.causal_chains.agents.models.messaging.turn import Turn
+from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
