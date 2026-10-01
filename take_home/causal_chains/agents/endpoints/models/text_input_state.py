@@ -1,0 +1,9 @@
+from enum import StrEnum
+
+
+class TextInputState(StrEnum):
+    ENABLED = "ENABLED"
+    SEND_DISABLED = "SEND_DISABLED"
+    SEND_ENABLED_WITH_STOP_BUTTON = "SEND_ENABLED_WITH_STOP_BUTTON"
+    DISABLED = "DISABLED"
+    HIDDEN = "HIDDEN"
