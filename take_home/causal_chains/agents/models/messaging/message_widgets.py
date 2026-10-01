@@ -36,12 +36,12 @@ def card_link(card: DeeplinkCard) -> str:
 
 
 def deeplink_message(card: DeeplinkCard, conversation_id: str) -> DeeplinkCardMessage:
-    """Copy the card onto a chat message. enabled is True."""
+    """Copy the card onto an assistant message. enabled is True."""
     return DeeplinkCardMessage(
         message_id=str(uuid.uuid4()),
         conversation_id=conversation_id,
         user_uuid="user-1",
-        role=Role.other,
+        role=Role.agent,
         created_timestamp=datetime.now(timezone.utc),
         title=card.title,
         subtitle=card.subtitle,

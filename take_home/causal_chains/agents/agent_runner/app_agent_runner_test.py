@@ -457,7 +457,7 @@ def test_app_agent_runner_streams_a_deeplink_widget(monkeypatch):
     assert events[0].text == "saved the chain"
     message = events[1]
     assert isinstance(message, DeeplinkCardMessage)
-    assert message.role is Role.other
+    assert message.role is Role.agent
     assert message.title == "now"
     assert message.subtitle == "the present"
     assert message.link == f"causal_chains://chain/{now_id}"
