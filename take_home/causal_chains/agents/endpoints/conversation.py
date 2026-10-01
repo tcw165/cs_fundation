@@ -30,7 +30,11 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page
     MessagePage,
 )
 from take_home.causal_chains.agents.models.run_config import RunConfig
-from take_home.causal_chains.agents.observability.logging import bind_session_logger
+from take_home.causal_chains.agents.observability.logging import (
+    bind_conversation_logger,
+    bind_session_logger,
+    logger,
+)
 
 router = APIRouter()
 
@@ -44,6 +48,7 @@ async def post_message(
     body: PostMessageBody,
     container: AppContainerDep,
 ) -> PostMessageResponse:
+    turn_id = f"t_{uuid.uuid4().hex[:8]}"
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),
         conversation_id=conversation_id,
@@ -52,15 +57,17 @@ async def post_message(
         text=body.text,
         created_timestamp=datetime.now(timezone.utc),
     )
-    await container.messaging_store().append(conversation_id, message)
-    turn = Turn(
-        turn_id=f"t_{uuid.uuid4().hex[:8]}",
-        conversation_id=conversation_id,
-        status=TurnStatus.queued,
-        from_message=message.message_id,
-    )
-    await container.turn_store().put_turn(turn)
-    return PostMessageResponse(turn=turn, received_message=message)
+    with bind_session_logger(conversation_id, turn_id):
+        logger().info("post message")
+        await container.messaging_store().append(conversation_id, message)
+        turn = Turn(
+            turn_id=turn_id,
+            conversation_id=conversation_id,
+            status=TurnStatus.queued,
+            from_message=message.message_id,
+        )
+        await container.turn_store().put_turn(turn)
+        return PostMessageResponse(turn=turn, received_message=message)
 
 
 @router.get("/conversation/{conversation_id}/messages")
@@ -70,11 +77,13 @@ async def get_messages(
     limit: Annotated[int, Query(ge=1)],
     start_message: Annotated[str | None, Query()] = None,
 ) -> MessagePage:
-    return await container.messaging_store().list_messages(
-        conversation_id,
-        limit,
-        start_message,
-    )
+    with bind_conversation_logger(conversation_id):
+        logger().info("list messages")
+        return await container.messaging_store().list_messages(
+            conversation_id,
+            limit,
+            start_message,
+        )
 
 
 def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
@@ -88,31 +97,30 @@ async def turn_sse(
     container: AppContainerDep,
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
-    turn = await container.turn_store().get_turn(turn_id)
-    stored = (
-        await container.messaging_store().list_messages(conversation_id, 100)
-    ).messages
-    from_message = None if turn is None else turn.from_message
-    anchored = next(
-        (
-            message
-            for message in stored
-            if getattr(message, "message_id", None) == from_message
-        ),
-        None,
-    )
-
     async def event_stream() -> AsyncIterator[str]:
-        if (
-            turn is None
-            or conversation_id != "1"
-            or turn.conversation_id != "1"
-            or turn.status is not TurnStatus.queued
-            or not isinstance(anchored, MarkdownMessage)
-        ):
-            return
-        chat_service = container.chat_service()
         with bind_session_logger(conversation_id, turn_id):
+            turn = await container.turn_store().get_turn(turn_id)
+            stored = (
+                await container.messaging_store().list_messages(conversation_id, 100)
+            ).messages
+            from_message = None if turn is None else turn.from_message
+            anchored = next(
+                (
+                    message
+                    for message in stored
+                    if getattr(message, "message_id", None) == from_message
+                ),
+                None,
+            )
+            if (
+                turn is None
+                or conversation_id != "1"
+                or turn.conversation_id != "1"
+                or turn.status is not TurnStatus.queued
+                or not isinstance(anchored, MarkdownMessage)
+            ):
+                return
+            chat_service = container.chat_service()
             async for message in chat_service.run_turn(
                 turn,
                 anchored.text,
