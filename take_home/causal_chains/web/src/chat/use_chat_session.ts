@@ -54,14 +54,14 @@ export function use_chat_session(
       dispatch({ type: "run", running: true });
       set_draft("");
       try {
-        const turn = await chat_port.post_message({
+        const posted = await chat_port.post_message({
           conversation_id,
           text: trimmed,
         });
         for await (const message of chat_port.subscribe_turn({
           conversation_id,
-          turn_id: turn.turn_id,
-          after_message: turn.from_message,
+          turn_id: posted.turn.turn_id,
+          after_message: posted.turn.from_message,
         })) {
           dispatch({ type: "enqueue", item: chat_item_from_message(message) });
         }

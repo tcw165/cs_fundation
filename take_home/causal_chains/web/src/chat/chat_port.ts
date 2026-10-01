@@ -45,7 +45,12 @@ export type SubscribeReq = {
   abort_signal?: AbortSignal;
 };
 
+export type PostMessageResponse = {
+  turn: Turn;
+  received_message: Message;
+};
+
 export type ChatPort = {
-  post_message: (req: PostMessageReq) => Promise<Turn>;
+  post_message: (req: PostMessageReq) => Promise<PostMessageResponse>;
   subscribe_turn: (req: SubscribeReq) => AsyncIterable<Message>;
 };

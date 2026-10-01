@@ -43,10 +43,19 @@ describe("app chat", () => {
   it("keeps the panel folded until a deeplink is ready", async () => {
     const chat_port: ChatPort = {
       post_message: async () => ({
-        turn_id: "t_1",
-        conversation_id: "1",
-        status: "queued",
-        from_message: "m_user",
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
