@@ -134,27 +134,37 @@ function role_field(payload: Record<string, unknown>): Role {
 function decode_sse_event(event_name: string, data: string): Message {
   const payload =
     data === "" ? {} : (JSON.parse(data) as Record<string, unknown>);
-  if (event_name === "markdown") {
+  if (event_name === "markdown" && payload.kind === "markdown") {
+    const created_timestamp = payload.created_timestamp;
+    if (typeof created_timestamp !== "string") {
+      throw new Error("markdown payload is missing created_timestamp");
+    }
     return {
-      type: "markdown",
+      kind: "markdown",
       message_id: text_field(payload, "message_id"),
       role: role_field(payload),
       text: text_field(payload, "text"),
+      created_timestamp,
     };
   }
-  if (event_name === "deeplink") {
+  if (event_name === "deeplink" && payload.kind === "deeplink") {
     const title = text_field(payload, "title");
+    const created_timestamp = payload.created_timestamp;
+    if (typeof created_timestamp !== "string") {
+      throw new Error("deeplink payload is missing created_timestamp");
+    }
     return {
-      type: "deeplink",
+      kind: "deeplink",
       message_id: text_field(payload, "message_id"),
       role: role_field(payload),
       link: text_field(payload, "link"),
+      created_timestamp,
       ...(title === "" ? {} : { title }),
     };
   }
-  if (event_name === "heartbeat") {
+  if (event_name === "heartbeat" && payload.kind === "heartbeat") {
     return {
-      type: "heartbeat",
+      kind: "heartbeat",
       role: "meta",
     };
   }

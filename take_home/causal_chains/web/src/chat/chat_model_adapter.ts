@@ -23,14 +23,14 @@ export function create_chat_model_adapter(
         after_message: turn.from_message,
         abort_signal: abortSignal,
       })) {
-        if (event.type === "heartbeat") {
+        if (event.kind === "heartbeat") {
           continue;
         }
-        if (event.type === "markdown" && event.role === "agent") {
+        if (event.kind === "markdown" && event.role === "agent") {
           paragraphs.push(event.text);
           yield assistant_snapshot(paragraphs, cards);
         }
-        if (event.type === "deeplink") {
+        if (event.kind === "deeplink") {
           cards.push(card_from_link(event.link));
           yield assistant_snapshot(paragraphs, cards);
         }

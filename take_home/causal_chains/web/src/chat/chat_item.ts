@@ -12,44 +12,48 @@ function heartbeat_message_id(message_id: string | undefined): string {
 
 export type ChatItem =
   | {
-      type: "markdown";
+      kind: "markdown";
       message_id: string;
       role: Role;
       text: string;
+      created_timestamp: string;
     }
   | {
-      type: "deeplink";
+      kind: "deeplink";
       message_id: string;
       role: Role;
       link: string;
+      created_timestamp: string;
       title?: string;
     }
   | {
-      type: "heartbeat";
+      kind: "heartbeat";
       message_id: string;
       role: "meta";
     };
 
 export function chat_item_from_message(message: Message): ChatItem {
-  switch (message.type) {
+  switch (message.kind) {
     case "markdown":
       return {
-        type: "markdown",
+        kind: "markdown",
         message_id: message.message_id,
         role: message.role,
         text: message.text,
+        created_timestamp: message.created_timestamp,
       };
     case "deeplink":
       return {
-        type: "deeplink",
+        kind: "deeplink",
         message_id: message.message_id,
         role: message.role,
         link: message.link,
+        created_timestamp: message.created_timestamp,
         ...(message.title === undefined ? {} : { title: message.title }),
       };
     case "heartbeat":
       return {
-        type: "heartbeat",
+        kind: "heartbeat",
         message_id: heartbeat_message_id(message.message_id),
         role: "meta",
       };

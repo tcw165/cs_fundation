@@ -8,22 +8,24 @@ export type Turn = {
 };
 
 export type MarkdownMessage = {
-  type: "markdown";
+  kind: "markdown";
   message_id: string;
   role: Role;
   text: string;
+  created_timestamp: string;
 };
 
 export type DeeplinkCardMessage = {
-  type: "deeplink";
+  kind: "deeplink";
   message_id: string;
   role: Role;
   link: string;
+  created_timestamp: string;
   title?: string;
 };
 
 export type HeartbeatMessage = {
-  type: "heartbeat";
+  kind: "heartbeat";
   role: "meta";
   message_id?: string;
 };
