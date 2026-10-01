@@ -17,13 +17,13 @@ export const fast_timing: RevealTiming = {
 };
 
 export function item_duration_ms(
-  item: { type: string; text?: string },
+  item: { kind: string; text?: string },
   timing: RevealTiming,
 ): number {
-  if (item.type === "markdown") {
+  if (item.kind === "markdown") {
     return timing.markdown_ms(item.text ?? "");
   }
-  if (item.type === "deeplink") {
+  if (item.kind === "deeplink") {
     return timing.deeplink_ms;
   }
   return timing.heartbeat_ms;

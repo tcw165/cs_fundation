@@ -54,7 +54,7 @@ export function App({
 
   useEffect(() => {
     for (const item of session.state.shown) {
-      if (item.type !== "deeplink" || opened_links.current.has(item.message_id)) {
+      if (item.kind !== "deeplink" || opened_links.current.has(item.message_id)) {
         continue;
       }
       opened_links.current.add(item.message_id);

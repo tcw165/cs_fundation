@@ -9,6 +9,13 @@ import { describe, expect, it } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+
 import type { ChainPort } from "../chain/chain_port";
 import type { ChatPort, Message } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
@@ -43,14 +50,16 @@ describe("app chat", () => {
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
-          type: "markdown",
+          kind: "markdown",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_a",
           role: "agent",
           text: "creating a case",
         };
-        yield { type: "heartbeat", message_id: "m_h", role: "meta" };
+        yield { kind: "heartbeat", message_id: "m_h", role: "meta" };
         yield {
-          type: "deeplink",
+          kind: "deeplink",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_d",
           role: "other",
           link: `causal_chains://chain?root_situation_id=${now_id}&root_version=1&title=now`,

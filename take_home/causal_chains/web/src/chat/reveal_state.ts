@@ -80,16 +80,16 @@ export function reveal_reducer(state: RevealState, action: RevealAction): Reveal
 }
 
 function enqueue_item(state: RevealState, item: ChatItem): RevealState {
-  if (item.type === "heartbeat") {
+  if (item.kind === "heartbeat") {
     const tail = state.pending[state.pending.length - 1];
-    if (tail?.type === "heartbeat") {
+    if (tail?.kind === "heartbeat") {
       const pending = state.pending.slice();
       pending[pending.length - 1] = item;
       return { ...state, pending };
     }
     if (state.pending.length === 0 && state.phase === "animating") {
       const current = state.shown.find((shown) => shown.message_id === state.animating_id);
-      if (current?.type === "heartbeat") {
+      if (current?.kind === "heartbeat") {
         return state;
       }
     }

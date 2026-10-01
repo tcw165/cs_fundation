@@ -4,11 +4,17 @@ import type { ChatItem } from "./chat_item";
 import { initial_reveal_state, reveal_reducer } from "./reveal_state";
 
 function markdown(message_id: string, text: string): ChatItem {
-  return { type: "markdown", message_id, role: "agent", text };
+  return {
+    kind: "markdown",
+    message_id,
+    role: "agent",
+    text,
+    created_timestamp: "2026-09-30T00:00:00+00:00",
+  };
 }
 
 function heartbeat(message_id: string): ChatItem {
-  return { type: "heartbeat", message_id, role: "meta" };
+  return { kind: "heartbeat", message_id, role: "meta" };
 }
 
 describe("reveal_reducer", () => {

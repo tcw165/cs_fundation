@@ -32,14 +32,16 @@ describe("create_chat_model_adapter", () => {
       subscribe_turn: async function* ({ after_message }): AsyncGenerator<Message> {
         cursors.push(after_message);
         yield {
-          type: "markdown",
+          kind: "markdown",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_a",
           role: "agent",
           text: "one",
         };
-        yield { type: "heartbeat", role: "meta" };
+        yield { kind: "heartbeat", role: "meta" };
         yield {
-          type: "markdown",
+          kind: "markdown",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_b",
           role: "agent",
           text: "two",
@@ -80,13 +82,15 @@ describe("create_chat_model_adapter", () => {
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
-          type: "markdown",
+          kind: "markdown",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_a",
           role: "agent",
           text: "saved",
         };
         yield {
-          type: "deeplink",
+          kind: "deeplink",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_card",
           role: "other",
           link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
@@ -125,7 +129,8 @@ describe("create_chat_model_adapter", () => {
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
-          type: "deeplink",
+          kind: "deeplink",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_card",
           role: "other",
           link: "causal_chains://chain?root_situation_id=11111111-1111-4111-8111-111111111111&root_version=1&title=now",
@@ -163,7 +168,8 @@ describe("create_chat_model_adapter", () => {
       }),
       subscribe_turn: async function* (): AsyncGenerator<Message> {
         yield {
-          type: "markdown",
+          kind: "markdown",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
           message_id: "m_a",
           role: "agent",
           text: "done talking",

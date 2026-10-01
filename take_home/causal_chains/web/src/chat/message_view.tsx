@@ -17,7 +17,7 @@ export function MessageView({
   on_done: () => void;
   on_open_link: (link: string, title?: string) => void;
 }) {
-  switch (item.type) {
+  switch (item.kind) {
     case "markdown":
       return (
         <MarkdownReveal
@@ -77,7 +77,7 @@ function DeeplinkMessage({
   item,
   on_open_link,
 }: {
-  item: Extract<ChatItem, { type: "deeplink" }>;
+  item: Extract<ChatItem, { kind: "deeplink" }>;
   on_open_link: (link: string, title?: string) => void;
 }) {
   const parsed = parse_deeplink(item.link);

@@ -35,10 +35,10 @@ export function use_chat_session(
   }, [state.animating_id]);
 
   useEffect(() => {
-    if (animating === null || animating.type === "markdown") {
+    if (animating === null || animating.kind === "markdown") {
       return;
     }
-    const ms = animating.type === "deeplink" ? timing.deeplink_ms : timing.heartbeat_ms;
+    const ms = animating.kind === "deeplink" ? timing.deeplink_ms : timing.heartbeat_ms;
     const timer = window.setTimeout(() => finish(), ms);
     return () => window.clearTimeout(timer);
   }, [animating, finish, timing.deeplink_ms, timing.heartbeat_ms]);
