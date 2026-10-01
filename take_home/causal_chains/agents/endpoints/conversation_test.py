@@ -4,7 +4,12 @@ from datetime import datetime, timezone
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import post_message, turn_sse
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
+from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
+    ConversationMessagesResponse,
+)
+from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
 from take_home.causal_chains.agents.models.messaging.message import (
+    HeartbeatMessage,
     MarkdownMessage,
     Role,
 )
@@ -144,14 +149,12 @@ def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurn
 async def _read_sse(
     container: _Container,
     turn_id: str,
-    after_message: str,
     include_traces: bool = False,
 ) -> str:
     response = await turn_sse(
         "1",
         turn_id,
         container,
-        after_message=after_message,
         include_traces=include_traces,
     )
     chunks: list[str] = []
@@ -184,58 +187,87 @@ def test_post_message_stores_the_anchored_turn():
     assert saved.status is TurnStatus.queued
 
 
-def test_sse_forwards_runner_messages_after_the_cursor():
+def _snapshots(body: str) -> list[ConversationMessagesResponse]:
+    payloads: list[ConversationMessagesResponse] = []
+    for block in body.split("\n\n"):
+        if not block.strip():
+            continue
+        lines = block.split("\n")
+        assert lines[0] == "event: conversation_messages"
+        payload = lines[1].removeprefix("data: ")
+        payloads.append(ConversationMessagesResponse.model_validate_json(payload))
+    return payloads
+
+
+def test_sse_streams_one_snapshot_per_emission():
     async def exercise():
         container, runner, _store, turn_store = _services()
         posted = await post_message("1", PostMessageBody(text="hello"), container)
-        everything = await _read_sse(container, posted.turn.turn_id, "")
+        everything = await _read_sse(container, posted.turn.turn_id)
         saved = await turn_store.get_turn(posted.turn.turn_id)
-        replay = await _read_sse(container, posted.turn.turn_id, "")
+        replay = await _read_sse(container, posted.turn.turn_id)
 
         user_container, user_runner, _store_again, _turns_again = _services()
         queued = await post_message("1", PostMessageBody(text="hello"), user_container)
-        from_user = await _read_sse(
+        traced = await _read_sse(
             user_container,
             queued.turn.turn_id,
-            queued.turn.from_message,
             include_traces=True,
         )
+        return everything, replay, traced, saved, runner, user_runner, posted
 
-        skip_container, _skip_runner, _skip_store, _skip_turns = _services()
-        later = await post_message("1", PostMessageBody(text="hello"), skip_container)
-        skipped = await _read_sse(skip_container, later.turn.turn_id, "m_a")
-        return (
-            everything,
-            replay,
-            from_user,
-            skipped,
-            saved,
-            runner,
-            user_runner,
-            queued.turn.from_message,
-        )
-
-    (
-        everything,
-        replay,
-        from_user,
-        skipped,
-        saved,
-        runner,
-        user_runner,
-        from_message,
-    ) = asyncio.run(exercise())
-    assert '"text":"one"' in everything
-    assert '"text":"two"' in everything
+    everything, replay, traced, saved, runner, user_runner, posted = asyncio.run(exercise())
+    snapshots = _snapshots(everything)
+    assert [snapshot.messages[0].text for snapshot in snapshots] == ["one", "two"]
+    assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
+    assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
+    assert snapshots[0].user_interaction_state.text_input_state is (
+        TextInputState.SEND_ENABLED_WITH_STOP_BUTTON
+    )
+    assert snapshots[0].user_interaction_state.thinking_state is None
+    assert snapshots[0].turn is not None
+    assert snapshots[0].turn.processing == [posted.turn]
+    assert snapshots[0].turn.queued == []
     assert saved is not None
     assert saved.status is TurnStatus.completed
-    assert saved.from_message
     assert runner.calls == 1
     assert replay == ""
-    assert '"text":"one"' in from_user
-    assert '"text":"two"' in from_user
-    assert from_message not in from_user
+    assert [snapshot.messages[0].text for snapshot in _snapshots(traced)] == ["one", "two"]
     assert user_runner.calls == 1
     assert user_runner.contexts[0].run_config.include_traces is True
-    assert "m_a" not in skipped
-    assert '"text":"two"' in skipped
+
+
+def test_sse_streams_a_heartbeat_as_its_own_snapshot():
+    class _HeartbeatThenText:
+        async def stream(self, inputs: list[str], context: object):
+            del inputs, context
+            yield HeartbeatMessage()
+            yield MarkdownMessage(
+                message_id="m_a",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.agent,
+                text="one",
+                created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+            )
+
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        turn_store = InMemoryTurnStore()
+        service = ChatService(
+            _HeartbeatThenText(),
+            store,
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        container = _Container(service, store, turn_store)
+        posted = await post_message("1", PostMessageBody(text="hello"), container)
+        return await _read_sse(container, posted.turn.turn_id)
+
+    snapshots = _snapshots(asyncio.run(exercise()))
+    assert [message.kind for snapshot in snapshots for message in snapshot.messages] == [
+        "heartbeat",
+        "markdown",
+    ]
+    assert len(snapshots[0].messages) == 1

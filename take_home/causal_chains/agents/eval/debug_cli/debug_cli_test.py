@@ -114,7 +114,7 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
         if request.url.path.endswith("/sse")
     ]
     assert sse_requests[-1].url.params["include_traces"] == "true"
-    assert sse_requests[-1].url.params["after_message"]
+    assert "after_message" not in sse_requests[-1].url.params
 
 
 def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
