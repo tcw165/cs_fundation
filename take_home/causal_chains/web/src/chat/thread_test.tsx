@@ -293,11 +293,13 @@ describe("thread composer", () => {
     expect(host.querySelector(".message-separator time")?.getAttribute("datetime")).toBe(
       "2026-10-01T07:00:00.000Z",
     );
-    expect(host.querySelector(".message-user time")).toBeNull();
+    expect(host.querySelector(".message-user time")?.getAttribute("datetime")).toBe(
+      "2026-10-01T07:00:00.000Z",
+    );
     expect(host.querySelector(".message-assistant time")?.getAttribute("datetime")).toBe(
       "2026-10-01T07:06:00.000Z",
     );
-    expect(host.querySelectorAll("time")).toHaveLength(2);
+    expect(host.querySelectorAll("time")).toHaveLength(3);
     act(() => {
       root.unmount();
     });

@@ -110,10 +110,10 @@ export function Thread({
             return null;
           }
           const timestamp = timestamps[index] ?? null;
+          const on_message =
+            entry.kind === "user" || !followed_by_separator(marks, timestamps, index);
           const time =
-            mark?.show_timestamp === true &&
-            timestamp !== null &&
-            !followed_by_separator(marks, timestamps, index) ? (
+            mark?.show_timestamp === true && timestamp !== null && on_message ? (
               <MessageTime created_timestamp={timestamp} />
             ) : null;
           const divider_time =
