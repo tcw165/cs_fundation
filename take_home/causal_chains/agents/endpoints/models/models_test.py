@@ -6,6 +6,9 @@ from pydantic import ValidationError
 from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
     ConversationMessagesResponse,
 )
+from take_home.causal_chains.agents.endpoints.models.conversation_response import (
+    ConversationResponse,
+)
 from take_home.causal_chains.agents.endpoints.models.turn_descriptor import (
     TurnDescriptor,
 )
@@ -13,6 +16,9 @@ from take_home.causal_chains.agents.endpoints.models.text_input_state import (
     TextInputState,
 )
 from take_home.causal_chains.agents.endpoints.models.thinking_state import ThinkingState
+from take_home.causal_chains.agents.models.messaging.conversation_status import (
+    ConversationStatus,
+)
 from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage, Role
 from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
@@ -94,3 +100,16 @@ def test_conversation_messages_response_parses_without_a_turn():
     )
     assert with_turn.turn is not None
     assert with_turn.turn.processing == []
+
+
+def test_conversation_response_defaults_preview_messages_and_omits_stored_fields():
+    response = ConversationResponse(
+        id="1",
+        status=ConversationStatus.OPEN,
+        turn=TurnDescriptor(processing=[], queued=[]),
+    )
+    assert response.preview_messages == []
+    dumped = response.model_dump()
+    assert dumped["status"] == ConversationStatus.OPEN
+    for stored_field in ("title", "memory", "followup_questions", "entry_context", "active_plan"):
+        assert stored_field not in dumped
