@@ -7,6 +7,7 @@ py_library(
     srcs = [
         "causal_chain.py",
         "conversation.py",
+        "conversation_status.py",
         "deeplink_card.py",
         "entry_context.py",
         "followup_question.py",
@@ -28,6 +29,7 @@ pytest_test(
     name = "messaging_test",
     srcs = [
         "causal_chain_test.py",
+        "conversation_status_test.py",
         "conversation_test.py",
         "deeplink_card_test.py",
         "entry_context_test.py",
