@@ -136,12 +136,14 @@ describe("app chat", () => {
       await Promise.resolve();
     });
     expect(host.textContent).toContain("creating a case");
-    expect(host.textContent).toContain("working through the chain");
+    expect(host.textContent).not.toContain("working through the chain");
+    expect(host.querySelector(".heartbeat")).toBeNull();
     expect(host.querySelector(".chain-canvas")).toBeNull();
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 80));
     });
-    expect(host.textContent).toContain("working through the chain");
+    expect(host.textContent).not.toContain("working through the chain");
+    expect(host.querySelector(".heartbeat")).toBeNull();
     expect(host.textContent).toContain("causal_chains://chain");
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
     expect(host.textContent).toContain("strait shut");
