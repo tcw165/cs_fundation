@@ -10,6 +10,7 @@ class Case(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     case_id: UUID
+    conversation_id: str
 
     @model_validator(mode="after")
     def assigned_case_id(self) -> Self:

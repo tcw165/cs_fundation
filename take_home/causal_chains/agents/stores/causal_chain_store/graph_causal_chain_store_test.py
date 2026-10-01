@@ -28,7 +28,7 @@ OTHER_CASE_ID = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
 
 class _FakeGraphDb:
     def __init__(self) -> None:
-        self.case_calls: list[UUID] = []
+        self.case_calls: list[tuple[UUID, str]] = []
         self.situation_calls: list[tuple[UUID, int, str, UUID, str, list[str], str]] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
@@ -40,7 +40,7 @@ class _FakeGraphDb:
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
-        self._cases: set[UUID] = set()
+        self._cases: dict[UUID, str] = {}
         self.leaf_rows: list[tuple[UUID, int, str]] = []
         self.reaches = False
         self.chain_row: tuple[
@@ -49,14 +49,15 @@ class _FakeGraphDb:
             list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
         ] | None = None
 
-    def merge_case(self, case_id: UUID) -> None:
-        self.case_calls.append(case_id)
-        self._cases.add(case_id)
+    def merge_case(self, case_id: UUID, conversation_id: str) -> None:
+        self.case_calls.append((case_id, conversation_id))
+        self._cases[case_id] = conversation_id
 
-    def get_case(self, case_id: UUID) -> UUID | None:
-        if case_id not in self._cases:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str] | None:
+        conversation_id = self._cases.get(case_id)
+        if conversation_id is None:
             return None
-        return case_id
+        return case_id, conversation_id
 
     def list_leaf_situations(
         self,
@@ -150,7 +151,7 @@ def test_add_situation_and_link_situations_record_calls():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
@@ -176,7 +177,7 @@ def test_add_situation_and_link_situations_record_calls():
         return graph_db
 
     graph_db = asyncio.run(exercise())
-    assert graph_db.case_calls == [CASE_ID]
+    assert graph_db.case_calls == [(CASE_ID, "1")]
     assert graph_db.situation_calls == [
         (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
         (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
@@ -230,7 +231,7 @@ def test_get_chains_returns_one_chain_per_root():
             version=1,
             desc="orphan",
         )
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         await store.add_situation(case, now)
         await store.add_situation(case, other)
         await store.add_situation(case, orphan)
@@ -273,8 +274,8 @@ def test_get_chains_keeps_each_case_separate():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        case = Case(case_id=CASE_ID)
-        other_case = Case(case_id=OTHER_CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
+        other_case = Case(case_id=OTHER_CASE_ID, conversation_id="1")
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
@@ -306,7 +307,7 @@ def test_get_case_and_leaf_lookup():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,
@@ -325,7 +326,7 @@ def test_get_case_and_leaf_lookup():
         return found, leaves, missing
 
     found, leaves, missing = asyncio.run(exercise())
-    assert found == Case(case_id=CASE_ID)
+    assert found == Case(case_id=CASE_ID, conversation_id="1")
     assert leaves == [Situation(situation_id=LEAF_ID, version=1, desc="leaf")]
     assert missing == "case is missing"
 
@@ -334,7 +335,7 @@ def test_reaches_terminal_reads_the_graph():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,
@@ -357,7 +358,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,

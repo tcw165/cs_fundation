@@ -49,7 +49,7 @@ def test_deeplink_card_fields():
 
 def test_deeplink_request_reads_the_case():
     request = DeeplinkRequest(
-        case=Case(case_id=CASE_ID),
+        case=Case(case_id=CASE_ID, conversation_id="1"),
         destination_desc="Open the saved chain.",
     )
     assert request.case.case_id == CASE_ID

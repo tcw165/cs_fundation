@@ -51,7 +51,10 @@ class _Store:
         self.cases.append(case)
 
     async def get_case(self, case_id: UUID) -> Case:
-        return Case(case_id=case_id)
+        for saved in self.cases:
+            if saved.case_id == case_id:
+                return saved
+        raise ValueError("case is missing")
 
     async def add_situation(
         self,

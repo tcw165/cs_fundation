@@ -140,7 +140,7 @@ class GraphCausalChainStore(CausalChainStore):
         self,
         case: Case,
     ) -> None:
-        self._graph_db.merge_case(case.case_id)
+        self._graph_db.merge_case(case.case_id, case.conversation_id)
 
     @override
     async def get_case(
@@ -150,7 +150,8 @@ class GraphCausalChainStore(CausalChainStore):
         found = self._graph_db.get_case(case_id)
         if found is None:
             raise ValueError("case is missing")
-        return Case(case_id=found)
+        found_id, conversation_id = found
+        return Case(case_id=found_id, conversation_id=conversation_id)
 
     @override
     async def add_situation(

@@ -36,7 +36,7 @@ class _Both:
         self,
         case_id: UUID,
     ) -> Case:
-        return Case(case_id=case_id)
+        return Case(case_id=case_id, conversation_id="1")
 
     async def add_situation(
         self,
@@ -99,7 +99,7 @@ def test_causal_chain_store_requires_case_and_situation_methods():
 def test_fake_records_a_situation_and_a_link():
     async def exercise():
         store = _Both()
-        case = Case(case_id=CASE_ID)
+        case = Case(case_id=CASE_ID, conversation_id="1")
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,

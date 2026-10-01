@@ -32,11 +32,12 @@ RETURN s.situation_id AS situation_id, total
 
 MERGE_CASE = """
 MERGE (c:Case {case_id: $case_id})
+SET c.conversation_id = $conversation_id
 """
 
 GET_CASE = """
 MATCH (c:Case {case_id: $case_id})
-RETURN c.case_id AS case_id
+RETURN c.case_id AS case_id, c.conversation_id AS conversation_id
 """
 
 MERGE_SITUATION = """
@@ -252,17 +253,21 @@ class Neo4jClient(GraphDb):
         return rows
 
     @override
-    def merge_case(self, case_id: UUID) -> None:
+    def merge_case(self, case_id: UUID, conversation_id: str) -> None:
         with self._driver.session() as session:
-            session.run(MERGE_CASE, case_id=str(case_id))
+            session.run(
+                MERGE_CASE,
+                case_id=str(case_id),
+                conversation_id=conversation_id,
+            )
 
     @override
-    def get_case(self, case_id: UUID) -> UUID | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str] | None:
         with self._driver.session() as session:
             record = session.run(GET_CASE, case_id=str(case_id)).single()
-        if record is None or record["case_id"] is None:
+        if record is None or record["case_id"] is None or record["conversation_id"] is None:
             return None
-        return UUID(str(record["case_id"]))
+        return UUID(str(record["case_id"])), str(record["conversation_id"])
 
     @override
     def merge_situation(

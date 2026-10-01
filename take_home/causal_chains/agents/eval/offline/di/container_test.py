@@ -45,7 +45,7 @@ def test_eval_container_wires_the_real_runner_to_store_mocks() -> None:
 
 def test_rehearsed_stores_return_what_they_saved() -> None:
     container = EvalContainer()
-    case = Case(case_id=uuid4())
+    case = Case(case_id=uuid4(), conversation_id="1")
     root = StartSituation(
         situation_id=uuid4(),
         version=1,
