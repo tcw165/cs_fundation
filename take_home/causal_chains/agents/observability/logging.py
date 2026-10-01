@@ -47,3 +47,11 @@ def bind_session_logger(
         yield adapter
     finally:
         _session_logger.reset(token)
+
+
+def bind_conversation_logger(conversation_id: str) -> Iterator[LoggerAdapter[Logger]]:
+    return bind_session_logger(conversation_id, "")
+
+
+def bind_logger() -> Iterator[LoggerAdapter[Logger]]:
+    return bind_session_logger("", "")
