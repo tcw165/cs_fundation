@@ -11,6 +11,7 @@ import {
   type LaidNode,
 } from "./layout";
 import { likelihood_label, sparkline_points } from "./likelihood";
+import { layout_overview } from "./overview";
 import type { FocusTarget } from "./panel_state";
 
 import "./chain.css";
@@ -24,6 +25,7 @@ export function ChainCanvas({
   focus: FocusTarget;
   chain_port: ChainPort;
 }) {
+  const [chains, set_chains] = useState<CausalChain[]>([]);
   const [chain, set_chain] = useState<CausalChain | null>(null);
   const [error, set_error] = useState<string | null>(null);
   const [loaded, set_loaded] = useState(false);
@@ -49,6 +51,7 @@ export function ChainCanvas({
     let cancelled = false;
     let timer = 0;
     chain_ref.current = null;
+    set_chains([]);
     set_chain(null);
     set_error(null);
     set_loaded(false);
@@ -61,6 +64,7 @@ export function ChainCanvas({
           }
           const next = chain_for_focus(chains, focus);
           chain_ref.current = next;
+          set_chains(chains);
           set_chain(next);
           set_error(null);
           set_loaded(true);
@@ -91,6 +95,7 @@ export function ChainCanvas({
   const title =
     focus.kind === "chain" || focus.kind === "case" ? focus.title : "Causal chain";
   const layout = chain === null ? null : layout_chain(chain, selection);
+  const overview = layout_overview(chains, chain);
 
   return (
     <section className="chain-canvas" aria-label="causal chain" ref={host_ref}>
@@ -103,8 +108,38 @@ export function ChainCanvas({
       {error === null && loaded && chain === null ? (
         <p className="panel-status">chain not found</p>
       ) : null}
-      {chain !== null && layout !== null ? (
+      {chains.length > 0 || (chain !== null && layout !== null) ? (
         <div className="graph-scroll">
+          {overview.nodes.length > 0 ? (
+            <svg
+              className="case-overview"
+              viewBox={`0 0 ${overview.width} ${overview.height}`}
+              role="img"
+              aria-label="all cases"
+            >
+              {overview.edges.map((edge) => (
+                <line
+                  key={edge.key}
+                  className={edge.latest ? "overview-edge is-latest" : "overview-edge"}
+                  x1={edge.x1}
+                  y1={edge.y1}
+                  x2={edge.x2}
+                  y2={edge.y2}
+                />
+              ))}
+              {overview.nodes.map((node) => (
+                <circle
+                  key={node.key}
+                  className={node.latest ? "overview-node is-latest" : "overview-node"}
+                  data-latest={node.latest ? "true" : "false"}
+                  cx={node.cx}
+                  cy={node.cy}
+                  r={node.latest ? 8 : 6}
+                />
+              ))}
+            </svg>
+          ) : null}
+          {chain !== null && layout !== null ? (
           <div className="graph-canvas" style={{ width: layout.width, height: layout.height }}>
             <svg className="graph-edges" viewBox={`0 0 ${layout.width} ${layout.height}`}>
               {layout.edges.map((edge) => (
@@ -192,6 +227,7 @@ export function ChainCanvas({
               );
             })}
           </div>
+          ) : null}
         </div>
       ) : null}
     </section>

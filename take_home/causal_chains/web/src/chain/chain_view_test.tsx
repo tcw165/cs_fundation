@@ -74,6 +74,7 @@ describe("chain canvas", () => {
       await Promise.resolve();
     });
     expect(get_chains).toHaveBeenCalledTimes(1);
+    expect(host.querySelectorAll(".overview-node.is-latest")).toHaveLength(2);
     expect(host.querySelector(`[data-situation-id="${now_id}"]`)?.getAttribute("data-open")).toBe(
       "true",
     );
@@ -95,6 +96,50 @@ describe("chain canvas", () => {
     expect(host.textContent).toContain("very unlikely");
     expect(y_of(host, next_id)).toBeGreaterThan(collapsed_y);
     expect(host.querySelector(".edge-card.is-open")).not.toBeNull();
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("keeps older cases dim and marks the open case", async () => {
+    const older_id = "33333333-3333-4333-8333-333333333333";
+    const get_chains = vi.fn<ChainPort["get_chains"]>().mockResolvedValue([
+      {
+        case_id: "older",
+        situations: [
+          {
+            situation_id: older_id,
+            version: 1,
+            desc: "older start",
+            potential_factors: ["then"],
+          },
+        ],
+        links: [],
+      },
+      {
+        case_id: "opened",
+        situations: [
+          {
+            situation_id: now_id,
+            version: 1,
+            desc: "strait shut",
+            potential_factors: ["blockade"],
+          },
+        ],
+        links: [],
+      },
+    ]);
+    const chain_port: ChainPort = { get_chains };
+    const { host, root } = render(<ChainCanvas focus={focus} chain_port={chain_port} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.querySelectorAll(".overview-node")).toHaveLength(2);
+    expect(host.querySelectorAll(".overview-node.is-latest")).toHaveLength(1);
+    expect(host.querySelector(".overview-node.is-latest")?.getAttribute("data-latest")).toBe(
+      "true",
+    );
     act(() => {
       root.unmount();
     });
