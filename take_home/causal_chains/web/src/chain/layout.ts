@@ -3,7 +3,7 @@ import type { CausalChain, ChainLink, ChainSituation } from "./chain_port";
 export const NODE_WIDTH = 340;
 export const NODE_HEIGHT = 220;
 export const NODE_HEIGHT_OPEN = 340;
-export const EDGE_GAP = 68;
+export const EDGE_GAP = 128;
 export const EDGE_CARD_HEIGHT = 248;
 export const LAYOUT_PAD = 8;
 
