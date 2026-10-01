@@ -1,13 +1,33 @@
 import { useEffect, useRef } from "react";
 
 import { MicIcon, SendIcon } from "../shell/icons";
+import { format_message_time, message_marks } from "./message_time";
 import { MessageView } from "./message_view";
+import type { TranscriptEntry } from "./reveal_state";
 import { Suggestions } from "./suggestions";
 import type { use_chat_session } from "./use_chat_session";
 
 import "./thread.css";
 
 type Session = ReturnType<typeof use_chat_session>;
+
+function entry_timestamp(entry: TranscriptEntry): string | null {
+  if (entry.kind === "user") {
+    return entry.created_timestamp;
+  }
+  if (entry.item.kind === "heartbeat") {
+    return null;
+  }
+  return entry.item.created_timestamp;
+}
+
+function MessageTime({ created_timestamp }: { created_timestamp: string }) {
+  return (
+    <time className="message-time" dateTime={created_timestamp}>
+      {format_message_time(created_timestamp)}
+    </time>
+  );
+}
 
 export function Thread({
   session,
@@ -58,23 +78,44 @@ export function Thread({
     >
       {empty ? <h2 className="play-title">What's the play?</h2> : null}
       <div className="thread-viewport" ref={viewport_ref}>
-        {state.log.map((entry) => {
+        {message_marks(state.log.map(entry_timestamp)).map((mark, index) => {
+          const entry = state.log[index];
+          if (entry === undefined) {
+            return null;
+          }
+          const timestamp = entry_timestamp(entry);
+          const time =
+            mark?.show_timestamp === true && timestamp !== null ? (
+              <MessageTime created_timestamp={timestamp} />
+            ) : null;
+          const separator =
+            mark?.show_separator === true ? (
+              <div className="message-separator" role="separator" />
+            ) : null;
           if (entry.kind === "user") {
             return (
-              <p key={entry.id} className="message message-user">
-                {entry.text}
-              </p>
+              <div key={entry.id}>
+                {separator}
+                <div className="message message-user">
+                  <p>{entry.text}</p>
+                  {time}
+                </div>
+              </div>
             );
           }
           return (
-            <div key={entry.item.message_id} className="message message-assistant">
-              <MessageView
-                item={entry.item}
-                active={entry.item.message_id === state.animating_id}
-                timing={timing}
-                on_done={finish}
-                on_open_link={on_open_link}
-              />
+            <div key={entry.item.message_id}>
+              {separator}
+              <div className="message message-assistant">
+                <MessageView
+                  item={entry.item}
+                  active={entry.item.message_id === state.animating_id}
+                  timing={timing}
+                  on_done={finish}
+                  on_open_link={on_open_link}
+                />
+                {time}
+              </div>
             </div>
           );
         })}
