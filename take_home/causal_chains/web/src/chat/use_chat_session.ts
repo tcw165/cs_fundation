@@ -58,12 +58,13 @@ export function use_chat_session(
           conversation_id,
           text: trimmed,
         });
-        for await (const message of chat_port.subscribe_turn({
+        for await (const snapshot of chat_port.subscribe_turn({
           conversation_id,
           turn_id: posted.turn.turn_id,
-          after_message: posted.turn.from_message,
         })) {
-          dispatch({ type: "enqueue", item: chat_item_from_message(message) });
+          for (const message of snapshot.messages) {
+            dispatch({ type: "enqueue", item: chat_item_from_message(message) });
+          }
         }
       } catch (error) {
         dispatch({

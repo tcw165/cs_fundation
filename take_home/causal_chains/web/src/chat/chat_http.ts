@@ -1,8 +1,7 @@
 import type {
   ChatPort,
-  Message,
+  ConversationMessagesResponse,
   PostMessageResponse,
-  Role,
 } from "./chat_port";
 
 export function create_chat_http(api_url: string): ChatPort {
@@ -22,14 +21,8 @@ export function create_chat_http(api_url: string): ChatPort {
       }
       return (await response.json()) as PostMessageResponse;
     },
-    subscribe_turn: ({ conversation_id, turn_id, after_message, abort_signal }) => {
-      return read_turn_sse(
-        api_url,
-        conversation_id,
-        turn_id,
-        after_message,
-        abort_signal,
-      );
+    subscribe_turn: ({ conversation_id, turn_id, abort_signal }) => {
+      return read_turn_sse(api_url, conversation_id, turn_id, abort_signal);
     },
   };
 }
@@ -38,12 +31,10 @@ async function* read_turn_sse(
   api_url: string,
   conversation_id: string,
   turn_id: string,
-  after_message: string,
   abort_signal?: AbortSignal,
-): AsyncGenerator<Message> {
-  const query = new URLSearchParams({ after_message });
+): AsyncGenerator<ConversationMessagesResponse> {
   const response = await fetch(
-    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${query}`,
+    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse`,
     { signal: abort_signal },
   );
   if (!response.ok || response.body === null) {
@@ -54,14 +45,14 @@ async function* read_turn_sse(
 
 export async function* parse_sse_stream(
   body: ReadableStream<Uint8Array>,
-): AsyncGenerator<Message> {
+): AsyncGenerator<ConversationMessagesResponse> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let event_name = "";
   let data_lines: string[] = [];
 
-  const flush = (): Message | null => {
+  const flush = (): ConversationMessagesResponse | null => {
     const data = data_lines.join("\n");
     const name = event_name;
     event_name = "";
@@ -114,59 +105,12 @@ export async function* parse_sse_stream(
   }
 }
 
-function text_field(
-  payload: Record<string, unknown>,
-  key: string,
-  fallback = "",
-): string {
-  const value = payload[key];
-  return typeof value === "string" ? value : fallback;
-}
-
-function role_field(payload: Record<string, unknown>): Role {
-  const role = payload.role;
-  if (role === "user" || role === "agent" || role === "other" || role === "meta") {
-    return role;
+function decode_sse_event(
+  event_name: string,
+  data: string,
+): ConversationMessagesResponse {
+  if (event_name !== "conversation_messages") {
+    throw new Error(`unknown sse event: ${event_name}`);
   }
-  return "other";
-}
-
-function decode_sse_event(event_name: string, data: string): Message {
-  const payload =
-    data === "" ? {} : (JSON.parse(data) as Record<string, unknown>);
-  if (event_name === "markdown" && payload.kind === "markdown") {
-    const created_timestamp = payload.created_timestamp;
-    if (typeof created_timestamp !== "string") {
-      throw new Error("markdown payload is missing created_timestamp");
-    }
-    return {
-      kind: "markdown",
-      message_id: text_field(payload, "message_id"),
-      role: role_field(payload),
-      text: text_field(payload, "text"),
-      created_timestamp,
-    };
-  }
-  if (event_name === "deeplink" && payload.kind === "deeplink") {
-    const title = text_field(payload, "title");
-    const created_timestamp = payload.created_timestamp;
-    if (typeof created_timestamp !== "string") {
-      throw new Error("deeplink payload is missing created_timestamp");
-    }
-    return {
-      kind: "deeplink",
-      message_id: text_field(payload, "message_id"),
-      role: role_field(payload),
-      link: text_field(payload, "link"),
-      created_timestamp,
-      ...(title === "" ? {} : { title }),
-    };
-  }
-  if (event_name === "heartbeat" && payload.kind === "heartbeat") {
-    return {
-      kind: "heartbeat",
-      role: "meta",
-    };
-  }
-  throw new Error(`unknown sse event: ${event_name}`);
+  return JSON.parse(data) as ConversationMessagesResponse;
 }

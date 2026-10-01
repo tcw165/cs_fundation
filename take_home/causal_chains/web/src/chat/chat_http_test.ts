@@ -1,6 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { create_chat_http, parse_sse_stream } from "./chat_http";
+import type { ConversationMessagesResponse, Message } from "./chat_port";
+
+function page(messages: Message[]): ConversationMessagesResponse {
+  return {
+    conversation_id: "1",
+    messages,
+    user_interaction_state: {
+      text_input_state: "SEND_ENABLED_WITH_STOP_BUTTON",
+      text_input_placeholder: "Ask about a chain",
+      thinking_state: null,
+    },
+    turn: null,
+  };
+}
 
 function sse_stream(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -39,7 +53,7 @@ describe("create_chat_http", () => {
       .mockResolvedValueOnce({
         ok: true,
         body: sse_stream([
-          'event: markdown\ndata: {"kind":"markdown","message_id":"m_1","role":"agent","text":"oil ","created_timestamp":"2026-09-30T00:00:00+00:00"}\n\n',
+          `event: conversation_messages\ndata: ${JSON.stringify(page([{ kind: "markdown", message_id: "m_1", role: "agent", text: "oil ", created_timestamp: "2026-09-30T00:00:00+00:00" }]))}\n\n`,
         ]),
       });
     vi.stubGlobal("fetch", fetch_mock);
@@ -74,22 +88,23 @@ describe("create_chat_http", () => {
     for await (const event of chat_port.subscribe_turn({
       conversation_id: "1",
       turn_id: posted.turn.turn_id,
-      after_message: posted.turn.from_message,
       abort_signal,
     })) {
       events.push(event);
     }
     expect(events).toEqual([
-      {
-        kind: "markdown",
-        message_id: "m_1",
-        role: "agent",
-        text: "oil ",
-        created_timestamp: "2026-09-30T00:00:00+00:00",
-      },
+      page([
+        {
+          kind: "markdown",
+          message_id: "m_1",
+          role: "agent",
+          text: "oil ",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      ]),
     ]);
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/turn/t_8f3a/sse?after_message=m_user",
+      "http://agents:8000/conversation/1/turn/t_8f3a/sse",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();
@@ -97,66 +112,41 @@ describe("create_chat_http", () => {
 });
 
 describe("parse_sse_stream", () => {
-  it("reassembles events split across chunks", async () => {
+  it("yields a heartbeat from one conversation_messages event", async () => {
     const events = [];
     for await (const event of parse_sse_stream(
       sse_stream([
-        'event: mark',
-        'down\ndata: {"kind":"markdown","message_id":"m_1","role":"agent","text":"oil ","created_timestamp":"2026-09-30T00:00:00+00:00"}\n\n',
+        `event: conversation_messages\ndata: ${JSON.stringify(page([{ kind: "heartbeat", role: "meta" }]))}\n\n`,
       ]),
     )) {
       events.push(event);
     }
-    expect(events).toEqual([
-      {
-        kind: "markdown",
-        message_id: "m_1",
-        role: "agent",
-        text: "oil ",
-        created_timestamp: "2026-09-30T00:00:00+00:00",
-      },
-    ]);
+    expect(events).toEqual([page([{ kind: "heartbeat", role: "meta" }])]);
+    expect(events[0]?.messages).toEqual([{ kind: "heartbeat", role: "meta" }]);
   });
 
-  it("decodes a deeplink message", async () => {
+  it("yields only the markdown message in that event", async () => {
+    const message: Message = {
+      kind: "markdown",
+      message_id: "m_1",
+      role: "agent",
+      text: "oil ",
+      created_timestamp: "2026-09-30T00:00:00+00:00",
+    };
     const events = [];
+    const payload = JSON.stringify(page([message]));
     for await (const event of parse_sse_stream(
-      sse_stream([
-        'event: deeplink\ndata: {"kind":"deeplink","message_id":"m_card","role":"other","link":"/chain/11111111-1111-4111-8111-111111111111/1?title=now","created_timestamp":"2026-09-30T00:00:00+00:00"}\n\n',
-      ]),
+      sse_stream([`event: conversation_mess`, `ages\ndata: ${payload}\n\n`]),
     )) {
       events.push(event);
     }
-    expect(events).toEqual([
-      {
-        kind: "deeplink",
-        created_timestamp: "2026-09-30T00:00:00+00:00",
-        message_id: "m_card",
-        role: "other",
-        link: "/chain/11111111-1111-4111-8111-111111111111/1?title=now",
-      },
-    ]);
+    expect(events).toEqual([page([message])]);
+    expect(events[0]?.messages).toEqual([message]);
   });
 
-  it("decodes a heartbeat the page does not render", async () => {
-    const events = [];
-    for await (const event of parse_sse_stream(
-      sse_stream([
-        'event: heartbeat\ndata: {"kind":"heartbeat","role":"meta"}\n\n',
-      ]),
-    )) {
-      events.push(event);
-    }
-    expect(events).toEqual([
-      { kind: "heartbeat", role: "meta" },
-    ]);
-  });
-
-  it("does not decode a payload that still says type", async () => {
+  it("rejects an unknown event name", async () => {
     const stream = parse_sse_stream(
-      sse_stream([
-        'event: markdown\ndata: {"type":"markdown","message_id":"m_1","role":"agent","text":"oil ","created_timestamp":"2026-09-30T00:00:00+00:00"}\n\n',
-      ]),
+      sse_stream(['event: markdown\ndata: {"kind":"markdown"}\n\n']),
     );
     await expect(stream.next()).rejects.toThrow(/unknown sse event/);
   });

@@ -41,8 +41,36 @@ export type PostMessageReq = {
 export type SubscribeReq = {
   conversation_id: string;
   turn_id: string;
-  after_message: string;
   abort_signal?: AbortSignal;
+};
+
+export type TextInputState =
+  | "ENABLED"
+  | "SEND_DISABLED"
+  | "SEND_ENABLED_WITH_STOP_BUTTON"
+  | "DISABLED"
+  | "HIDDEN";
+
+export type ThinkingState = {
+  text: string;
+};
+
+export type UserInteractionState = {
+  text_input_state: TextInputState;
+  text_input_placeholder: string;
+  thinking_state: ThinkingState | null;
+};
+
+export type TurnDescriptor = {
+  processing: Turn[];
+  queued: Turn[];
+};
+
+export type ConversationMessagesResponse = {
+  conversation_id: string;
+  messages: Message[];
+  user_interaction_state: UserInteractionState;
+  turn: TurnDescriptor | null;
 };
 
 export type PostMessageResponse = {
@@ -52,5 +80,5 @@ export type PostMessageResponse = {
 
 export type ChatPort = {
   post_message: (req: PostMessageReq) => Promise<PostMessageResponse>;
-  subscribe_turn: (req: SubscribeReq) => AsyncIterable<Message>;
+  subscribe_turn: (req: SubscribeReq) => AsyncIterable<ConversationMessagesResponse>;
 };
