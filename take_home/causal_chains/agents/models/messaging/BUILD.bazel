@@ -21,6 +21,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai"),
         requirement("pydantic"),
     ],
 )
