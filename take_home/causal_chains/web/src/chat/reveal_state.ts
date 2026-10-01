@@ -3,7 +3,7 @@ import type { ChatItem } from "./chat_item";
 export type RevealPhase = "idle" | "animating";
 
 export type TranscriptEntry =
-  | { kind: "user"; id: string; text: string }
+  | { kind: "user"; id: string; text: string; created_timestamp: string }
   | { kind: "agent"; item: ChatItem };
 
 export type RevealState = {
@@ -29,7 +29,7 @@ export const initial_reveal_state: RevealState = {
 };
 
 export type RevealAction =
-  | { type: "user"; text: string }
+  | { type: "user"; text: string; created_timestamp: string }
   | { type: "enqueue"; item: ChatItem }
   | { type: "restore"; item: ChatItem }
   | { type: "start" }
@@ -45,7 +45,12 @@ export function reveal_reducer(state: RevealState, action: RevealAction): Reveal
         user_texts: [...state.user_texts, action.text],
         log: [
           ...state.log,
-          { kind: "user", id: `user-${state.user_texts.length}`, text: action.text },
+          {
+            kind: "user",
+            id: `user-${state.user_texts.length}`,
+            text: action.text,
+            created_timestamp: action.created_timestamp,
+          },
         ],
         error: null,
       };
@@ -92,7 +97,15 @@ function restore_item(state: RevealState, item: ChatItem): RevealState {
     }
     return {
       ...state,
-      log: [...state.log, { kind: "user", id: item.message_id, text: item.text }],
+      log: [
+        ...state.log,
+        {
+          kind: "user",
+          id: item.message_id,
+          text: item.text,
+          created_timestamp: item.created_timestamp,
+        },
+      ],
     };
   }
   if (

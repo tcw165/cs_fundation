@@ -60,7 +60,12 @@ describe("reveal_reducer", () => {
     expect(state.pending).toEqual([]);
     expect(state.phase).toBe("idle");
     expect(state.log).toEqual([
-      { kind: "user", id: "u", text: "earlier" },
+      {
+        kind: "user",
+        id: "u",
+        text: "earlier",
+        created_timestamp: "2026-09-30T00:00:00+00:00",
+      },
       { kind: "agent", item: markdown("a", "saved") },
     ]);
   });
