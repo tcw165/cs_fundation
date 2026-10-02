@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from logging import Logger, LoggerAdapter
 
-_LOGGER_NAME = "causal_chains"
+_LOGGER_NAME = "agents"
 _session_logger: ContextVar[LoggerAdapter[Logger]] = ContextVar("session_logger")
 
 
