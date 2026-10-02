@@ -127,6 +127,7 @@ export function use_chat_session(
         for await (const snapshot of chat_port.subscribe_turn({
           conversation_id,
           turn_id: posted.turn.turn_id,
+          after_message: posted.turn.from_message,
           abort_signal: controller.signal,
         })) {
           set_user_interaction_state(snapshot.user_interaction_state);

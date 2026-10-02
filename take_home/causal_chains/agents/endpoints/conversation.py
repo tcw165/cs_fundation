@@ -29,6 +29,7 @@ from take_home.causal_chains.agents.models.messaging.turn.turn_status import Tur
 from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
     MessagePage,
 )
+from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.observability.logging import (
     bind_conversation_logger,
@@ -116,32 +117,34 @@ async def turn_sse(
     conversation_id: str,
     turn_id: str,
     container: AppContainerDep,
+    after_message: Annotated[
+        str,
+        Query(description="Exclusive message id. The stream starts after this message."),
+    ],
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
+    chat_service = container.chat_service()
+    turn_store = container.turn_store()
+    turn = await _require(turn_store, conversation_id, turn_id)
+
     async def event_stream() -> AsyncIterator[str]:
         with bind_session_logger(conversation_id, turn_id):
-            turn = await container.turn_store().get_turn(turn_id)
             stored = (
                 await container.messaging_store().list_messages(conversation_id, 100)
             ).messages
-            from_message = None if turn is None else turn.from_message
             anchored = next(
                 (
                     message
                     for message in stored
-                    if getattr(message, "message_id", None) == from_message
+                    if getattr(message, "message_id", None) == turn.from_message
                 ),
                 None,
             )
             if (
-                turn is None
-                or conversation_id != "1"
-                or turn.conversation_id != "1"
-                or turn.status is not TurnStatus.queued
+                turn.status is not TurnStatus.queued
                 or not isinstance(anchored, MarkdownMessage)
             ):
                 return
-            chat_service = container.chat_service()
             async for message in chat_service.run_turn(
                 turn,
                 anchored.text,
@@ -150,6 +153,17 @@ async def turn_sse(
                 yield format_conversation_sse(_snapshot(message, turn))
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+async def _require(
+    turn_store: TurnStore,
+    conversation_id: str,
+    turn_id: str,
+) -> Turn:
+    turn = await turn_store.get_turn(turn_id)
+    if turn is None or turn.conversation_id != conversation_id:
+        raise HTTPException(status_code=404, detail="turn not found")
+    return turn
 
 
 def _snapshot(message: Message, turn: Turn) -> ConversationMessagesResponse:

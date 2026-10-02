@@ -157,12 +157,14 @@ def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurn
 async def _read_sse(
     container: _Container,
     turn_id: str,
+    after_message: str,
     include_traces: bool = False,
 ) -> str:
     response = await turn_sse(
         "1",
         turn_id,
         container,
+        after_message=after_message,
         include_traces=include_traces,
     )
     chunks: list[str] = []
@@ -226,6 +228,28 @@ def test_post_message_rejects_a_second_turn():
     assert raised.value.detail == "conversation already has a turn"
 
 
+def test_turn_sse_rejects_a_turn_from_another_conversation():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        await turn_sse(
+            "2",
+            posted.turn.turn_id,
+            container,
+            after_message=posted.turn.from_message,
+        )
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 404
+    assert raised.value.detail == "turn not found"
+
+
 def test_get_messages_returns_one_page():
     async def exercise():
         container, _runner, _store, _turn_store = _services()
@@ -282,15 +306,24 @@ def test_sse_streams_one_snapshot_per_emission():
     async def exercise():
         container, runner, _store, turn_store = _services()
         posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
-        everything = await _read_sse(container, posted.turn.turn_id)
+        everything = await _read_sse(
+            container,
+            posted.turn.turn_id,
+            posted.turn.from_message,
+        )
         saved = await turn_store.get_turn(posted.turn.turn_id)
-        replay = await _read_sse(container, posted.turn.turn_id)
+        replay = await _read_sse(
+            container,
+            posted.turn.turn_id,
+            posted.turn.from_message,
+        )
 
         user_container, user_runner, _store_again, _turns_again = _services()
         queued = await post_message("1", PostMessageBody(text="hello"), user_container, BackgroundTasks())
         traced = await _read_sse(
             user_container,
             queued.turn.turn_id,
+            queued.turn.from_message,
             include_traces=True,
         )
         return everything, replay, traced, saved, runner, user_runner, posted
@@ -342,7 +375,11 @@ def test_sse_streams_a_heartbeat_as_its_own_snapshot():
         )
         container = _Container(service, store, turn_store)
         posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
-        return await _read_sse(container, posted.turn.turn_id)
+        return await _read_sse(
+            container,
+            posted.turn.turn_id,
+            posted.turn.from_message,
+        )
 
     snapshots = _snapshots(asyncio.run(exercise()))
     assert [message.kind for snapshot in snapshots for message in snapshot.messages] == [

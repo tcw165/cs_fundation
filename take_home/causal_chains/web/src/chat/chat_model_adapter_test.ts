@@ -29,7 +29,7 @@ function user_message(text: string): ThreadMessage {
 }
 
 describe("create_chat_model_adapter", () => {
-  it("subscribes without after_message and yields each agent paragraph", async () => {
+  it("subscribes after the posted message and yields each agent paragraph", async () => {
     const posted: string[] = [];
     const turn_ids: string[] = [];
     const chat_port: ChatPort = {
@@ -54,7 +54,7 @@ describe("create_chat_model_adapter", () => {
       list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* (req): AsyncGenerator<ConversationMessagesResponse> {
         turn_ids.push(req.turn_id);
-        expect(req).not.toHaveProperty("after_message");
+        expect(req.after_message).toBe("m_user");
         yield page([
           {
             kind: "markdown",
