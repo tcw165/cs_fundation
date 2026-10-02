@@ -113,12 +113,12 @@ async def get_messages(
     limit: Annotated[int, Query(ge=1)],
     after_message: Annotated[
         str | None,
-        Query(description="Exclusive message id. The page starts after this message."),
+        Query(description="Exclusive message id. The page starts after this message. Absent to start at the oldest message."),
     ] = None,
     after_message_timestamp: Annotated[
         datetime | None,
         Query(
-            description="created_timestamp of after_message. Required with the message id to find that message.",
+            description="created_timestamp of after_message. Required with the message id to find that message. Absent to start at the oldest message.",
         ),
     ] = None,
 ) -> MessagePage:
@@ -139,17 +139,18 @@ async def turn_sse(
     turn_id: str,
     container: AppContainerDep,
     after_message: Annotated[
-        str,
-        Query(description="Exclusive message id. The stream starts after this message."),
-    ],
+        str | None,
+        Query(description="Exclusive message id. The stream starts after this message. Absent to start at the oldest message."),
+    ] = None,
     after_message_timestamp: Annotated[
-        datetime,
+        datetime | None,
         Query(
-            description="created_timestamp of after_message. Required with the message id to find that message.",
+            description="created_timestamp of after_message. Required with the message id to find that message. Absent to start at the oldest message.",
         ),
-    ],
+    ] = None,
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
+    _require_cursor_pair(after_message, after_message_timestamp)
     turn_store = container.turn_store()
     messaging_store = container.messaging_store()
     turn = await _require(turn_store, conversation_id, turn_id)
@@ -218,8 +219,8 @@ async def _watch_turn(
 async def _poll_messages(
     messaging_store: MessagingStore,
     conversation_id: str,
-    after_message: str,
-    after_message_timestamp: datetime,
+    after_message: str | None,
+    after_message_timestamp: datetime | None,
     send: MemoryObjectSendStream[Message],
     stop: anyio.Event,
 ) -> None:

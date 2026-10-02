@@ -86,11 +86,17 @@ async function* read_turn_sse(
   api_url: string,
   conversation_id: string,
   turn_id: string,
-  after_message: string,
-  after_message_timestamp: string,
+  after_message: string | undefined,
+  after_message_timestamp: string | undefined,
   abort_signal?: AbortSignal,
 ): AsyncGenerator<ConversationMessagesResponse> {
-  const params = new URLSearchParams({ after_message, after_message_timestamp });
+  const params = new URLSearchParams();
+  if (after_message !== undefined) {
+    params.set("after_message", after_message);
+  }
+  if (after_message_timestamp !== undefined) {
+    params.set("after_message_timestamp", after_message_timestamp);
+  }
   const response = await fetch(
     `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${params}`,
     { signal: abort_signal },
