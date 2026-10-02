@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 
 import pytest
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import (
@@ -173,7 +173,7 @@ async def _read_sse(
 def test_post_message_stores_the_anchored_turn():
     async def exercise():
         container, _runner, store, turn_store = _services()
-        posted = await post_message("1", PostMessageBody(text="hello"), container)
+        posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
         stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(posted.turn.turn_id)
         return posted, stored, saved
@@ -197,8 +197,8 @@ def test_post_message_stores_the_anchored_turn():
 def test_post_message_rejects_a_second_turn():
     async def exercise():
         container, _runner, _store, _turn_store = _services()
-        await post_message("1", PostMessageBody(text="first"), container)
-        await post_message("1", PostMessageBody(text="second"), container)
+        await post_message("1", PostMessageBody(text="first"), container, BackgroundTasks())
+        await post_message("1", PostMessageBody(text="second"), container, BackgroundTasks())
 
     with pytest.raises(HTTPException) as raised:
         asyncio.run(exercise())
@@ -209,7 +209,7 @@ def test_post_message_rejects_a_second_turn():
 def test_get_messages_returns_one_page():
     async def exercise():
         container, _runner, _store, _turn_store = _services()
-        await post_message("1", PostMessageBody(text="first"), container)
+        await post_message("1", PostMessageBody(text="first"), container, BackgroundTasks())
         await container.messaging_store().append(
             "1",
             MarkdownMessage(
@@ -261,13 +261,13 @@ def _snapshots(body: str) -> list[ConversationMessagesResponse]:
 def test_sse_streams_one_snapshot_per_emission():
     async def exercise():
         container, runner, _store, turn_store = _services()
-        posted = await post_message("1", PostMessageBody(text="hello"), container)
+        posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
         everything = await _read_sse(container, posted.turn.turn_id)
         saved = await turn_store.get_turn(posted.turn.turn_id)
         replay = await _read_sse(container, posted.turn.turn_id)
 
         user_container, user_runner, _store_again, _turns_again = _services()
-        queued = await post_message("1", PostMessageBody(text="hello"), user_container)
+        queued = await post_message("1", PostMessageBody(text="hello"), user_container, BackgroundTasks())
         traced = await _read_sse(
             user_container,
             queued.turn.turn_id,
@@ -321,7 +321,7 @@ def test_sse_streams_a_heartbeat_as_its_own_snapshot():
             _FixedClock(),
         )
         container = _Container(service, store, turn_store)
-        posted = await post_message("1", PostMessageBody(text="hello"), container)
+        posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
         return await _read_sse(container, posted.turn.turn_id)
 
     snapshots = _snapshots(asyncio.run(exercise()))
