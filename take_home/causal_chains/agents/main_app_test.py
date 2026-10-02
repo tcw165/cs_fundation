@@ -94,14 +94,14 @@ def test_post_message_and_sse_with_stub_runner():
     container.causal_chain_store.override(providers.Object(object()))
     _override_dynamo_db(container)
     client = TestClient(create_app(container))
-    created = client.post("/conversation/1/messages", json={"text": "hello"})
+    created = client.post("/api/v1/conversation/1/messages", json={"text": "hello"})
     assert created.status_code == 200
     body = created.json()
     assert body["turn"]["status"] == "queued"
     assert body["received_message"]["text"] == "hello"
     turn_id = body["turn"]["turn_id"]
     stream = client.get(
-        f"/conversation/1/turn/{turn_id}/sse",
+        f"/api/v1/conversation/1/turn/{turn_id}/sse",
         params={
             "after_message": body["turn"]["from_message"],
             "after_message_timestamp": body["received_message"]["created_timestamp"],
@@ -132,7 +132,7 @@ def test_get_causal_chains_returns_the_stored_chains():
     container = AppContainer()
     container.causal_chain_store.override(providers.Object(_Chains()))
     client = TestClient(create_app(container))
-    response = client.get("/causal_chains")
+    response = client.get("/api/v1/causal_chains")
     assert response.status_code == 200
     assert response.json() == [chain.model_dump(mode="json")]
 
