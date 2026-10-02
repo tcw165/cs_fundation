@@ -10,5 +10,5 @@ class MessagePage(BaseModel):
     )
     next_cursor: str | None = Field(
         default=None,
-        description="Sort key to pass as start_message for the next page. Absent when this is the last page.",
+        description="Message id to pass as after_message for the next page. The next page starts after this message. Absent when this is the last page.",
     )

@@ -26,7 +26,7 @@ class _Both:
         self,
         conversation_id: str,
         limit: int,
-        start_message: str | None = None,
+        after_message: str | None = None,
     ) -> MessagePage:
         return MessagePage(messages=[])
 
