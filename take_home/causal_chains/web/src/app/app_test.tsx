@@ -55,6 +55,12 @@ function render(node: ReactElement): { host: HTMLDivElement; root: Root } {
 describe("app chat", () => {
   it("keeps the panel folded until a deeplink is ready", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",

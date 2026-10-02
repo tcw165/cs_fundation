@@ -33,6 +33,12 @@ describe("create_chat_model_adapter", () => {
     const posted: string[] = [];
     const turn_ids: string[] = [];
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async ({ text }) => {
         posted.push(text);
         return {
@@ -101,6 +107,12 @@ describe("create_chat_model_adapter", () => {
       root_version: 1,
     };
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",
@@ -160,6 +172,12 @@ describe("create_chat_model_adapter", () => {
 
   it("parses a causal_chains:// chain link", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",
@@ -211,6 +229,12 @@ describe("create_chat_model_adapter", () => {
 
   it("finishes the turn when the stream ends", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",

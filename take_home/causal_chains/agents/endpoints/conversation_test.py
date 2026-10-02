@@ -10,6 +10,7 @@ from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import (
     get_messages,
     post_message,
+    stop_turn,
     turn_sse,
 )
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
@@ -285,6 +286,74 @@ def test_post_message_rejects_a_running_turn_beside_a_finished_one():
         asyncio.run(exercise())
     assert raised.value.status_code == 409
     assert raised.value.detail == "conversation already has a turn"
+
+
+def test_stop_turn_marks_an_open_turn_cancelled():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        stopped = await stop_turn("1", posted.turn.turn_id, container)
+        saved = await turn_store.get_turn(posted.turn.turn_id)
+        return stopped, saved
+
+    stopped, saved = asyncio.run(exercise())
+    assert stopped.status is TurnStatus.cancelled
+    assert saved == stopped
+
+
+def test_stop_turn_leaves_a_finished_turn():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        completed = posted.turn.model_copy(update={"status": TurnStatus.completed})
+        await turn_store.put_turn(completed)
+        stopped = await stop_turn("1", posted.turn.turn_id, container)
+        return stopped, completed
+
+    stopped, completed = asyncio.run(exercise())
+    assert stopped == completed
+
+
+def test_stop_turn_rejects_an_unknown_turn():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        await stop_turn("1", "t_missing", container)
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 404
+    assert raised.value.detail == "turn not found"
+
+
+def test_stop_turn_allows_another_message():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="first"),
+            container,
+            BackgroundTasks(),
+        )
+        await stop_turn("1", posted.turn.turn_id, container)
+        return await post_message(
+            "1",
+            PostMessageBody(text="second"),
+            container,
+            BackgroundTasks(),
+        )
+
+    second = asyncio.run(exercise())
+    assert second.received_message.text == "second"
 
 
 def test_post_message_rejects_a_second_turn():

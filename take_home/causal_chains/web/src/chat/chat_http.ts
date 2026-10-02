@@ -3,6 +3,7 @@ import type {
   ConversationMessagesResponse,
   MessagePage,
   PostMessageResponse,
+  Turn,
 } from "./chat_port";
 
 export function create_chat_http(api_url: string): ChatPort {
@@ -37,6 +38,16 @@ export function create_chat_http(api_url: string): ChatPort {
         after_message_timestamp,
         abort_signal,
       );
+    },
+    stop_turn: async ({ conversation_id, turn_id }) => {
+      const response = await fetch(
+        `${api_url}/conversation/${conversation_id}/turn/${turn_id}/stop`,
+        { method: "POST" },
+      );
+      if (!response.ok) {
+        throw new Error(`stop_turn failed: ${response.status}`);
+      }
+      return (await response.json()) as Turn;
     },
     subscribe_turn: ({
       conversation_id,
