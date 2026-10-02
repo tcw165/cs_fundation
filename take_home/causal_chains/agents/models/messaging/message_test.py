@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
+    BaseMessage,
+)
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -69,6 +72,7 @@ def test_message_item_uses_one_key_for_the_same_id_and_timestamp():
     first = message.to_dynamodb()
     second = message.to_dynamodb()
     assert first["SK"] == second["SK"]
+    assert first["SK"] == BaseMessage.message_sort_key(created, "m_1")
     assert first["created_at"] == created.isoformat()
     assert first["schema_version"] == 1
     assert "input_guardrail_flagged" not in first["message_json"]
