@@ -10,8 +10,6 @@ from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
 
 
 class _FakeDynamoDb:
@@ -102,16 +100,6 @@ def test_post_message_and_sse_with_stub_runner():
     assert body["turn"]["status"] == "queued"
     assert body["received_message"]["text"] == "hello"
     turn_id = body["turn"]["turn_id"]
-    asyncio.run(
-        container.turn_store().put_turn(
-            Turn(
-                turn_id=turn_id,
-                conversation_id="1",
-                status=TurnStatus.completed,
-                from_message=body["turn"]["from_message"],
-            ),
-        ),
-    )
     stream = client.get(
         f"/conversation/1/turn/{turn_id}/sse",
         params={

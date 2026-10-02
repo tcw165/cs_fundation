@@ -54,6 +54,30 @@ def test_in_memory_turn_store_finds_a_turn_by_conversation():
     assert missing is None
 
 
+def test_in_memory_turn_store_prefers_an_open_turn():
+    async def exercise():
+        store = InMemoryTurnStore()
+        finished = Turn(
+            turn_id="t_done",
+            conversation_id="1",
+            status=TurnStatus.completed,
+            from_message="m_1",
+        )
+        running = Turn(
+            turn_id="t_open",
+            conversation_id="1",
+            status=TurnStatus.running,
+            from_message="m_2",
+        )
+        await store.put_turn(finished)
+        await store.put_turn(running)
+        return await store.get_turn_by_conversation("1")
+
+    found = asyncio.run(exercise())
+    assert found is not None
+    assert found.turn_id == "t_open"
+
+
 def test_in_memory_turn_store_deletes_a_turn():
     async def exercise():
         store = InMemoryTurnStore()

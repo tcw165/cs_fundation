@@ -38,8 +38,15 @@ async def update_turn(turn_store: TurnStore, turn: Turn) -> AsyncIterator[None]:
     await turn_store.put_turn(running)
     try:
         yield
-    finally:
-        await turn_store.delete_turn(turn.turn_id)
+    except Exception:
+        await turn_store.put_turn(
+            running.model_copy(update={"status": TurnStatus.failed})
+        )
+        raise
+    else:
+        await turn_store.put_turn(
+            running.model_copy(update={"status": TurnStatus.completed})
+        )
 
 
 class ChatService:

@@ -45,9 +45,13 @@ class DdbTurnStore(TurnStore):
             "conversation_id",
             conversation_id,
         )
-        if len(rows) == 0:
+        turns = [Turn.model_validate(row) for row in rows]
+        for turn in turns:
+            if not turn.status.is_ended():
+                return turn
+        if len(turns) == 0:
             return None
-        return Turn.model_validate(rows[0])
+        return turns[0]
 
     @override
     async def delete_turn(
