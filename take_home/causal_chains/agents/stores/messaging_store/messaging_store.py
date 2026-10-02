@@ -43,6 +43,7 @@ class MessagingStoreImpl(MessagingStore):
         conversation_id: str,
         limit: int,
         after_message: str | None = None,
+        after_message_timestamp: datetime | None = None,
     ) -> MessagePage:
         """List one page of messages, oldest first.
 
@@ -52,6 +53,8 @@ class MessagingStoreImpl(MessagingStore):
             after_message: Exclusive message id. The page starts after this
                 message and does not include it. None starts at the oldest
                 message.
+            after_message_timestamp: created_timestamp of after_message. None
+                when after_message is None.
         """
         exclusive_start_sk = None
         if after_message is not None:

@@ -27,6 +27,7 @@ class _Both:
         conversation_id: str,
         limit: int,
         after_message: str | None = None,
+        after_message_timestamp: datetime | None = None,
     ) -> MessagePage:
         return MessagePage(messages=[])
 

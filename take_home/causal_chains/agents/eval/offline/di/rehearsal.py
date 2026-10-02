@@ -1,4 +1,5 @@
 from collections.abc import Coroutine
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -62,6 +63,7 @@ def rehearse_persistence(
         conversation_id: str,
         limit: int,
         after_message: str | None = None,
+        after_message_timestamp: datetime | None = None,
     ) -> MessagePage:
         matched = [
             message
