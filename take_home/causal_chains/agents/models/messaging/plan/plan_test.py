@@ -1,6 +1,11 @@
 from datetime import datetime, timezone
 
-from take_home.causal_chains.agents.models.messaging.plan import Plan, PlanStatus, PlanStep, StepStatus
+from take_home.causal_chains.agents.models.messaging.plan.plan import (
+    Plan,
+    PlanStatus,
+    PlanStep,
+    StepStatus,
+)
 
 
 def test_step_defaults_to_pending():

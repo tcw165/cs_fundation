@@ -13,12 +13,12 @@ py_library(
         "followup_question.py",
         "message.py",
         "message_widgets.py",
-        "plan.py",
     ],
     imports = ["../../../../../"],
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging/plan",
         "//take_home/causal_chains/agents/models/messaging/protocol",
         requirement("openai"),
         requirement("pydantic"),
@@ -36,12 +36,12 @@ pytest_test(
         "followup_question_test.py",
         "message_test.py",
         "message_widgets_test.py",
-        "plan_test.py",
     ],
     imports = ["../../../../../"],
     deps = [
         ":messaging",
         "//take_home/causal_chains/agents/models/causal_chains",
+        "//take_home/causal_chains/agents/models/messaging/plan",
         requirement("pydantic"),
     ],
 )
