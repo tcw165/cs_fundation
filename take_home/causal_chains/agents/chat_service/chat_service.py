@@ -1,10 +1,12 @@
-import asyncio
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 
+import anyio
 from agents import flush_traces, trace
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -19,7 +21,6 @@ from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
-from take_home.causal_chains.agents.observability.logging import logger
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
@@ -28,6 +29,8 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.time.protocol.protocol import Clock
+
+_TURN_POLL_INTERVAL_S = 0.3
 
 
 def can_store_message(message: Message) -> bool:
@@ -90,16 +93,26 @@ class ChatService:
                     metadata={"turn_id": turn.turn_id},
                 ):
                     stream = await self._agent_runner.stream([text], context)
-                    async for message in stream:
-                        if await _turn_is_ended(self._turn_store, turn.turn_id):
-                            await _close_stream(stream)
-                            break
-                        if can_store_message(message):
-                            await self._messaging_store.append(
-                                turn.conversation_id,
-                                message,
-                            )
-                        yield message
+
+                    async with anyio.create_task_group() as group:
+                        # stream blocks on the model, so the poll has to run beside it.
+                        group.start_soon(
+                            partial(
+                                _cancel_when_ended,
+                                turn_store=self._turn_store,
+                                turn_id=turn.turn_id,
+                                stream=stream,
+                            ),
+                        )
+
+                        async for message in stream:
+                            if can_store_message(message):
+                                await self._messaging_store.append(
+                                    turn.conversation_id,
+                                    message,
+                                )
+                            yield message
+                        group.cancel_scope.cancel()
         finally:
             flush_traces()
 
@@ -111,21 +124,16 @@ def format_sse(
     return f"event: {event.kind}\ndata: {payload}\n\n"
 
 
-async def _close_stream(stream: AsyncGenerator[Message]) -> None:
-    try:
-        await stream.aclose()
-    except BaseException as error:
-        if not _is_cancellation(error):
-            raise
-        logger().exception("turn stream cancelled")
-
-
-def _is_cancellation(error: BaseException) -> bool:
-    if isinstance(error, asyncio.CancelledError):
-        return True
-    if isinstance(error, BaseExceptionGroup):
-        return all(_is_cancellation(item) for item in error.exceptions)
-    return False
+async def _cancel_when_ended(
+    turn_store: TurnStore,
+    turn_id: str,
+    stream: AgentStream,
+) -> None:
+    while True:
+        if await _turn_is_ended(turn_store, turn_id):
+            stream.cancel()
+            return
+        await anyio.sleep(_TURN_POLL_INTERVAL_S)
 
 
 async def _turn_is_ended(turn_store: TurnStore, turn_id: str) -> bool:

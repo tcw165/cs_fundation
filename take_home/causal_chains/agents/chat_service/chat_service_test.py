@@ -1,9 +1,6 @@
 import asyncio
-import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
-
-import pytest
 
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import (
@@ -290,7 +287,7 @@ def test_run_turn_yields_runner_messages_and_completes():
     assert saved.status is TurnStatus.completed
 
 
-def test_run_turn_stops_when_the_turn_is_cancelled():
+def test_run_turn_keeps_produced_messages_when_the_turn_is_cancelled():
     class _StopBeforeSecond:
         def __init__(self, turn_store: InMemoryTurnStore, turn: Turn) -> None:
             self._turn_store = turn_store
@@ -341,68 +338,12 @@ def test_run_turn_stops_when_the_turn_is_cancelled():
         return events, stored, saved
 
     events, stored, saved = asyncio.run(exercise())
-    assert [event.text for event in events if isinstance(event, MarkdownMessage)] == ["one"]
-    assert [message.text for message in stored] == ["hello", "one"]
+    assert [event.text for event in events if isinstance(event, MarkdownMessage)] == [
+        "one",
+        "two",
+    ]
+    assert [message.text for message in stored] == ["hello", "one", "two"]
     assert saved is not None and saved.status is TurnStatus.cancelled
-
-
-def test_run_turn_logs_the_cancellation_error(caplog: pytest.LogCaptureFixture):
-    class _CancelOnClose:
-        def __init__(self, turn_store: InMemoryTurnStore, turn: Turn) -> None:
-            self._turn_store = turn_store
-            self._turn = turn
-
-        async def stream(self, inputs: list[str], context: RunContext):
-            return _CancellableStream(self._events(inputs, context))
-
-        async def _events(self, inputs: list[str], context: RunContext):
-            del inputs, context
-            try:
-                created = datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc)
-                yield MarkdownMessage(
-                    message_id="m_one",
-                    conversation_id="1",
-                    user_uuid="user-1",
-                    role=Role.agent,
-                    text="one",
-                    created_timestamp=created,
-                )
-                await self._turn_store.put_turn(
-                    self._turn.model_copy(update={"status": TurnStatus.cancelled}),
-                )
-                yield MarkdownMessage(
-                    message_id="m_two",
-                    conversation_id="1",
-                    user_uuid="user-1",
-                    role=Role.agent,
-                    text="two",
-                    created_timestamp=created,
-                )
-            finally:
-                raise asyncio.CancelledError()
-
-    async def exercise():
-        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
-        turn_store = InMemoryTurnStore()
-        message, turn = _user_turn()
-        service = ChatService(
-            _CancelOnClose(turn_store, turn),
-            store,
-            turn_store,
-            _ChainStore(),
-            _FixedClock(),
-        )
-        await store.append("1", message)
-        await turn_store.put_turn(turn)
-        events = [event async for event in service.run_turn(turn, message.text)]
-        saved = await turn_store.get_turn(turn.turn_id)
-        return events, saved
-
-    with caplog.at_level(logging.ERROR, logger="agents"):
-        events, saved = asyncio.run(exercise())
-    assert [event.text for event in events if isinstance(event, MarkdownMessage)] == ["one"]
-    assert saved is not None and saved.status is TurnStatus.cancelled
-    assert "turn stream cancelled" in caplog.text
 
 
 def test_run_turn_skips_heartbeats_and_other_roles():
@@ -562,3 +503,82 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
         ("chat_service", "1", {"turn_id": turn.turn_id}),
     ]
     assert flushed_while_open == [False]
+
+
+def test_run_turn_cancels_the_stream_before_the_next_yield():
+    class _Blocked:
+        def __init__(self) -> None:
+            self.cancel_calls = 0
+            self.yielded = False
+            self.first_cancel_before_yield = False
+            self.started = asyncio.Event()
+            self._release = asyncio.Event()
+
+        async def stream(self, inputs: list[str], context: RunContext):
+            del inputs, context
+            return self
+
+        def cancel(self) -> None:
+            if self.cancel_calls == 0:
+                self.first_cancel_before_yield = not self.yielded
+            self.cancel_calls += 1
+            self._release.set()
+
+        def __aiter__(self) -> AsyncIterator[Message]:
+            return self._read()
+
+        async def _read(self) -> AsyncIterator[Message]:
+            self.started.set()
+            await self._release.wait()
+            self.yielded = True
+            created = datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc)
+            yield MarkdownMessage(
+                message_id="m_late",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.agent,
+                text="late",
+                created_timestamp=created,
+            )
+
+        async def aclose(self) -> None:
+            return
+
+    async def exercise():
+        runner = _Blocked()
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        turn_store = InMemoryTurnStore()
+        message, turn = _user_turn()
+        service = ChatService(
+            runner,
+            store,
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        await store.append("1", message)
+        await turn_store.put_turn(turn)
+
+        async def mark_cancelled() -> None:
+            await runner.started.wait()
+            await turn_store.put_turn(
+                turn.model_copy(update={"status": TurnStatus.cancelled}),
+            )
+
+        marker = asyncio.create_task(mark_cancelled())
+        events = await asyncio.wait_for(
+            _collect(service.run_turn(turn, message.text)),
+            2,
+        )
+        await marker
+        saved = await turn_store.get_turn(turn.turn_id)
+        return events, runner, saved
+
+    async def _collect(source: AsyncIterator[Message]) -> list[Message]:
+        return [event async for event in source]
+
+    events, runner, saved = asyncio.run(exercise())
+    assert [event.text for event in events if isinstance(event, MarkdownMessage)] == ["late"]
+    assert runner.first_cancel_before_yield is True
+    assert runner.cancel_calls >= 1
+    assert saved is not None and saved.status is TurnStatus.cancelled
