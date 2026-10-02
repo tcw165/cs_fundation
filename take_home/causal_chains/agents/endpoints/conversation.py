@@ -48,6 +48,7 @@ from take_home.causal_chains.agents.observability.logging import (
 router = APIRouter()
 
 _WATCH_TURN_POLL_INTERVAL_S = 0.3
+_TAIL_MESSAGES_POLL_INTERVAL_S = 0.5
 _HEARTBEAT_INTERVAL_S = 3.0
 
 _TURN_ENDED_STATUS = {TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled}
@@ -161,7 +162,7 @@ async def _poll_messages(
                 continue
             if stop.is_set():
                 return
-            await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
+            await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
     finally:
         await send.aclose()
 
