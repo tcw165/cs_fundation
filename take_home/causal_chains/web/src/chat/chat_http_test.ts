@@ -132,13 +132,13 @@ describe("create_chat_http", () => {
     const page = await create_chat_http("http://agents:8000").list_messages({
       conversation_id: "1",
       limit: 20,
-      start_message: "MSG#0",
+      after_message: "MSG#0",
       abort_signal,
     });
     expect(page.next_cursor).toBe("MSG#1");
     expect(page.messages[0]).toMatchObject({ message_id: "m_1", text: "earlier" });
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/messages?limit=20&start_message=MSG%230",
+      "http://agents:8000/conversation/1/messages?limit=20&after_message=MSG%230",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();

@@ -22,12 +22,12 @@ export function create_chat_http(api_url: string): ChatPort {
       }
       return (await response.json()) as PostMessageResponse;
     },
-    list_messages: ({ conversation_id, limit, start_message, abort_signal }) => {
+    list_messages: ({ conversation_id, limit, after_message, abort_signal }) => {
       return read_message_page(
         api_url,
         conversation_id,
         limit,
-        start_message,
+        after_message,
         abort_signal,
       );
     },
@@ -47,12 +47,12 @@ async function read_message_page(
   api_url: string,
   conversation_id: string,
   limit: number,
-  start_message: string | undefined,
+  after_message: string | undefined,
   abort_signal?: AbortSignal,
 ): Promise<MessagePage> {
   const params = new URLSearchParams({ limit: String(limit) });
-  if (start_message !== undefined) {
-    params.set("start_message", start_message);
+  if (after_message !== undefined) {
+    params.set("after_message", after_message);
   }
   const response = await fetch(
     `${api_url}/conversation/${conversation_id}/messages?${params}`,
