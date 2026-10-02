@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
 import pytest
@@ -14,6 +15,7 @@ from take_home.causal_chains.agents.chat_service.chat_service import (
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
+    Message,
     Role,
 )
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
@@ -33,6 +35,22 @@ from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurn
 class _FixedClock:
     def now(self) -> datetime:
         return datetime(2026, 9, 29, 5, 16, tzinfo=timezone.utc)
+
+
+class _CancellableStream:
+    def __init__(self, source: AsyncIterator[Message]) -> None:
+        self._source = source
+
+    def cancel(self) -> None:
+        return
+
+    def __aiter__(self) -> AsyncIterator[Message]:
+        return self._source
+
+    async def aclose(self) -> None:
+        aclose = getattr(self._source, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
 
 def test_stores_user_and_agent_messages_only():
@@ -279,6 +297,9 @@ def test_run_turn_stops_when_the_turn_is_cancelled():
             self._turn = turn
 
         async def stream(self, inputs: list[str], context: RunContext):
+            return _CancellableStream(self._events(inputs, context))
+
+        async def _events(self, inputs: list[str], context: RunContext):
             del inputs, context
             created = datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc)
             yield MarkdownMessage(
@@ -332,6 +353,9 @@ def test_run_turn_logs_the_cancellation_error(caplog: pytest.LogCaptureFixture):
             self._turn = turn
 
         async def stream(self, inputs: list[str], context: RunContext):
+            return _CancellableStream(self._events(inputs, context))
+
+        async def _events(self, inputs: list[str], context: RunContext):
             del inputs, context
             try:
                 created = datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc)
@@ -384,6 +408,9 @@ def test_run_turn_logs_the_cancellation_error(caplog: pytest.LogCaptureFixture):
 def test_run_turn_skips_heartbeats_and_other_roles():
     class _Mixed:
         async def stream(self, inputs: list[str], context: RunContext):
+            return _CancellableStream(self._events(inputs, context))
+
+        async def _events(self, inputs: list[str], context: RunContext):
             del inputs, context
             yield HeartbeatMessage()
             yield DeeplinkCardMessage(
@@ -450,6 +477,9 @@ def test_run_turn_builds_run_clients():
             self.contexts: list[RunContext] = []
 
         async def stream(self, inputs: list[str], context: RunContext):
+            return _CancellableStream(self._events(inputs, context))
+
+        async def _events(self, inputs: list[str], context: RunContext):
             self.contexts.append(context)
             if False:
                 yield MarkdownMessage(

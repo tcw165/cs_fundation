@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 
+from collections.abc import AsyncIterator
+
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
-from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage, Role
+from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage, Message, Role
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -13,6 +15,18 @@ class _FixedClock:
 
 class _WithStream:
     async def stream(self, inputs: list[str], context: RunContext):
+        del inputs, context
+        return _CancellableStream()
+
+
+class _CancellableStream:
+    def cancel(self) -> None:
+        return
+
+    def __aiter__(self) -> AsyncIterator[Message]:
+        return self._read()
+
+    async def _read(self) -> AsyncIterator[Message]:
         if False:
             yield MarkdownMessage(
                 message_id="m_1",

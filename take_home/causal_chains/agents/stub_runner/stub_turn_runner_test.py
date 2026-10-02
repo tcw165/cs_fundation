@@ -26,7 +26,7 @@ def test_stub_turn_runner_stream_yields_one_markdown_message():
             turn_id="t_1",
             clients=RunClients(causal_chain_store=object()),
         )
-        return [event async for event in runner.stream(["hello"], context)]
+        return [event async for event in await runner.stream(["hello"], context)]
 
     events = asyncio.run(collect())
     assert len(events) == 1

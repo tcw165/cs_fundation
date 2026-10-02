@@ -89,7 +89,7 @@ class ChatService:
                     group_id=turn.conversation_id,
                     metadata={"turn_id": turn.turn_id},
                 ):
-                    stream = self._agent_runner.stream([text], context)
+                    stream = await self._agent_runner.stream([text], context)
                     async for message in stream:
                         if await _turn_is_ended(self._turn_store, turn.turn_id):
                             await _close_stream(stream)
