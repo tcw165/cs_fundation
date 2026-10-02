@@ -29,10 +29,17 @@ class InMemoryTurnStore(TurnStore):
         self,
         conversation_id: str,
     ) -> Turn | None:
-        for turn in self._turns.values():
-            if turn.conversation_id == conversation_id:
+        matched = [
+            turn
+            for turn in self._turns.values()
+            if turn.conversation_id == conversation_id
+        ]
+        for turn in matched:
+            if not turn.status.is_ended():
                 return turn
-        return None
+        if len(matched) == 0:
+            return None
+        return matched[0]
 
     @override
     async def delete_turn(

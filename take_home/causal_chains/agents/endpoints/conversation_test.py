@@ -21,6 +21,7 @@ from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
     Role,
 )
+from take_home.causal_chains.agents.models.turn.turn import Turn
 from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
@@ -234,8 +235,56 @@ def test_post_message_accepts_another_turn_after_the_first_finishes():
         return saved, second
 
     saved, second = asyncio.run(exercise())
-    assert saved is None
+    assert saved is not None and saved.status is TurnStatus.completed
     assert second.received_message.text == "second"
+
+
+@pytest.mark.parametrize(
+    "status",
+    [TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled],
+)
+def test_post_message_accepts_a_turn_when_the_stored_one_has_ended(status: TurnStatus):
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        await turn_store.put_turn(
+            Turn(
+                turn_id="t_old",
+                conversation_id="1",
+                status=status,
+                from_message="m_old",
+            ),
+        )
+        return await post_message(
+            "1",
+            PostMessageBody(text="next"),
+            container,
+            BackgroundTasks(),
+        )
+
+    posted = asyncio.run(exercise())
+    assert posted.received_message.text == "next"
+
+
+def test_post_message_rejects_a_running_turn_beside_a_finished_one():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        tasks = BackgroundTasks()
+        first = await post_message("1", PostMessageBody(text="first"), container, tasks)
+        await tasks()
+        await turn_store.put_turn(
+            Turn(
+                turn_id="t_open",
+                conversation_id="1",
+                status=TurnStatus.running,
+                from_message=first.turn.from_message,
+            ),
+        )
+        await post_message("1", PostMessageBody(text="second"), container, BackgroundTasks())
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 409
+    assert raised.value.detail == "conversation already has a turn"
 
 
 def test_post_message_rejects_a_second_turn():
@@ -434,9 +483,9 @@ def test_sse_streams_one_snapshot_per_emission():
             posted.turn.from_message,
             posted.received_message.created_timestamp,
         )
-        return everything, replay, runner, completed
+        return everything, replay, runner
 
-    everything, replay, runner, completed = asyncio.run(exercise())
+    everything, replay, runner = asyncio.run(exercise())
     snapshots = _snapshots(everything)
     assert [snapshot.messages[0].text for snapshot in snapshots] == ["one", "two"]
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
@@ -446,7 +495,7 @@ def test_sse_streams_one_snapshot_per_emission():
     )
     assert snapshots[0].user_interaction_state.thinking_state is None
     assert snapshots[0].turn is not None
-    assert snapshots[0].turn.processing == [completed]
+    assert snapshots[0].turn.processing == []
     assert snapshots[0].turn.queued == []
     assert runner.calls == 0
     assert [snapshot.messages[0].text for snapshot in _snapshots(replay)] == ["one", "two"]

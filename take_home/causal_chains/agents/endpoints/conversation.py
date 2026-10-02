@@ -51,8 +51,6 @@ _WATCH_TURN_POLL_INTERVAL_S = 0.3
 _TAIL_MESSAGES_POLL_INTERVAL_S = 0.5
 _HEARTBEAT_INTERVAL_S = 3.0
 
-_TURN_ENDED_STATUS = {TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled}
-
 
 @router.post(
     "/conversation/{conversation_id}/messages",
@@ -68,8 +66,8 @@ async def post_message(
     turn_store = container.turn_store()
     messaging_store = container.messaging_store()
 
-    existing = await turn_store.get_turn_by_conversation(conversation_id)
-    if existing is not None:
+    existing_turn = await turn_store.get_turn_by_conversation(conversation_id)
+    if existing_turn is not None and not existing_turn.status.is_ended():
         raise HTTPException(status_code=409, detail="conversation already has a turn")
 
     async def _run_turn() -> None:
@@ -190,14 +188,23 @@ async def turn_sse(
                 )
                 async with receive:
                     async for message in receive:
+                        current_turn = await turn_store.get_turn(turn_id)
                         yield format_conversation_sse(
-                            _snapshot(conversation_id, turn, message),
+                            conversation_id=conversation_id,
+                            turn=current_turn,
+                            message=message,
                         )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
+def format_conversation_sse(
+    conversation_id: str,
+    turn: Turn | None,
+    message: Message,
+) -> str:
+    nullable_turn = turn if turn is not None and not turn.status.is_ended() else None
+    snapshot = _snapshot(conversation_id, nullable_turn, message)
     return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
 
 
@@ -209,7 +216,7 @@ async def _watch_turn(
     try:
         while True:
             current = await turn_store.get_turn(turn_id)
-            if current is None or current.status in _TURN_ENDED_STATUS:
+            if current is None or current.status.is_ended():
                 return
             await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
     finally:
@@ -284,7 +291,7 @@ async def _require(
 
 def _snapshot(
     conversation_id: str,
-    turn: Turn,
+    turn: Turn | None,
     message: Message,
 ) -> ConversationMessagesResponse:
     return ConversationMessagesResponse(
@@ -293,5 +300,8 @@ def _snapshot(
         user_interaction_state=UserInteractionState(
             text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,
         ),
-        turn=TurnDescriptor(processing=[turn], queued=[]),
+        turn=TurnDescriptor(
+            processing=[] if turn is None else [turn],
+            queued=[],
+        ),
     )
