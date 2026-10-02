@@ -10,7 +10,7 @@ export function create_chat_http(api_url: string): ChatPort {
   return {
     post_message: async ({ conversation_id, text, abort_signal }) => {
       const response = await fetch(
-        `${api_url}/conversation/${conversation_id}/messages`,
+        `${api_url}/api/v1/conversation/${conversation_id}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -41,7 +41,7 @@ export function create_chat_http(api_url: string): ChatPort {
     },
     stop_turn: async ({ conversation_id, turn_id }) => {
       const response = await fetch(
-        `${api_url}/conversation/${conversation_id}/turn/${turn_id}/stop`,
+        `${api_url}/api/v1/conversation/${conversation_id}/turn/${turn_id}/stop`,
         { method: "POST" },
       );
       if (!response.ok) {
@@ -84,7 +84,7 @@ async function read_message_page(
     params.set("after_message_timestamp", after_message_timestamp);
   }
   const response = await fetch(
-    `${api_url}/conversation/${conversation_id}/messages?${params}`,
+    `${api_url}/api/v1/conversation/${conversation_id}/messages?${params}`,
     { signal: abort_signal },
   );
   if (!response.ok) {
@@ -109,7 +109,7 @@ async function* read_turn_sse(
     params.set("after_message_timestamp", after_message_timestamp);
   }
   const response = await fetch(
-    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${params}`,
+    `${api_url}/api/v1/conversation/${conversation_id}/turn/${turn_id}/sse?${params}`,
     { signal: abort_signal },
   );
   if (!response.ok || response.body === null) {

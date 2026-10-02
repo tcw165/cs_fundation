@@ -45,7 +45,7 @@ from take_home.causal_chains.agents.observability.logging import (
     logger,
 )
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1")
 
 _WATCH_TURN_POLL_INTERVAL_S = 0.3
 _TAIL_MESSAGES_POLL_INTERVAL_S = 0.5

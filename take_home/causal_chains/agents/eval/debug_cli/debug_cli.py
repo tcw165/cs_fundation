@@ -9,7 +9,7 @@ def post_and_read(
     client: httpx.Client,
 ) -> None:
     created = client.post(
-        f"{base_url}/conversation/{conversation_id}/messages",
+        f"{base_url}/api/v1/conversation/{conversation_id}/messages",
         json={"text": query},
     )
     created.raise_for_status()
@@ -17,7 +17,7 @@ def post_and_read(
     turn_id = body["turn"]["turn_id"]
     with client.stream(
         "GET",
-        f"{base_url}/conversation/{conversation_id}/turn/{turn_id}/sse",
+        f"{base_url}/api/v1/conversation/{conversation_id}/turn/{turn_id}/sse",
         params={
             "include_traces": True,
             "after_message": body["turn"]["from_message"],

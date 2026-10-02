@@ -4,7 +4,7 @@ from take_home.causal_chains.agents.di.deps import AppContainerDep
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.observability.logging import bind_logger, logger
 
-router = APIRouter()
+router = APIRouter(prefix="/api/v1")
 
 
 @router.get("/causal_chains", response_model=list[CausalChain])

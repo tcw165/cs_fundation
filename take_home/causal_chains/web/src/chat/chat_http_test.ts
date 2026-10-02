@@ -76,7 +76,7 @@ describe("create_chat_http", () => {
       text: "hello",
     });
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/messages",
+      "http://agents:8000/api/v1/conversation/1/messages",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,7 +106,7 @@ describe("create_chat_http", () => {
       ]),
     ]);
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/turn/t_8f3a/sse?after_message=m_user&after_message_timestamp=2026-09-30T00%3A00%3A00%2B00%3A00",
+      "http://agents:8000/api/v1/conversation/1/turn/t_8f3a/sse?after_message=m_user&after_message_timestamp=2026-09-30T00%3A00%3A00%2B00%3A00",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();
@@ -140,7 +140,7 @@ describe("create_chat_http", () => {
     expect(page.next_cursor).toBe("MSG#1");
     expect(page.messages[0]).toMatchObject({ message_id: "m_1", text: "earlier" });
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/messages?limit=20&after_message=MSG%230&after_message_timestamp=2026-09-30T00%3A00%3A00%2B00%3A00",
+      "http://agents:8000/api/v1/conversation/1/messages?limit=20&after_message=MSG%230&after_message_timestamp=2026-09-30T00%3A00%3A00%2B00%3A00",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();
@@ -163,7 +163,7 @@ describe("create_chat_http", () => {
     });
     expect(stopped.status).toBe("cancelled");
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/turn/t_8f3a/stop",
+      "http://agents:8000/api/v1/conversation/1/turn/t_8f3a/stop",
       { method: "POST" },
     );
     vi.unstubAllGlobals();
