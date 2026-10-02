@@ -7,7 +7,7 @@ py_library(
     imports = ["../../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
-        "//take_home/causal_chains/agents/models/messaging/turn",
+        "//take_home/causal_chains/agents/models/turn",
     ],
 )
 
@@ -18,6 +18,6 @@ pytest_test(
     deps = [
         ":protocol",
         "//take_home/causal_chains/agents/models/messaging",
-        "//take_home/causal_chains/agents/models/messaging/turn",
+        "//take_home/causal_chains/agents/models/turn",
     ],
 )

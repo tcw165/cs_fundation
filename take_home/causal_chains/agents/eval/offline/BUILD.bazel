@@ -15,7 +15,7 @@ py_binary(
         "//take_home/causal_chains/agents/eval/offline/di",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
-        "//take_home/causal_chains/agents/models/messaging/turn",
+        "//take_home/causal_chains/agents/models/turn",
         "//take_home/causal_chains/agents/stores/causal_chain_store",
         requirement("braintrust"),
         requirement("click"),

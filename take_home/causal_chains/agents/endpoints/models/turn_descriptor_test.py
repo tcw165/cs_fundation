@@ -1,8 +1,8 @@
 from take_home.causal_chains.agents.endpoints.models.turn_descriptor import (
     TurnDescriptor,
 )
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 
 
 def test_turn_descriptor_accepts_empty_lists_and_round_trips():

@@ -2,8 +2,8 @@ import asyncio
 import time
 
 from take_home.causal_chains.agents.stores.turn_store.ddb_turn_store import DdbTurnStore
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 
 
 class _FakeDynamoDb:

@@ -27,8 +27,8 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Message,
     Role,
 )
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from anyio.streams.memory import MemoryObjectSendStream
 
 from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
