@@ -87,6 +87,7 @@ def test_post_message_and_sse_with_stub_runner():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.config.user_uuid.from_value("user-1")
+    container.causal_chain_store.override(providers.Object(object()))
     _override_dynamo_db(container)
     client = TestClient(create_app(container))
     created = client.post("/conversation/1/messages", json={"text": "hello"})
@@ -95,12 +96,14 @@ def test_post_message_and_sse_with_stub_runner():
     assert body["turn"]["status"] == "queued"
     assert body["received_message"]["text"] == "hello"
     turn_id = body["turn"]["turn_id"]
-    stream = client.get(f"/conversation/1/turn/{turn_id}/sse")
+    stream = client.get(
+        f"/conversation/1/turn/{turn_id}/sse",
+        params={"after_message": body["turn"]["from_message"]},
+    )
     assert stream.status_code == 200
-    assert "event: conversation_messages" in stream.text
+    assert stream.text == ""
     stored = asyncio.run(container.messaging_store().list_messages("1", 20)).messages
-    assert len(stored) == 1
-    assert stored[0].text == "hello"
+    assert {message.text for message in stored} == {"hello", "echo: hello"}
 
 
 def test_get_causal_chains_returns_the_stored_chains():

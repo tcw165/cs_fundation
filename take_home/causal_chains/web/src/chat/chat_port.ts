@@ -41,6 +41,7 @@ export type PostMessageReq = {
 export type SubscribeReq = {
   conversation_id: string;
   turn_id: string;
+  after_message: string;
   abort_signal?: AbortSignal;
 };
 

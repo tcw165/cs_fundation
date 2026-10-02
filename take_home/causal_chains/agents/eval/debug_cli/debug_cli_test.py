@@ -91,6 +91,7 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.config.user_uuid.from_value("user-1")
+    container.causal_chain_store.override(providers.Object(object()))
     container.clients.dynamo_db.override(providers.Object(_FakeDynamoDb()))
     transport = _SyncAsgiTransport(create_app(container))
     original_client = httpx.Client
@@ -107,14 +108,16 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
         ["--query", "hello"],
     )
     assert result.exit_code == 0
-    assert "event: markdown" in result.output
+    assert "received user message" in result.output
+    assert "queued turn" in result.output
+    assert "streamed message kind=markdown" in result.output
     sse_requests = [
         request
         for request in transport.requests
         if request.url.path.endswith("/sse")
     ]
     assert sse_requests[-1].url.params["include_traces"] == "true"
-    assert "after_message" not in sse_requests[-1].url.params
+    assert sse_requests[-1].url.params["after_message"]
 
 
 def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):

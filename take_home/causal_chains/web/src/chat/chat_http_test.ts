@@ -88,6 +88,7 @@ describe("create_chat_http", () => {
     for await (const event of chat_port.subscribe_turn({
       conversation_id: "1",
       turn_id: posted.turn.turn_id,
+      after_message: posted.turn.from_message,
       abort_signal,
     })) {
       events.push(event);
@@ -104,7 +105,7 @@ describe("create_chat_http", () => {
       ]),
     ]);
     expect(fetch_mock).toHaveBeenCalledWith(
-      "http://agents:8000/conversation/1/turn/t_8f3a/sse",
+      "http://agents:8000/conversation/1/turn/t_8f3a/sse?after_message=m_user",
       { signal: abort_signal },
     );
     vi.unstubAllGlobals();

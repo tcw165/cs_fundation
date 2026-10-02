@@ -31,8 +31,14 @@ export function create_chat_http(api_url: string): ChatPort {
         abort_signal,
       );
     },
-    subscribe_turn: ({ conversation_id, turn_id, abort_signal }) => {
-      return read_turn_sse(api_url, conversation_id, turn_id, abort_signal);
+    subscribe_turn: ({ conversation_id, turn_id, after_message, abort_signal }) => {
+      return read_turn_sse(
+        api_url,
+        conversation_id,
+        turn_id,
+        after_message,
+        abort_signal,
+      );
     },
   };
 }
@@ -62,10 +68,12 @@ async function* read_turn_sse(
   api_url: string,
   conversation_id: string,
   turn_id: string,
+  after_message: string,
   abort_signal?: AbortSignal,
 ): AsyncGenerator<ConversationMessagesResponse> {
+  const params = new URLSearchParams({ after_message });
   const response = await fetch(
-    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse`,
+    `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${params}`,
     { signal: abort_signal },
   );
   if (!response.ok || response.body === null) {
