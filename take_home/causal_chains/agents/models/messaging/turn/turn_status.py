@@ -6,3 +6,4 @@ class TurnStatus(StrEnum):
     running = "running"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
