@@ -111,6 +111,7 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
     assert "received user message" in result.output
     assert "queued turn" in result.output
     assert "streamed message kind=markdown" in result.output
+    assert "echo: hello" in result.output
     sse_requests = [
         request
         for request in transport.requests

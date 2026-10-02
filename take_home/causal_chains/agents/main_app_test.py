@@ -101,7 +101,8 @@ def test_post_message_and_sse_with_stub_runner():
         params={"after_message": body["turn"]["from_message"]},
     )
     assert stream.status_code == 200
-    assert stream.text == ""
+    assert "echo: hello" in stream.text
+    assert "event: conversation_messages" in stream.text
     stored = asyncio.run(container.messaging_store().list_messages("1", 20)).messages
     assert {message.text for message in stored} == {"hello", "echo: hello"}
 
