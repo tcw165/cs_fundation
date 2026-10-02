@@ -9,7 +9,7 @@ from take_home.causal_chains.agents.observability.logging import (
 def test_logger_is_unbound_until_a_session_is_bound():
     unbound = logger()
     assert unbound.extra == {}
-    assert unbound.logger.name == "causal_chains"
+    assert unbound.logger.name == "agents"
 
 
 def test_bind_session_logger_sets_extra_and_resets():
