@@ -1,7 +1,6 @@
-from collections.abc import AsyncGenerator
 from typing import Protocol, runtime_checkable
 
-from take_home.causal_chains.agents.models.messaging.message import Message
+from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -11,5 +10,5 @@ class AgentRunner(Protocol):
         self,
         inputs: list[str],
         context: RunContext,
-    ) -> AsyncGenerator[Message]:
+    ) -> AgentStream:
         ...

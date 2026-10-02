@@ -1,16 +1,25 @@
 import json
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
 from datetime import datetime, timezone
 from functools import partial
 from typing import override
+
 import anyio
-from agents import InputGuardrailTripwireTriggered, RunConfig, Runner, trace
-from agents.run_config import CallModelData, ModelInputData
 from anyio.streams.memory import MemoryObjectSendStream
+
+from agents import (
+    InputGuardrailTripwireTriggered,
+    RunConfig,
+    RunResultStreaming,
+    Runner,
+    trace,
+)
+from agents.run_config import CallModelData, ModelInputData
 from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
+from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
 )
@@ -199,156 +208,179 @@ class AppAgentRunner(AgentRunner):
         self._api_key = api_key
         self._memcache = memcache
 
+    def _stream_agent_run(
+        self,
+        inputs: list[str],
+        context: RunContext,
+    ) -> RunResultStreaming:
+        user_ask = "\n".join(inputs)
+        logger().info(
+            "agent run start "
+            f"conversation_id={context.conversation_id} "
+            f"turn_id={context.turn_id} "
+            f"ask_len={len(user_ask)}",
+        )
+        return Runner.run_streamed(
+            causal_chain,
+            input=user_ask,
+            context=context,
+            max_turns=context.run_config.causal_chain_max_steps,
+            run_config=RunConfig(
+                call_model_input_filter=_decorate_tail_messages,
+            ),
+        )
+
     @override
     async def stream(
         self,
         inputs: list[str],
         context: RunContext,
-    ) -> AsyncGenerator[Message]:
-        results: list[object] = []
-        send, receive = anyio.create_memory_object_stream[Message]()
-        stop = anyio.Event()
-        try:
-            async with anyio.create_task_group() as group:
-                group.start_soon(
-                    partial(
-                        self._stream_agent_run,
-                        inputs=inputs,
-                        context=context,
-                        send=send.clone(),
-                        stop=stop,
-                        results=results,
-                    ),
-                )
-                await send.aclose()
-                async with receive:
-                    async for message in receive:
-                        yield message
-        finally:
-            for result in results:
-                cancel = getattr(result, "cancel", None)
-                if cancel is not None:
-                    cancel()
+    ) -> AgentStream:
+        runner = self
 
-    async def _stream_agent_run(
+        class AppAgentStream(AgentStream):
+            def __init__(self) -> None:
+                self._run_result: RunResultStreaming | None = None
+                self._generator: AsyncGenerator[Message, None] | None = None
+
+            def cancel(self) -> None:
+                logger().info(f"agent run cancel turn_id={context.turn_id}")
+                if self._run_result is not None:
+                    self._run_result.cancel()
+
+            def __aiter__(self) -> AsyncIterator[Message]:
+                self._generator = self._read()
+                return self._generator
+
+            async def aclose(self) -> None:
+                self.cancel()
+                if self._generator is not None:
+                    await self._generator.aclose()
+
+            async def _read(self) -> AsyncGenerator[Message, None]:
+                with trace(
+                    "app_agent_runner",
+                    group_id=context.conversation_id,
+                    metadata={"turn_id": context.turn_id},
+                ):
+                    self._run_result = runner._stream_agent_run(inputs, context)
+
+                # Now translate the RunResultStreaming into a stream of Messages.
+                send, receive = anyio.create_memory_object_stream[Message]()
+                async with anyio.create_task_group() as group:
+                    group.start_soon(
+                        partial(
+                            runner._stream_messages,
+                            self._run_result,
+                            context,
+                            send.clone(),
+                        ),
+                    )
+                    await send.aclose()
+                    async with receive:
+                        async for message in receive:
+                            yield message
+
+        return AppAgentStream()
+
+    async def _stream_messages(
         self,
-        inputs: list[str],
+        run_result: RunResultStreaming,
         context: RunContext,
         send: MemoryObjectSendStream[Message],
-        stop: anyio.Event,
-        results: list[object],
     ) -> None:
         try:
-            with trace(
-                "app_agent_runner",
-                group_id=context.conversation_id,
-                metadata={"turn_id": context.turn_id},
-            ):
-                user_ask = "\n".join(inputs)
-                logger().info(
-                    f"agent run start turn_id={context.turn_id} ask_len={len(user_ask)}",
-                )
-                result = Runner.run_streamed(
-                    causal_chain,
-                    input=user_ask,
-                    context=context,
-                    max_turns=context.run_config.causal_chain_max_steps,
-                    run_config=RunConfig(
-                        call_model_input_filter=_decorate_tail_messages,
-                    ),
-                )
-                results.append(result)
-                # Call id to tool name for this turn. The output event only has the id.
-                tool_names: dict[str, str] = {}
-                render_later: dict[str, bool] = {}
-                # Messages held until the story is finished, then sent in order.
-                tail_messages: list[Message] = []
-                seen_links: set[str] = set()
-                buffer = ""
-                async for event in result.stream_events():
-                    event_type = getattr(event, "type", "")
-                    if event_type == "raw_response_event":
-                        data = getattr(event, "data", None)
-                        if isinstance(data, ResponseTextDeltaEvent):
-                            buffer += data.delta
-                            buffer = await _emit_paragraphs(
-                                send,
-                                buffer,
+            # Call id to tool name for this turn. The output event only has the id.
+            tool_names: dict[str, str] = {}
+            render_later: dict[str, bool] = {}
+            # Messages held until the story is finished, then sent in order.
+            tail_messages: list[Message] = []
+            seen_links: set[str] = set()
+            buffer = ""
+            async for event in run_result.stream_events():
+                event_type = getattr(event, "type", "")
+                if event_type == "raw_response_event":
+                    data = getattr(event, "data", None)
+                    if isinstance(data, ResponseTextDeltaEvent):
+                        buffer += data.delta
+                        buffer = await _emit_paragraphs(
+                            send,
+                            buffer,
+                            context.conversation_id,
+                            rest=False,
+                        )
+                    continue
+                item = getattr(event, "item", None)
+                if (
+                    event_type == "run_item_stream_event"
+                    and getattr(item, "type", "") == "tool_call_item"
+                ):
+                    buffer = await _emit_paragraphs(
+                        send,
+                        buffer,
+                        context.conversation_id,
+                        rest=True,
+                    )
+                    tool_name = _tool_call_name(item)
+                    call_id = _tool_call_id(item)
+                    logger().info(f"tool call {tool_name}")
+                    if call_id is not None:
+                        tool_names[call_id] = tool_name
+                        if tool_names[call_id] == "show_deeplink_widget":
+                            render_later[call_id] = _render_at_end(item)
+                    continue
+                if (
+                    event_type == "run_item_stream_event"
+                    and getattr(item, "type", "") == "tool_call_output_item"
+                ):
+                    call_id = _tool_call_id(item) or ""
+                    tool_name = tool_names.get(call_id)
+                    if tool_name not in _WIDGET_TOOLS:
+                        continue
+                    buffer = await _emit_paragraphs(
+                        send,
+                        buffer,
+                        context.conversation_id,
+                        rest=True,
+                    )
+                    output = getattr(item, "output", None)
+                    cards = (
+                        _cards_from_finder_output(output)
+                        if tool_name == "deeplinks_finder"
+                        else [_card_from_output(output)]
+                    )
+                    hold = (
+                        tool_name == "deeplinks_finder"
+                        or render_later.get(call_id, True)
+                    )
+                    for card in cards:
+                        if hold:
+                            _queue_deeplink(
+                                tail_messages,
+                                seen_links,
+                                card,
                                 context.conversation_id,
-                                rest=False,
                             )
-                        continue
-                    item = getattr(event, "item", None)
-                    if (
-                        event_type == "run_item_stream_event"
-                        and getattr(item, "type", "") == "tool_call_item"
-                    ):
-                        buffer = await _emit_paragraphs(
-                            send,
-                            buffer,
-                            context.conversation_id,
-                            rest=True,
-                        )
-                        tool_name = _tool_call_name(item)
-                        call_id = _tool_call_id(item)
-                        logger().info(f"tool call {tool_name}")
-                        if call_id is not None:
-                            tool_names[call_id] = tool_name
-                            if tool_names[call_id] == "show_deeplink_widget":
-                                render_later[call_id] = _render_at_end(item)
-                        continue
-                    if (
-                        event_type == "run_item_stream_event"
-                        and getattr(item, "type", "") == "tool_call_output_item"
-                    ):
-                        call_id = _tool_call_id(item) or ""
-                        tool_name = tool_names.get(call_id)
-                        if tool_name not in _WIDGET_TOOLS:
                             continue
-                        buffer = await _emit_paragraphs(
-                            send,
-                            buffer,
-                            context.conversation_id,
-                            rest=True,
-                        )
-                        output = getattr(item, "output", None)
-                        cards = (
-                            _cards_from_finder_output(output)
-                            if tool_name == "deeplinks_finder"
-                            else [_card_from_output(output)]
-                        )
-                        hold = (
-                            tool_name == "deeplinks_finder"
-                            or render_later.get(call_id, True)
-                        )
-                        for card in cards:
-                            if hold:
-                                _queue_deeplink(
-                                    tail_messages,
-                                    seen_links,
-                                    card,
-                                    context.conversation_id,
-                                )
-                                continue
-                            message = deeplink_message(card, context.conversation_id)
-                            if message.link in seen_links:
-                                continue
-                            seen_links.add(message.link)
-                            logger().info("deeplink sent")
-                            await send.send(message)
-                tail = buffer.strip()
-                buffer = await _emit_paragraphs(
-                    send,
-                    buffer,
-                    context.conversation_id,
-                    rest=True,
-                )
-                logger().info(
-                    f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
-                )
-                for message in tail_messages:
-                    await send.send(message)
-                self._memcache.flush()
+                        message = deeplink_message(card, context.conversation_id)
+                        if message.link in seen_links:
+                            continue
+                        seen_links.add(message.link)
+                        logger().info("deeplink sent")
+                        await send.send(message)
+            tail = buffer.strip()
+            buffer = await _emit_paragraphs(
+                send,
+                buffer,
+                context.conversation_id,
+                rest=True,
+            )
+            logger().info(
+                f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
+            )
+            for message in tail_messages:
+                await send.send(message)
+            self._memcache.flush()
         except InputGuardrailTripwireTriggered:
             logger().info("input guardrail triggered")
             self._memcache.flush()
@@ -357,5 +389,4 @@ class AppAgentRunner(AgentRunner):
             logger().exception("agent run failed")
             raise
         finally:
-            stop.set()
             await send.aclose()

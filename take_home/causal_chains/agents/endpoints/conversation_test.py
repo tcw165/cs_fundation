@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
 import anyio
@@ -20,6 +21,7 @@ from take_home.causal_chains.agents.endpoints.models.conversation_messages_respo
 from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
+    Message,
     Role,
 )
 from take_home.causal_chains.agents.models.turn.turn import Turn
@@ -106,6 +108,10 @@ class _Scripted:
         self.contexts: list[RunContext] = []
 
     async def stream(self, inputs: list[str], context: RunContext):
+        return _CancellableStream(self._events(inputs, context))
+
+    async def _events(self, inputs: list[str], context: RunContext):
+        del inputs
         self.calls += 1
         self.contexts.append(context)
         created = datetime(2026, 9, 30, tzinfo=timezone.utc)
@@ -125,6 +131,22 @@ class _Scripted:
             text="two",
             created_timestamp=created,
         )
+
+
+class _CancellableStream:
+    def __init__(self, source: AsyncIterator[Message]) -> None:
+        self._source = source
+
+    def cancel(self) -> None:
+        return
+
+    def __aiter__(self) -> AsyncIterator[Message]:
+        return self._source
+
+    async def aclose(self) -> None:
+        aclose = getattr(self._source, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
 
 class _Container:
