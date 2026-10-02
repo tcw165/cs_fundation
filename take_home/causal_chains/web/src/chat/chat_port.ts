@@ -87,7 +87,7 @@ export type MessagePage = {
 export type ListMessagesReq = {
   conversation_id: string;
   limit: number;
-  start_message?: string;
+  after_message?: string;
   abort_signal?: AbortSignal;
 };
 

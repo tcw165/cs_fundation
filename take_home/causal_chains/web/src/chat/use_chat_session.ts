@@ -41,12 +41,12 @@ export function use_chat_session(
     const controller = new AbortController();
     let cancelled = false;
     async function load_history() {
-      let start_message: string | undefined;
+      let after_message: string | undefined;
       do {
         const page = await chat_port.list_messages({
           conversation_id,
           limit: PAGE_LIMIT,
-          start_message,
+          after_message,
           abort_signal: controller.signal,
         });
         if (cancelled) {
@@ -55,8 +55,8 @@ export function use_chat_session(
         for (const message of page.messages) {
           present_history(message);
         }
-        start_message = page.next_cursor ?? undefined;
-      } while (start_message !== undefined);
+        after_message = page.next_cursor ?? undefined;
+      } while (after_message !== undefined);
     }
     function present_history(message: Message) {
       if (!messages_ref.current.remember(message)) {

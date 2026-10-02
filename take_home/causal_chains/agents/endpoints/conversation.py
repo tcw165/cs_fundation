@@ -111,14 +111,17 @@ async def get_messages(
     conversation_id: str,
     container: AppContainerDep,
     limit: Annotated[int, Query(ge=1)],
-    start_message: Annotated[str | None, Query()] = None,
+    after_message: Annotated[
+        str | None,
+        Query(description="Exclusive message id. The stream starts after this message."),
+    ] = None,
 ) -> MessagePage:
     with bind_conversation_logger(conversation_id):
         logger().info("list messages")
         return await container.messaging_store().list_messages(
             conversation_id=conversation_id,
             limit=limit,
-            after_message=start_message,
+            after_message=after_message,
         )
 
 
