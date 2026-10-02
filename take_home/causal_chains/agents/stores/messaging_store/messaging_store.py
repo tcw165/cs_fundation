@@ -42,24 +42,60 @@ class MessagingStoreImpl(MessagingStore):
         self,
         conversation_id: str,
         limit: int,
-        start_message: str | None = None,
+        after_message: str | None = None,
     ) -> MessagePage:
-        rows, next_cursor = self._dynamo_db.query(
+        exclusive_start_sk = None
+        if after_message is not None:
+            exclusive_start_sk = self._sort_key_for_message(conversation_id, after_message)
+            if exclusive_start_sk is None:
+                return MessagePage(messages=[])
+        rows, next_sort_key = self._dynamo_db.query(
             "conversation",
             "PK",
             f"CONV#{conversation_id}",
             "SK",
             "MSG#",
             limit,
-            start_message,
+            exclusive_start_sk,
         )
+        messages = [
+            message_adapter.validate_python(row["message_json"])
+            for row in rows
+        ]
+        next_cursor = None
+        if next_sort_key is not None and messages:
+            next_cursor = messages[-1].message_id
         return MessagePage(
-            messages=[
-                message_adapter.validate_python(row["message_json"])
-                for row in rows
-            ],
+            messages=messages,
             next_cursor=next_cursor,
         )
+
+    def _sort_key_for_message(
+        self,
+        conversation_id: str,
+        message_id: str,
+    ) -> str | None:
+        exclusive_start_sk: str | None = None
+        while True:
+            rows, next_sort_key = self._dynamo_db.query(
+                "conversation",
+                "PK",
+                f"CONV#{conversation_id}",
+                "SK",
+                "MSG#",
+                100,
+                exclusive_start_sk,
+            )
+            for row in rows:
+                if row.get("message_id") != message_id:
+                    continue
+                sort_key = row.get("SK")
+                if isinstance(sort_key, str):
+                    return sort_key
+                return None
+            if next_sort_key is None:
+                return None
+            exclusive_start_sk = next_sort_key
 
     @override
     async def save_message_with_ttl(
