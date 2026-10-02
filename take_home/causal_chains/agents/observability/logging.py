@@ -34,13 +34,12 @@ def logger() -> LoggerAdapter[Logger]:
 
 
 @contextmanager
-def bind_session_logger(
-    conversation_id: str,
-    turn_id: str,
+def bind_logger(
+    extra: dict[str, str] = {},
 ) -> Iterator[LoggerAdapter[Logger]]:
     adapter = LoggerAdapter(
         _causal_chains_logger(),
-        {"conversation_id": conversation_id, "turn_id": turn_id},
+        extra,
     )
     token = _session_logger.set(adapter)
     try:
@@ -49,9 +48,16 @@ def bind_session_logger(
         _session_logger.reset(token)
 
 
+@contextmanager
+def bind_session_logger(
+    conversation_id: str,
+    turn_id: str,
+) -> Iterator[LoggerAdapter[Logger]]:
+    with bind_logger(
+        {"conversation_id": conversation_id, "turn_id": turn_id},
+    ) as adapter:
+        yield adapter
+
+
 def bind_conversation_logger(conversation_id: str) -> Iterator[LoggerAdapter[Logger]]:
     return bind_session_logger(conversation_id, "")
-
-
-def bind_logger() -> Iterator[LoggerAdapter[Logger]]:
-    return bind_session_logger("", "")

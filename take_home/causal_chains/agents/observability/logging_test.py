@@ -28,6 +28,6 @@ def test_bind_conversation_logger_sets_conversation_and_resets():
 
 def test_bind_logger_sets_empty_ids_and_resets():
     with bind_logger() as bound:
-        assert bound.extra == {"conversation_id": "", "turn_id": ""}
+        assert bound.extra == {}
         assert logger() is bound
     assert logger().extra == {}
