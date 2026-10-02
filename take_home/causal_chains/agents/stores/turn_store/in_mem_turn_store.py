@@ -5,6 +5,8 @@ from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 
 
 class InMemoryTurnStore(TurnStore):
+    """In-memory turn store. Very helpful for offline eval and the REPL."""
+
     def __init__(self) -> None:
         self._turns: dict[str, Turn] = {}
 
