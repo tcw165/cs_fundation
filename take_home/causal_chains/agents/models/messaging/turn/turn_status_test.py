@@ -10,6 +10,7 @@ def test_turn_status_values():
     assert TurnStatus.running == "running"
     assert TurnStatus.completed == "completed"
     assert TurnStatus.failed == "failed"
+    assert TurnStatus.cancelled == "cancelled"
 
 
 def test_turn_status_rejects_unknown():
