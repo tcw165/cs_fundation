@@ -48,3 +48,10 @@ class DdbTurnStore(TurnStore):
         if len(rows) == 0:
             return None
         return Turn.model_validate(rows[0])
+
+    @override
+    async def delete_turn(
+        self,
+        turn_id: str,
+    ) -> None:
+        self._dynamo_db.delete_item("turn", {"turn_id": turn_id})

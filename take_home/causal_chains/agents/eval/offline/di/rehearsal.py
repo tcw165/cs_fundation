@@ -96,6 +96,11 @@ def rehearse_persistence(
     ) -> Turn | None:
         return turns.get(turn_id)
 
+    def forget_turn(
+        turn_id: str,
+    ) -> None:
+        turns.pop(turn_id, None)
+
     def remember_case(
         case: Case,
     ) -> None:
@@ -237,6 +242,10 @@ def rehearse_persistence(
         _drive(turn_store.get_turn(matchers.Anything())),
         ignore_extra_args=True,
     ).then_do(load_turn)
+    decoy.when(
+        _drive(turn_store.delete_turn(matchers.Anything())),
+        ignore_extra_args=True,
+    ).then_do(forget_turn)
     decoy.when(
         _drive(causal_chain_store.add_case(matchers.Anything())),
         ignore_extra_args=True,

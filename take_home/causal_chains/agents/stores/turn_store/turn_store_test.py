@@ -52,3 +52,21 @@ def test_in_memory_turn_store_finds_a_turn_by_conversation():
     found, missing, first = asyncio.run(exercise())
     assert found == first
     assert missing is None
+
+
+def test_in_memory_turn_store_deletes_a_turn():
+    async def exercise():
+        store = InMemoryTurnStore()
+        turn = Turn(
+            turn_id="t_1",
+            conversation_id="1",
+            status=TurnStatus.running,
+            from_message="m_1",
+        )
+        await store.put_turn(turn)
+        await store.delete_turn(turn.turn_id)
+        return await store.get_turn(turn.turn_id), await store.get_turn_by_conversation("1")
+
+    saved, by_conversation = asyncio.run(exercise())
+    assert saved is None
+    assert by_conversation is None

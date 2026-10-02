@@ -33,3 +33,10 @@ class InMemoryTurnStore(TurnStore):
             if turn.conversation_id == conversation_id:
                 return turn
         return None
+
+    @override
+    async def delete_turn(
+        self,
+        turn_id: str,
+    ) -> None:
+        self._turns.pop(turn_id, None)
