@@ -33,3 +33,18 @@ class DdbTurnStore(TurnStore):
         if item is None:
             return None
         return Turn.model_validate(item)
+
+    @override
+    async def get_turn_by_conversation(
+        self,
+        conversation_id: str,
+    ) -> Turn | None:
+        rows = self._dynamo_db.query_index(
+            "turn",
+            "conversation_id",
+            "conversation_id",
+            conversation_id,
+        )
+        if len(rows) == 0:
+            return None
+        return Turn.model_validate(rows[0])

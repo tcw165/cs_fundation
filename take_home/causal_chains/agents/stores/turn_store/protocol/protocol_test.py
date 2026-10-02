@@ -21,6 +21,15 @@ class _Both:
     ) -> Turn | None:
         return self._turns.get(turn_id)
 
+    async def get_turn_by_conversation(
+        self,
+        conversation_id: str,
+    ) -> Turn | None:
+        for turn in self._turns.values():
+            if turn.conversation_id == conversation_id:
+                return turn
+        return None
+
 
 class _PutOnly:
     async def put_turn(
