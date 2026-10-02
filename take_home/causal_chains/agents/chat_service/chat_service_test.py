@@ -181,7 +181,7 @@ def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
     return message, turn
 
 
-def test_update_turn_completes_or_fails():
+def test_update_turn_removes_the_turn_when_it_finishes():
     async def succeed():
         store = InMemoryTurnStore()
         _message, turn = _user_turn()
@@ -199,13 +199,13 @@ def test_update_turn_completes_or_fails():
                 raise RuntimeError("boom")
         except RuntimeError:
             return await store.get_turn(turn.turn_id)
-        return None
+        return turn
 
     running, finished = asyncio.run(succeed())
     failed = asyncio.run(fail())
     assert running is not None and running.status is TurnStatus.running
-    assert finished is not None and finished.status is TurnStatus.completed
-    assert failed is not None and failed.status is TurnStatus.failed
+    assert finished is None
+    assert failed is None
 
 
 def test_run_turn_yields_runner_messages_and_completes():
@@ -234,9 +234,7 @@ def test_run_turn_yields_runner_messages_and_completes():
     assert events[0].text == "echo: hello"
     assert [message.role for message in stored] == [Role.user, Role.agent]
     assert [message.text for message in stored] == ["hello", "echo: hello"]
-    assert saved is not None
-    assert saved.from_message == "m_user"
-    assert saved.status is TurnStatus.completed
+    assert saved is None
 
 
 def test_run_turn_skips_heartbeats_and_other_roles():
