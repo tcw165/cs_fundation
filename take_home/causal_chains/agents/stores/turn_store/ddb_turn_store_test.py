@@ -43,6 +43,15 @@ class _FakeDynamoDb:
             return []
         return [self.item]
 
+    def delete_item(
+        self,
+        table_name: str,
+        key: dict[str, object],
+    ) -> None:
+        assert table_name == "turn"
+        if self.item is not None and self.item.get("turn_id") == key["turn_id"]:
+            self.item = None
+
 
 def test_put_turn_stores_ttl_about_ten_minutes_ahead():
     async def exercise():
@@ -85,3 +94,22 @@ def test_get_turn_by_conversation_reads_the_conversation_index():
     found, missing, turn = asyncio.run(exercise())
     assert found == turn
     assert missing is None
+
+
+def test_delete_turn_removes_the_item():
+    async def exercise():
+        database = _FakeDynamoDb()
+        store = DdbTurnStore(database)
+        turn = Turn(
+            turn_id="t_1",
+            conversation_id="1",
+            status=TurnStatus.running,
+            from_message="m_1",
+        )
+        await store.put_turn(turn)
+        await store.delete_turn(turn.turn_id)
+        return await store.get_turn(turn.turn_id), await store.get_turn_by_conversation("1")
+
+    saved, by_conversation = asyncio.run(exercise())
+    assert saved is None
+    assert by_conversation is None

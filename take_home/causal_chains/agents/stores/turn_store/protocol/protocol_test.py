@@ -30,6 +30,12 @@ class _Both:
                 return turn
         return None
 
+    async def delete_turn(
+        self,
+        turn_id: str,
+    ) -> None:
+        self._turns.pop(turn_id, None)
+
 
 class _PutOnly:
     async def put_turn(
@@ -55,9 +61,12 @@ def test_turn_store_round_trips_a_turn():
         )
         await store.put_turn(turn)
         saved = await store.get_turn("t_1")
+        await store.delete_turn("t_1")
+        removed = await store.get_turn("t_1")
         missing = await store.get_turn("missing")
-        return saved, missing, turn
+        return saved, removed, missing, turn
 
-    saved, missing, turn = asyncio.run(exercise())
+    saved, removed, missing, turn = asyncio.run(exercise())
     assert saved == turn
+    assert removed is None
     assert missing is None

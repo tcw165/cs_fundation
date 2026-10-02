@@ -19,3 +19,8 @@ class TurnStore(Protocol):
         self,
         conversation_id: str,
     ) -> Turn | None: ...
+
+    async def delete_turn(
+        self,
+        turn_id: str,
+    ) -> None: ...
