@@ -368,18 +368,19 @@ class AppAgentRunner(AgentRunner):
                         seen_links.add(message.link)
                         logger().info("deeplink sent")
                         await send.send(message)
-            tail = buffer.strip()
-            buffer = await _emit_paragraphs(
-                send,
-                buffer,
-                context.conversation_id,
-                rest=True,
-            )
-            logger().info(
-                f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
-            )
-            for message in tail_messages:
-                await send.send(message)
+            if getattr(run_result, "_cancel_mode", "none") == "none":
+                tail = buffer.strip()
+                buffer = await _emit_paragraphs(
+                    send,
+                    buffer,
+                    context.conversation_id,
+                    rest=True,
+                )
+                logger().info(
+                    f"agent run end pending_deeplinks={len(tail_messages)} tail_flushed={bool(tail)}",
+                )
+                for message in tail_messages:
+                    await send.send(message)
             self._memcache.flush()
         except InputGuardrailTripwireTriggered:
             logger().info("input guardrail triggered")

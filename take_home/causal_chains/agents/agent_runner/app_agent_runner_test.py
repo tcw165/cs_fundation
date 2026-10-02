@@ -876,3 +876,99 @@ def test_cancel_unblocks_the_in_flight_run(monkeypatch, caplog):
     assert events[0].text == "before"
     assert result.cancel_calls >= 1
     assert "agent run cancel turn_id=t_1" in caplog.text
+
+
+def test_cancel_stops_the_stream_without_the_tail(monkeypatch):
+    class FakeDelta:
+        def __init__(self, delta: str) -> None:
+            self.delta = delta
+
+    release = anyio.Event()
+    card = _saved_chain_card()
+    call_id = "call_4LWe5OK3oVJ3r6lngJsJTI"
+
+    class FakeResult:
+        def __init__(self) -> None:
+            self.cancel_calls = 0
+            self._cancel_mode = "none"
+
+        def stream_events(self):
+            return self._events()
+
+        async def _events(self):
+            yield SimpleNamespace(
+                type="raw_response_event",
+                data=FakeDelta("before\n\n"),
+            )
+            yield SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_item",
+                    raw_item={
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": "deeplinks_finder",
+                            "arguments": "{}",
+                        },
+                    },
+                ),
+            )
+            yield SimpleNamespace(
+                type="run_item_stream_event",
+                item=SimpleNamespace(
+                    type="tool_call_output_item",
+                    raw_item={"id": call_id},
+                    output=DeeplinkResult(deeplinks=[card]),
+                ),
+            )
+            await release.wait()
+            if self._cancel_mode == "none":
+                yield SimpleNamespace(
+                    type="raw_response_event",
+                    data=FakeDelta("after\n\n"),
+                )
+
+        def cancel(self) -> None:
+            self.cancel_calls += 1
+            self._cancel_mode = "immediate"
+            release.set()
+
+    result = FakeResult()
+
+    class FakeRunner:
+        @staticmethod
+        def run_streamed(agent, input, context=None, max_turns=None, run_config=None):
+            return result
+
+    monkeypatch.setattr(app_agent_runner_module, "ResponseTextDeltaEvent", FakeDelta)
+    monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
+
+    async def exercise():
+        runner = AppAgentRunner(api_key="test", memcache=InMemoryMemcache())
+        context = RunContext(
+            conversation_id="1",
+            clock=_FixedClock(),
+            turn_id="t_1",
+            clients=RunClients(causal_chain_store=object()),
+        )
+        stream = await runner.stream(["hormuz"], context)
+        seen: list[object] = []
+
+        async def stop_after_first() -> None:
+            while not seen:
+                await anyio.sleep(0.01)
+            stream.cancel()
+
+        with anyio.fail_after(2):
+            async with anyio.create_task_group() as group:
+                group.start_soon(stop_after_first)
+                async for message in stream:
+                    seen.append(message)
+                group.cancel_scope.cancel()
+        return seen
+
+    events = asyncio.run(exercise())
+    assert [type(event) for event in events] == [MarkdownMessage]
+    assert events[0].text == "before"
+    assert result.cancel_calls >= 1
