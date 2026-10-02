@@ -42,6 +42,7 @@ export type SubscribeReq = {
   conversation_id: string;
   turn_id: string;
   after_message: string;
+  after_message_timestamp: string;
   abort_signal?: AbortSignal;
 };
 
@@ -88,6 +89,7 @@ export type ListMessagesReq = {
   conversation_id: string;
   limit: number;
   after_message?: string;
+  after_message_timestamp?: string;
   abort_signal?: AbortSignal;
 };
 

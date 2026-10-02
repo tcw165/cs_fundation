@@ -55,6 +55,7 @@ describe("create_chat_model_adapter", () => {
       subscribe_turn: async function* (req): AsyncGenerator<ConversationMessagesResponse> {
         turn_ids.push(req.turn_id);
         expect(req.after_message).toBe("m_user");
+        expect(req.after_message_timestamp).toBe("2026-09-30T00:00:00+00:00");
         yield page([
           {
             kind: "markdown",

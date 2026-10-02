@@ -42,11 +42,13 @@ export function use_chat_session(
     let cancelled = false;
     async function load_history() {
       let after_message: string | undefined;
+      let after_message_timestamp: string | undefined;
       do {
         const page = await chat_port.list_messages({
           conversation_id,
           limit: PAGE_LIMIT,
           after_message,
+          after_message_timestamp,
           abort_signal: controller.signal,
         });
         if (cancelled) {
@@ -55,8 +57,11 @@ export function use_chat_session(
         for (const message of page.messages) {
           present_history(message);
         }
+        const last = page.messages.at(-1);
         after_message = page.next_cursor ?? undefined;
-      } while (after_message !== undefined);
+        after_message_timestamp =
+          last !== undefined && last.kind !== "heartbeat" ? last.created_timestamp : undefined;
+      } while (after_message !== undefined && after_message_timestamp !== undefined);
     }
     function present_history(message: Message) {
       if (!messages_ref.current.remember(message)) {
@@ -124,10 +129,14 @@ export function use_chat_session(
           abort_signal: controller.signal,
         });
         messages_ref.current.remember(posted.received_message);
+        if (posted.received_message.kind === "heartbeat") {
+          return;
+        }
         for await (const snapshot of chat_port.subscribe_turn({
           conversation_id,
           turn_id: posted.turn.turn_id,
           after_message: posted.turn.from_message,
+          after_message_timestamp: posted.received_message.created_timestamp,
           abort_signal: controller.signal,
         })) {
           set_user_interaction_state(snapshot.user_interaction_state);

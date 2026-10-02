@@ -15,12 +15,17 @@ export function create_chat_model_adapter(
         text: last_user_text(messages),
         abort_signal: abortSignal,
       });
+      const received = posted.received_message;
+      if (received.kind === "heartbeat") {
+        return;
+      }
       const paragraphs: string[] = [];
       const cards: DeeplinkCard[] = [];
       for await (const snapshot of chat_port.subscribe_turn({
         conversation_id,
         turn_id: posted.turn.turn_id,
         after_message: posted.turn.from_message,
+        after_message_timestamp: received.created_timestamp,
         abort_signal: abortSignal,
       })) {
         for (const event of snapshot.messages) {

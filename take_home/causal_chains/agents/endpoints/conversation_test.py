@@ -158,6 +158,7 @@ async def _read_sse(
     container: _Container,
     turn_id: str,
     after_message: str,
+    after_message_timestamp: datetime,
     include_traces: bool = False,
 ) -> str:
     response = await turn_sse(
@@ -165,6 +166,7 @@ async def _read_sse(
         turn_id,
         container,
         after_message=after_message,
+        after_message_timestamp=after_message_timestamp,
         include_traces=include_traces,
     )
     chunks: list[str] = []
@@ -242,12 +244,24 @@ def test_turn_sse_rejects_a_turn_from_another_conversation():
             posted.turn.turn_id,
             container,
             after_message=posted.turn.from_message,
+            after_message_timestamp=posted.received_message.created_timestamp,
         )
 
     with pytest.raises(HTTPException) as raised:
         asyncio.run(exercise())
     assert raised.value.status_code == 404
     assert raised.value.detail == "turn not found"
+
+
+def test_get_messages_rejects_a_cursor_without_its_timestamp():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        await get_messages("1", container, limit=1, after_message="m_0")
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 422
+    assert raised.value.detail == "after_message and after_message_timestamp are a pair"
 
 
 def test_get_messages_returns_one_page():
@@ -267,9 +281,21 @@ def test_get_messages_returns_one_page():
         )
         page = await get_messages("1", container, limit=1)
         assert page.next_cursor is not None
-        rest = await get_messages("1", container, limit=1, after_message=page.next_cursor)
+        rest = await get_messages(
+            "1",
+            container,
+            limit=1,
+            after_message=page.next_cursor,
+            after_message_timestamp=page.messages[-1].created_timestamp,
+        )
         assert rest.next_cursor is not None
-        done = await get_messages("1", container, limit=1, after_message=rest.next_cursor)
+        done = await get_messages(
+            "1",
+            container,
+            limit=1,
+            after_message=rest.next_cursor,
+            after_message_timestamp=rest.messages[-1].created_timestamp,
+        )
         whole = await get_messages("1", container, limit=2)
         assert whole.next_cursor is not None
         after_whole = await get_messages(
@@ -277,6 +303,7 @@ def test_get_messages_returns_one_page():
             container,
             limit=2,
             after_message=whole.next_cursor,
+            after_message_timestamp=whole.messages[-1].created_timestamp,
         )
         return page, rest, done, whole, after_whole
 
@@ -339,11 +366,13 @@ def test_sse_streams_one_snapshot_per_emission():
             container,
             posted.turn.turn_id,
             posted.turn.from_message,
+            posted.received_message.created_timestamp,
         )
         replay = await _read_sse(
             container,
             posted.turn.turn_id,
             posted.turn.from_message,
+            posted.received_message.created_timestamp,
         )
         return everything, replay, runner, completed
 
@@ -392,6 +421,7 @@ def test_sse_streams_a_heartbeat_as_its_own_snapshot(monkeypatch: pytest.MonkeyP
                 container,
                 posted.turn.turn_id,
                 posted.turn.from_message,
+                posted.received_message.created_timestamp,
             )
 
     snapshots = _snapshots(asyncio.run(exercise()))
