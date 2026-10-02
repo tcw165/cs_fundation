@@ -13,6 +13,14 @@ def test_turn_status_values():
     assert TurnStatus.cancelled == "cancelled"
 
 
+def test_turn_status_is_ended_for_a_finished_turn():
+    assert TurnStatus.queued.is_ended() is False
+    assert TurnStatus.running.is_ended() is False
+    assert TurnStatus.completed.is_ended() is True
+    assert TurnStatus.failed.is_ended() is True
+    assert TurnStatus.cancelled.is_ended() is True
+
+
 def test_turn_status_rejects_unknown():
     with pytest.raises(ValidationError):
         Turn(
