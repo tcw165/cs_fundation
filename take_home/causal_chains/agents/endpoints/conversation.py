@@ -1,8 +1,10 @@
 import uuid
 from collections.abc import AsyncIterator
+from functools import partial
 from datetime import datetime, timezone
 from typing import Annotated
 
+import anyio
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
@@ -20,14 +22,20 @@ from take_home.causal_chains.agents.endpoints.models.user_interaction_state impo
 )
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.models.messaging.message import (
+    HeartbeatMessage,
     MarkdownMessage,
     Message,
     Role,
 )
 from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from anyio.streams.memory import MemoryObjectSendStream
+
 from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
     MessagePage,
+)
+from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
+    MessagingStore,
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.agents.models.run_config import RunConfig
@@ -38,6 +46,11 @@ from take_home.causal_chains.agents.observability.logging import (
 )
 
 router = APIRouter()
+
+_WATCH_TURN_POLL_INTERVAL_S = 0.3
+_HEARTBEAT_INTERVAL_S = 3.0
+
+_TURN_ENDED_STATUS = {TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled}
 
 
 @router.post(
@@ -112,6 +125,75 @@ def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
     return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
 
 
+async def _watch_turn(
+    turn_store: TurnStore,
+    turn_id: str,
+    stop: anyio.Event,
+) -> None:
+    try:
+        while True:
+            current = await turn_store.get_turn(turn_id)
+            if current is None or current.status in _TURN_ENDED_STATUS:
+                return
+            await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
+    finally:
+        stop.set()
+
+
+async def _poll_messages(
+    messaging_store: MessagingStore,
+    conversation_id: str,
+    after_message: str,
+    send: MemoryObjectSendStream[Message],
+    stop: anyio.Event,
+) -> None:
+    cursor = after_message
+    sent: set[str] = set()
+    try:
+        while True:
+            start_message: str | None = None
+            passed_anchor = False
+            while True:
+                page = await messaging_store.list_messages(
+                    conversation_id=conversation_id,
+                    limit=100,
+                    start_message=start_message,
+                )
+                for message in page.messages:
+                    message_id = getattr(message, "message_id", None)
+                    if not passed_anchor:
+                        if message_id == cursor:
+                            passed_anchor = True
+                        continue
+                    if not isinstance(message_id, str) or message_id in sent:
+                        continue
+                    sent.add(message_id)
+                    await send.send(message)
+                if page.next_cursor is None:
+                    break
+                start_message = page.next_cursor
+            if stop.is_set():
+                return
+            await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
+    finally:
+        await send.aclose()
+
+
+async def _send_heartbeat(
+    send: MemoryObjectSendStream[Message],
+    stop: anyio.Event,
+) -> None:
+    try:
+        while not stop.is_set():
+            with anyio.move_on_after(_HEARTBEAT_INTERVAL_S):
+                await stop.wait()
+            if stop.is_set():
+                return
+            await send.send(HeartbeatMessage())
+    except (anyio.BrokenResourceError, anyio.ClosedResourceError):
+        return
+
+
 @router.get("/conversation/{conversation_id}/turn/{turn_id}/sse")
 async def turn_sse(
     conversation_id: str,
@@ -123,34 +205,47 @@ async def turn_sse(
     ],
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
-    chat_service = container.chat_service()
     turn_store = container.turn_store()
+    messaging_store = container.messaging_store()
     turn = await _require(turn_store, conversation_id, turn_id)
+    del include_traces
 
     async def event_stream() -> AsyncIterator[str]:
         with bind_session_logger(conversation_id, turn_id):
-            stored = (
-                await container.messaging_store().list_messages(conversation_id, 100)
-            ).messages
-            anchored = next(
-                (
-                    message
-                    for message in stored
-                    if getattr(message, "message_id", None) == turn.from_message
-                ),
-                None,
-            )
-            if (
-                turn.status is not TurnStatus.queued
-                or not isinstance(anchored, MarkdownMessage)
-            ):
-                return
-            async for message in chat_service.run_turn(
-                turn,
-                anchored.text,
-                RunConfig(include_traces=include_traces),
-            ):
-                yield format_conversation_sse(_snapshot(message, turn))
+            send, receive = anyio.create_memory_object_stream[Message]()
+            stop = anyio.Event()
+
+            async with anyio.create_task_group() as group:
+                group.start_soon(
+                    partial(
+                        _watch_turn,
+                        turn_store=turn_store,
+                        turn_id=turn_id,
+                        stop=stop,
+                    ),
+                )
+                group.start_soon(
+                    partial(
+                        _poll_messages,
+                        messaging_store=messaging_store,
+                        conversation_id=conversation_id,
+                        after_message=after_message,
+                        send=send,
+                        stop=stop,
+                    ),
+                )
+                group.start_soon(
+                    partial(
+                        _send_heartbeat,
+                        send=send,
+                        stop=stop,
+                    ),
+                )
+                async with receive:
+                    async for message in receive:
+                        yield format_conversation_sse(
+                            _snapshot(conversation_id, turn, message),
+                        )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -166,9 +261,13 @@ async def _require(
     return turn
 
 
-def _snapshot(message: Message, turn: Turn) -> ConversationMessagesResponse:
+def _snapshot(
+    conversation_id: str,
+    turn: Turn,
+    message: Message,
+) -> ConversationMessagesResponse:
     return ConversationMessagesResponse(
-        conversation_id="1",
+        conversation_id=conversation_id,
         messages=[message],
         user_interaction_state=UserInteractionState(
             text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,

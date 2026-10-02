@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
+import anyio
 import pytest
 from fastapi import BackgroundTasks, HTTPException
 
@@ -17,7 +18,6 @@ from take_home.causal_chains.agents.endpoints.models.conversation_messages_respo
 )
 from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
 from take_home.causal_chains.agents.models.messaging.message import (
-    HeartbeatMessage,
     MarkdownMessage,
     Role,
 )
@@ -304,31 +304,50 @@ def _snapshots(body: str) -> list[ConversationMessagesResponse]:
 
 def test_sse_streams_one_snapshot_per_emission():
     async def exercise():
-        container, runner, _store, turn_store = _services()
-        posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
+        container, runner, store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        await store.append(
+            "1",
+            MarkdownMessage(
+                message_id="m_one",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.agent,
+                text="one",
+                created_timestamp=datetime(2099, 1, 1, tzinfo=timezone.utc),
+            ),
+        )
+        await store.append(
+            "1",
+            MarkdownMessage(
+                message_id="m_two",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.agent,
+                text="two",
+                created_timestamp=datetime(2099, 1, 2, tzinfo=timezone.utc),
+            ),
+        )
+        completed = posted.turn.model_copy(update={"status": TurnStatus.completed})
+        await turn_store.put_turn(completed)
         everything = await _read_sse(
             container,
             posted.turn.turn_id,
             posted.turn.from_message,
         )
-        saved = await turn_store.get_turn(posted.turn.turn_id)
         replay = await _read_sse(
             container,
             posted.turn.turn_id,
             posted.turn.from_message,
         )
+        return everything, replay, runner, completed
 
-        user_container, user_runner, _store_again, _turns_again = _services()
-        queued = await post_message("1", PostMessageBody(text="hello"), user_container, BackgroundTasks())
-        traced = await _read_sse(
-            user_container,
-            queued.turn.turn_id,
-            queued.turn.from_message,
-            include_traces=True,
-        )
-        return everything, replay, traced, saved, runner, user_runner, posted
-
-    everything, replay, traced, saved, runner, user_runner, posted = asyncio.run(exercise())
+    everything, replay, runner, completed = asyncio.run(exercise())
     snapshots = _snapshots(everything)
     assert [snapshot.messages[0].text for snapshot in snapshots] == ["one", "two"]
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
@@ -338,52 +357,47 @@ def test_sse_streams_one_snapshot_per_emission():
     )
     assert snapshots[0].user_interaction_state.thinking_state is None
     assert snapshots[0].turn is not None
-    assert snapshots[0].turn.processing == [posted.turn]
+    assert snapshots[0].turn.processing == [completed]
     assert snapshots[0].turn.queued == []
-    assert saved is not None
-    assert saved.status is TurnStatus.completed
-    assert runner.calls == 1
-    assert replay == ""
-    assert [snapshot.messages[0].text for snapshot in _snapshots(traced)] == ["one", "two"]
-    assert user_runner.calls == 1
-    assert user_runner.contexts[0].run_config.include_traces is True
+    assert runner.calls == 0
+    assert [snapshot.messages[0].text for snapshot in _snapshots(replay)] == ["one", "two"]
 
 
-def test_sse_streams_a_heartbeat_as_its_own_snapshot():
-    class _HeartbeatThenText:
-        async def stream(self, inputs: list[str], context: object):
-            del inputs, context
-            yield HeartbeatMessage()
-            yield MarkdownMessage(
-                message_id="m_a",
-                conversation_id="1",
-                user_uuid="user-1",
-                role=Role.agent,
-                text="one",
-                created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
-            )
+def test_sse_streams_a_heartbeat_as_its_own_snapshot(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "take_home.causal_chains.agents.endpoints.conversation._HEARTBEAT_INTERVAL_S",
+        0.01,
+    )
 
     async def exercise():
-        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
-        turn_store = InMemoryTurnStore()
-        service = ChatService(
-            _HeartbeatThenText(),
-            store,
-            turn_store,
-            _ChainStore(),
-            _FixedClock(),
-        )
-        container = _Container(service, store, turn_store)
-        posted = await post_message("1", PostMessageBody(text="hello"), container, BackgroundTasks())
-        return await _read_sse(
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
             container,
-            posted.turn.turn_id,
-            posted.turn.from_message,
+            BackgroundTasks(),
         )
 
+        async def finish() -> None:
+            await anyio.sleep(0.05)
+            current = await turn_store.get_turn(posted.turn.turn_id)
+            assert current is not None
+            await turn_store.put_turn(
+                current.model_copy(update={"status": TurnStatus.completed}),
+            )
+
+        async with anyio.create_task_group() as group:
+            group.start_soon(finish)
+            return await _read_sse(
+                container,
+                posted.turn.turn_id,
+                posted.turn.from_message,
+            )
+
     snapshots = _snapshots(asyncio.run(exercise()))
-    assert [message.kind for snapshot in snapshots for message in snapshot.messages] == [
-        "heartbeat",
-        "markdown",
-    ]
-    assert len(snapshots[0].messages) == 1
+    assert any(
+        message.kind == "heartbeat"
+        for snapshot in snapshots
+        for message in snapshot.messages
+    )
+    assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
