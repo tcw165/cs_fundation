@@ -10,6 +10,8 @@ class _LowLevelDynamo(Protocol):
 
     def get_item(self, **kwargs: object) -> dict[str, object]: ...
 
+    def delete_item(self, **kwargs: object) -> object: ...
+
     def query(self, **kwargs: object) -> dict[str, object]: ...
 
 
@@ -39,6 +41,13 @@ class BotoDynamoDb(DynamoDb):
             name: self._deserializer.deserialize(value)
             for name, value in raw.items()
         }
+
+    @override
+    def delete_item(self, table_name: str, key: dict[str, object]) -> None:
+        self._client.delete_item(
+            TableName=table_name,
+            Key={name: self._serializer.serialize(value) for name, value in key.items()},
+        )
 
     def _rows(self, response: dict[str, object]) -> list[dict[str, object]]:
         raw_items = response.get("Items", [])
