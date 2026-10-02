@@ -23,7 +23,6 @@ from take_home.causal_chains.agents.models.messaging.deeplink_card import (
     DeeplinkResult,
 )
 from take_home.causal_chains.agents.models.messaging.message import (
-    HeartbeatMessage,
     MarkdownMessage,
     Message,
     Role,
@@ -75,13 +74,6 @@ def _raw_field(
     if isinstance(raw_item, dict):
         return raw_item.get(field_name)
     return getattr(raw_item, field_name, None)
-
-
-_HEARTBEAT_INTERVAL_S = 3.0
-
-
-def _heartbeat() -> HeartbeatMessage:
-    return HeartbeatMessage()
 
 
 def _markdown(text: str, conversation_id: str) -> MarkdownMessage:
@@ -196,25 +188,6 @@ async def _emit_paragraphs(
         await send.send(_markdown(buffer, conversation_id))
         return ""
     return buffer
-
-
-async def stream_heartbeat(
-    send: MemoryObjectSendStream[Message],
-    stop: anyio.Event,
-    interval_s: float,
-) -> None:
-    try:
-        while not stop.is_set():
-            with anyio.move_on_after(interval_s):
-                await stop.wait()
-            if stop.is_set():
-                return
-            try:
-                await send.send(_heartbeat())
-            except (anyio.BrokenResourceError, anyio.ClosedResourceError):
-                return
-    finally:
-        await send.aclose()
 
 
 class AppAgentRunner(AgentRunner):
