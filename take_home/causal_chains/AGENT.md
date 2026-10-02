@@ -47,3 +47,9 @@ just eval-offline 'Republicans win the House but Democrats take the senate durin
 ```
 
 A recorded run of `The Strait of Hormuz is going to open next week.` is in `agents/eval/README.md`.
+
+## Development
+
+- Shape a plan as a stack of PRs. Each PR is one branch stacked on the previous one.
+- Every PR in the plan has a Before snippet and an After snippet. The snippets are the real code, short enough to read in one look.
+- After the stack is pushed, watch it. Address review comments, and watch CI until the checks finish.
