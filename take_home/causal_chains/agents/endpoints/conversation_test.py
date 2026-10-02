@@ -157,8 +157,8 @@ def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurn
 async def _read_sse(
     container: _Container,
     turn_id: str,
-    after_message: str,
-    after_message_timestamp: datetime,
+    after_message: str | None,
+    after_message_timestamp: datetime | None,
     include_traces: bool = False,
 ) -> str:
     response = await turn_sse(
@@ -251,6 +251,46 @@ def test_turn_sse_rejects_a_turn_from_another_conversation():
         asyncio.run(exercise())
     assert raised.value.status_code == 404
     assert raised.value.detail == "turn not found"
+
+
+def test_turn_sse_starts_at_the_oldest_message_without_a_cursor():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        await turn_store.put_turn(
+            posted.turn.model_copy(update={"status": TurnStatus.completed}),
+        )
+        return await _read_sse(container, posted.turn.turn_id, None, None)
+
+    snapshots = _snapshots(asyncio.run(exercise()))
+    assert [snapshot.messages[0].text for snapshot in snapshots] == ["hello"]
+
+
+def test_turn_sse_rejects_a_cursor_without_its_timestamp():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        await turn_sse(
+            "1",
+            posted.turn.turn_id,
+            container,
+            after_message=posted.turn.from_message,
+        )
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 422
+    assert raised.value.detail == "after_message and after_message_timestamp are a pair"
 
 
 def test_get_messages_rejects_a_cursor_without_its_timestamp():
