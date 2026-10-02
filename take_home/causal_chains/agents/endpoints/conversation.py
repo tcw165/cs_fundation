@@ -133,69 +133,6 @@ async def get_messages(
         )
 
 
-def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
-    return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
-
-
-async def _watch_turn(
-    turn_store: TurnStore,
-    turn_id: str,
-    stop: anyio.Event,
-) -> None:
-    try:
-        while True:
-            current = await turn_store.get_turn(turn_id)
-            if current is None or current.status in _TURN_ENDED_STATUS:
-                return
-            await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
-    finally:
-        stop.set()
-
-
-async def _poll_messages(
-    messaging_store: MessagingStore,
-    conversation_id: str,
-    after_message: str,
-    after_message_timestamp: datetime,
-    send: MemoryObjectSendStream[Message],
-    stop: anyio.Event,
-) -> None:
-    try:
-        while True:
-            page = await messaging_store.list_messages(
-                conversation_id=conversation_id,
-                limit=100,
-                after_message=after_message,
-                after_message_timestamp=after_message_timestamp,
-            )
-            for message in page.messages:
-                await send.send(message)
-            if page.next_cursor is not None:
-                after_message = page.next_cursor
-                after_message_timestamp = page.messages[-1].created_timestamp
-                continue
-            if stop.is_set():
-                return
-            await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
-    finally:
-        await send.aclose()
-
-
-async def _send_heartbeat(
-    send: MemoryObjectSendStream[Message],
-    stop: anyio.Event,
-) -> None:
-    try:
-        while not stop.is_set():
-            with anyio.move_on_after(_HEARTBEAT_INTERVAL_S):
-                await stop.wait()
-            if stop.is_set():
-                return
-            await send.send(HeartbeatMessage())
-    except (anyio.BrokenResourceError, anyio.ClosedResourceError):
-        return
-
-
 @router.get("/conversation/{conversation_id}/turn/{turn_id}/sse")
 async def turn_sse(
     conversation_id: str,
@@ -257,6 +194,69 @@ async def turn_sse(
                         )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+def format_conversation_sse(snapshot: ConversationMessagesResponse) -> str:
+    return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
+
+
+async def _watch_turn(
+    turn_store: TurnStore,
+    turn_id: str,
+    stop: anyio.Event,
+) -> None:
+    try:
+        while True:
+            current = await turn_store.get_turn(turn_id)
+            if current is None or current.status in _TURN_ENDED_STATUS:
+                return
+            await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
+    finally:
+        stop.set()
+
+
+async def _poll_messages(
+    messaging_store: MessagingStore,
+    conversation_id: str,
+    after_message: str,
+    after_message_timestamp: datetime,
+    send: MemoryObjectSendStream[Message],
+    stop: anyio.Event,
+) -> None:
+    try:
+        while True:
+            page = await messaging_store.list_messages(
+                conversation_id=conversation_id,
+                limit=100,
+                after_message=after_message,
+                after_message_timestamp=after_message_timestamp,
+            )
+            for message in page.messages:
+                await send.send(message)
+            if page.next_cursor is not None:
+                after_message = page.next_cursor
+                after_message_timestamp = page.messages[-1].created_timestamp
+                continue
+            if stop.is_set():
+                return
+            await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
+    finally:
+        await send.aclose()
+
+
+async def _send_heartbeat(
+    send: MemoryObjectSendStream[Message],
+    stop: anyio.Event,
+) -> None:
+    try:
+        while not stop.is_set():
+            with anyio.move_on_after(_HEARTBEAT_INTERVAL_S):
+                await stop.wait()
+            if stop.is_set():
+                return
+            await send.send(HeartbeatMessage())
+    except (anyio.BrokenResourceError, anyio.ClosedResourceError):
+        return
 
 
 def _require_cursor_pair(
