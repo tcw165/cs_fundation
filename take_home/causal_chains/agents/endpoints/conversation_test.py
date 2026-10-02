@@ -218,6 +218,26 @@ def test_post_message_logs_each_streamed_kind(caplog: pytest.LogCaptureFixture):
     assert caplog.text.count("streamed message kind=markdown") == 2
 
 
+def test_post_message_accepts_another_turn_after_the_first_finishes():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        tasks = BackgroundTasks()
+        first = await post_message("1", PostMessageBody(text="first"), container, tasks)
+        await tasks()
+        second = await post_message(
+            "1",
+            PostMessageBody(text="second"),
+            container,
+            BackgroundTasks(),
+        )
+        saved = await turn_store.get_turn(first.turn.turn_id)
+        return saved, second
+
+    saved, second = asyncio.run(exercise())
+    assert saved is None
+    assert second.received_message.text == "second"
+
+
 def test_post_message_rejects_a_second_turn():
     async def exercise():
         container, _runner, _store, _turn_store = _services()
