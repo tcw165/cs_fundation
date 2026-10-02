@@ -39,6 +39,11 @@ class BaseMessage(BaseModel):
         description="Retractions and text replacements. Empty until one happens.",
     )
 
+    @classmethod
+    def message_sort_key(cls, created_timestamp: datetime, message_id: str) -> str:
+        """Dynamo sort key for one message. created_timestamp orders the page."""
+        return f"MSG#{created_timestamp.isoformat()}#{message_id}"
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, BaseMessage):
             return NotImplemented
@@ -51,7 +56,7 @@ class BaseMessage(BaseModel):
         created_at = self.created_timestamp.isoformat()
         item: dict[str, Any] = {
             "PK": f"CONV#{self.conversation_id}",
-            "SK": f"MSG#{created_at}#{self.message_id}",
+            "SK": self.message_sort_key(self.created_timestamp, self.message_id),
             "user_uuid": self.user_uuid,
             "conversation_id": self.conversation_id,
             "message_id": self.message_id,
