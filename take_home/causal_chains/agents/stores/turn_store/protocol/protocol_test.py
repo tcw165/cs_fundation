@@ -1,8 +1,8 @@
 import asyncio
 
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 
 
 class _Both:

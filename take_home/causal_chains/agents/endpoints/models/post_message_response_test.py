@@ -4,8 +4,8 @@ from take_home.causal_chains.agents.endpoints.models.post_message_response impor
     PostMessageResponse,
 )
 from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage, Role
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 
 
 def _markdown() -> MarkdownMessage:

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from take_home.causal_chains.agents.models.messaging.message import Message
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn import Turn
 
 
 class PostMessageResponse(BaseModel):

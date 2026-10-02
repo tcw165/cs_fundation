@@ -12,7 +12,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
         "//take_home/causal_chains/agents/stores/turn_store/protocol",
-        "//take_home/causal_chains/agents/models/messaging/turn",
+        "//take_home/causal_chains/agents/models/turn",
     ],
 )
 
@@ -26,6 +26,6 @@ pytest_test(
     deps = [
         ":turn_store",
         "//take_home/causal_chains/agents/models/messaging",
-        "//take_home/causal_chains/agents/models/messaging/turn",
+        "//take_home/causal_chains/agents/models/turn",
     ],
 )

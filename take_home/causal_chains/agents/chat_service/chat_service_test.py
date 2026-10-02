@@ -16,8 +16,8 @@ from take_home.causal_chains.agents.models.messaging.message import (
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
     DeeplinkCardMessage,
 )
-from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
-from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
+from take_home.causal_chains.agents.models.turn.turn import Turn
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
