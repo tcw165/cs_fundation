@@ -49,12 +49,22 @@ async def post_message(
     container: AppContainerDep,
     background_tasks: BackgroundTasks,
 ) -> PostMessageResponse:
+    chat_service = container.chat_service()
     turn_store = container.turn_store()
     messaging_store = container.messaging_store()
 
     existing = await turn_store.get_turn_by_conversation(conversation_id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="conversation already has a turn")
+
+    async def _run_turn() -> None:
+        with bind_session_logger(conversation_id, turn_id):
+            async for streamed in chat_service.run_turn(
+                turn,
+                message.text,
+                RunConfig(),
+            ):
+                logger().info(f"streamed message kind={streamed.kind}")
 
     turn_id = f"t_{uuid.uuid4().hex[:8]}"
     message = MarkdownMessage(
@@ -66,7 +76,6 @@ async def post_message(
         created_timestamp=datetime.now(timezone.utc),
     )
     with bind_session_logger(conversation_id, turn_id):
-        logger().info("post message")
         await messaging_store.append(conversation_id, message)
         turn = Turn(
             turn_id=turn_id,
@@ -75,6 +84,10 @@ async def post_message(
             from_message=message.message_id,
         )
         await turn_store.put_turn(turn)
+        logger().info("received user message")
+
+        background_tasks.add_task(_run_turn)
+        logger().info("queued turn")
         return PostMessageResponse(turn=turn, received_message=message)
 
 

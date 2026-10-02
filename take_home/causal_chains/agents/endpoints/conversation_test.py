@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 import pytest
@@ -192,6 +193,25 @@ def test_post_message_stores_the_anchored_turn():
     assert saved is not None
     assert saved.from_message == stored[0].message_id
     assert saved.status is TurnStatus.queued
+
+
+def test_post_message_logs_each_streamed_kind(caplog: pytest.LogCaptureFixture):
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        tasks = BackgroundTasks()
+        with caplog.at_level(logging.INFO, logger="agents"):
+            await post_message(
+                "1",
+                PostMessageBody(text="hello"),
+                container,
+                tasks,
+            )
+            await tasks()
+
+    asyncio.run(exercise())
+    assert "received user message" in caplog.text
+    assert "queued turn" in caplog.text
+    assert caplog.text.count("streamed message kind=markdown") == 2
 
 
 def test_post_message_rejects_a_second_turn():
