@@ -115,9 +115,9 @@ async def get_messages(
     with bind_conversation_logger(conversation_id):
         logger().info("list messages")
         return await container.messaging_store().list_messages(
-            conversation_id,
-            limit,
-            start_message,
+            conversation_id=conversation_id,
+            limit=limit,
+            after_message=start_message,
         )
 
 
@@ -157,7 +157,7 @@ async def _poll_messages(
                 page = await messaging_store.list_messages(
                     conversation_id=conversation_id,
                     limit=100,
-                    start_message=start_message,
+                    after_message=start_message,
                 )
                 for message in page.messages:
                     message_id = getattr(message, "message_id", None)

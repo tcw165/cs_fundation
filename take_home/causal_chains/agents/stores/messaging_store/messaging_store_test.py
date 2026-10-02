@@ -234,13 +234,17 @@ def test_list_messages_pages_oldest_first_and_a_short_page_has_no_cursor():
                 ),
             )
         first = await store.list_messages("1", 2)
-        rest = await store.list_messages("1", 2, first.next_cursor)
+        rest = await store.list_messages("1", 2, after_message=first.next_cursor)
         short = await store.list_messages("1", 5)
-        return first, rest, short
+        after_first = await store.list_messages("1", 20, after_message="m_0")
+        missing = await store.list_messages("1", 20, after_message="missing")
+        return first, rest, short, after_first, missing
 
-    first, rest, short = asyncio.run(exercise())
+    first, rest, short, after_first, missing = asyncio.run(exercise())
     assert [message.text for message in first.messages] == ["text-0", "text-1"]
-    assert first.next_cursor is not None
+    assert first.next_cursor == "m_1"
     assert [message.text for message in rest.messages] == ["text-2"]
     assert rest.next_cursor is None
     assert short.next_cursor is None
+    assert [message.text for message in after_first.messages] == ["text-1", "text-2"]
+    assert missing.messages == []
