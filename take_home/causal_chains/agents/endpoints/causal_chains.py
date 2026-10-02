@@ -12,5 +12,5 @@ async def get_causal_chains(
     container: AppContainerDep,
 ) -> list[CausalChain]:
     with bind_logger():
-        logger().info("list causal chains")
+        logger().debug("list causal chains")
         return await container.causal_chain_store().get_chains()
