@@ -231,7 +231,6 @@ class AppAgentRunner(AgentRunner):
         self,
         inputs: list[str],
         context: RunContext,
-        interval_s: float = _HEARTBEAT_INTERVAL_S,
     ) -> AsyncGenerator[Message]:
         results: list[object] = []
         send, receive = anyio.create_memory_object_stream[Message]()
@@ -246,14 +245,6 @@ class AppAgentRunner(AgentRunner):
                         send=send.clone(),
                         stop=stop,
                         results=results,
-                    ),
-                )
-                group.start_soon(
-                    partial(
-                        stream_heartbeat,
-                        send=send.clone(),
-                        stop=stop,
-                        interval_s=interval_s,
                     ),
                 )
                 await send.aclose()
