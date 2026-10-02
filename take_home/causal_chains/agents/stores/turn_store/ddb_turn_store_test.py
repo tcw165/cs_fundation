@@ -53,7 +53,7 @@ class _FakeDynamoDb:
             self.item = None
 
 
-def test_put_turn_stores_ttl_about_ten_minutes_ahead():
+def test_put_turn_stores_ttl_about_one_day_ahead():
     async def exercise():
         database = _FakeDynamoDb()
         store = DdbTurnStore(database)
@@ -72,7 +72,7 @@ def test_put_turn_stores_ttl_about_ten_minutes_ahead():
     assert database.item is not None
     ttl = database.item["ttl"]
     assert isinstance(ttl, int)
-    assert abs(ttl - (written_at + 600)) < 2
+    assert abs(ttl - (written_at + 24 * 60 * 60)) < 2
     assert saved == turn
 
 

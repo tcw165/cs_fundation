@@ -5,7 +5,7 @@ from take_home.causal_chains.agents.clients.dynamo_db.protocol.protocol import D
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
 from take_home.causal_chains.agents.models.turn.turn import Turn
 
-_TURN_TTL_SECONDS = 600
+_TURN_TTL_SECONDS = 24 * 60 * 60
 
 
 class DdbTurnStore(TurnStore):
