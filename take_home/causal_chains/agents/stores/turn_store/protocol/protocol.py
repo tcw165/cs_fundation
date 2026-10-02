@@ -14,3 +14,8 @@ class TurnStore(Protocol):
         self,
         turn_id: str,
     ) -> Turn | None: ...
+
+    async def get_turn_by_conversation(
+        self,
+        conversation_id: str,
+    ) -> Turn | None: ...
