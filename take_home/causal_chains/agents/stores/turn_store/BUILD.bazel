@@ -5,7 +5,7 @@ py_library(
     name = "turn_store",
     srcs = [
         "ddb_turn_store.py",
-        "turn_store.py",
+        "in_mem_turn_store.py",
     ],
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
