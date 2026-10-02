@@ -26,7 +26,7 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
 )
-from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.stores.turn_store.in_mem_turn_store import InMemoryTurnStore
 
 
 class _ChainStore:

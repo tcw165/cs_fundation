@@ -1,6 +1,6 @@
 import asyncio
 
-from take_home.causal_chains.agents.stores.turn_store.turn_store import InMemoryTurnStore
+from take_home.causal_chains.agents.stores.turn_store.in_mem_turn_store import InMemoryTurnStore
 from take_home.causal_chains.agents.models.messaging.turn.turn import Turn
 from take_home.causal_chains.agents.models.messaging.turn.turn_status import TurnStatus
 
