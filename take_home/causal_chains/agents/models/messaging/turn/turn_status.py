@@ -1,9 +1,1 @@
-from enum import StrEnum
-
-
-class TurnStatus(StrEnum):
-    queued = "queued"
-    running = "running"
-    completed = "completed"
-    failed = "failed"
-    cancelled = "cancelled"
+from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
