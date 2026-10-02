@@ -131,6 +131,26 @@ async def get_messages(
         )
 
 
+@router.post(
+    "/conversation/{conversation_id}/turn/{turn_id}/stop",
+    response_model=Turn,
+)
+async def stop_turn(
+    conversation_id: str,
+    turn_id: str,
+    container: AppContainerDep,
+) -> Turn:
+    turn_store = container.turn_store()
+    turn = await _require(turn_store, conversation_id, turn_id)
+    with bind_session_logger(conversation_id, turn_id):
+        if turn.status.is_ended():
+            return turn
+        cancelled = turn.model_copy(update={"status": TurnStatus.cancelled})
+        await turn_store.put_turn(cancelled)
+        logger().info("stopped turn")
+        return cancelled
+
+
 @router.get("/conversation/{conversation_id}/turn/{turn_id}/sse")
 async def turn_sse(
     conversation_id: str,

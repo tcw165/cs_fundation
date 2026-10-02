@@ -92,6 +92,12 @@ async function send(host: HTMLElement, text: string) {
 describe("thread composer", () => {
   it("shows Stop and thinking text from the snapshot", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",
@@ -135,6 +141,12 @@ describe("thread composer", () => {
 
   it("removes the field when the snapshot hides it", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",
@@ -167,6 +179,12 @@ describe("thread composer", () => {
   it("shows a message id once when the stream repeats it", async () => {
     const snapshot = page(interaction("ENABLED", null));
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",
@@ -241,6 +259,12 @@ describe("thread composer", () => {
     ];
     let index = 0;
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => {
         throw new Error("unused");
       },
@@ -284,6 +308,12 @@ describe("thread composer", () => {
       created_timestamp: "2026-10-01T07:06:00.000Z",
     };
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => {
         throw new Error("unused");
       },
@@ -313,6 +343,12 @@ describe("thread composer", () => {
 
   it("pins the viewport to the bottom while the turn stream is open", async () => {
     const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
       post_message: async () => ({
         turn: {
           turn_id: "t_1",

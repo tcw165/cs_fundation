@@ -93,8 +93,14 @@ export type ListMessagesReq = {
   abort_signal?: AbortSignal;
 };
 
+export type StopTurnReq = {
+  conversation_id: string;
+  turn_id: string;
+};
+
 export type ChatPort = {
   post_message: (req: PostMessageReq) => Promise<PostMessageResponse>;
   subscribe_turn: (req: SubscribeReq) => AsyncIterable<ConversationMessagesResponse>;
   list_messages: (req: ListMessagesReq) => Promise<MessagePage>;
+  stop_turn: (req: StopTurnReq) => Promise<Turn>;
 };

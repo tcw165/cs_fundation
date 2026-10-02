@@ -28,6 +28,7 @@ export function use_chat_session(
     useState<UserInteractionState>(idle_interaction);
   const running_ref = useRef(false);
   const abort_ref = useRef<AbortController | null>(null);
+  const turn_id_ref = useRef<string | null>(null);
   const finished_id = useRef<string | null>(null);
   const messages_ref = useRef(create_message_store());
 
@@ -128,6 +129,7 @@ export function use_chat_session(
           text: trimmed,
           abort_signal: controller.signal,
         });
+        turn_id_ref.current = posted.turn.turn_id;
         messages_ref.current.remember(posted.received_message);
         if (posted.received_message.kind === "heartbeat") {
           return;
@@ -157,6 +159,7 @@ export function use_chat_session(
         });
       } finally {
         abort_ref.current = null;
+        turn_id_ref.current = null;
         running_ref.current = false;
         dispatch({ type: "run", running: false });
       }
@@ -165,8 +168,12 @@ export function use_chat_session(
   );
 
   const stop = useCallback(() => {
+    const turn_id = turn_id_ref.current;
+    if (turn_id !== null) {
+      void chat_port.stop_turn({ conversation_id, turn_id });
+    }
     abort_ref.current?.abort();
-  }, []);
+  }, [chat_port, conversation_id]);
 
   return { state, draft, set_draft, send, finish, timing, user_interaction_state, stop };
 }

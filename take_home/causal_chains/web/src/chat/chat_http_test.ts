@@ -145,6 +145,29 @@ describe("create_chat_http", () => {
     );
     vi.unstubAllGlobals();
   });
+
+  it("posts a stop for the turn", async () => {
+    const fetch_mock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        turn_id: "t_8f3a",
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+    });
+    vi.stubGlobal("fetch", fetch_mock);
+    const stopped = await create_chat_http("http://agents:8000").stop_turn({
+      conversation_id: "1",
+      turn_id: "t_8f3a",
+    });
+    expect(stopped.status).toBe("cancelled");
+    expect(fetch_mock).toHaveBeenCalledWith(
+      "http://agents:8000/conversation/1/turn/t_8f3a/stop",
+      { method: "POST" },
+    );
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("parse_sse_stream", () => {
