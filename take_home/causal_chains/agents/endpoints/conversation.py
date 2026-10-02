@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from take_home.causal_chains.agents.di.deps import AppContainerDep
@@ -48,6 +48,13 @@ async def post_message(
     body: PostMessageBody,
     container: AppContainerDep,
 ) -> PostMessageResponse:
+    turn_store = container.turn_store()
+    messaging_store = container.messaging_store()
+
+    existing = await turn_store.get_turn_by_conversation(conversation_id)
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="conversation already has a turn")
+
     turn_id = f"t_{uuid.uuid4().hex[:8]}"
     message = MarkdownMessage(
         message_id=str(uuid.uuid4()),
@@ -59,14 +66,14 @@ async def post_message(
     )
     with bind_session_logger(conversation_id, turn_id):
         logger().info("post message")
-        await container.messaging_store().append(conversation_id, message)
+        await messaging_store.append(conversation_id, message)
         turn = Turn(
             turn_id=turn_id,
             conversation_id=conversation_id,
             status=TurnStatus.queued,
             from_message=message.message_id,
         )
-        await container.turn_store().put_turn(turn)
+        await turn_store.put_turn(turn)
         return PostMessageResponse(turn=turn, received_message=message)
 
 

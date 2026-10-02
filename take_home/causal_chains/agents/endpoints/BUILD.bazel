@@ -44,5 +44,6 @@ pytest_test(
         "//take_home/causal_chains/agents/stores/turn_store",
         "//take_home/causal_chains/agents/stub_runner",
         requirement("dependency-injector"),
+        requirement("fastapi"),
     ],
 )
