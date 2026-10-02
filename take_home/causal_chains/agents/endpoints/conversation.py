@@ -147,31 +147,18 @@ async def _poll_messages(
     send: MemoryObjectSendStream[Message],
     stop: anyio.Event,
 ) -> None:
-    cursor = after_message
-    sent: set[str] = set()
     try:
         while True:
-            start_message: str | None = None
-            passed_anchor = False
-            while True:
-                page = await messaging_store.list_messages(
-                    conversation_id=conversation_id,
-                    limit=100,
-                    after_message=start_message,
-                )
-                for message in page.messages:
-                    message_id = getattr(message, "message_id", None)
-                    if not passed_anchor:
-                        if message_id == cursor:
-                            passed_anchor = True
-                        continue
-                    if not isinstance(message_id, str) or message_id in sent:
-                        continue
-                    sent.add(message_id)
-                    await send.send(message)
-                if page.next_cursor is None:
-                    break
-                start_message = page.next_cursor
+            page = await messaging_store.list_messages(
+                conversation_id=conversation_id,
+                limit=100,
+                after_message=after_message,
+            )
+            for message in page.messages:
+                await send.send(message)
+            if page.next_cursor is not None:
+                after_message = page.next_cursor
+                continue
             if stop.is_set():
                 return
             await anyio.sleep(_WATCH_TURN_POLL_INTERVAL_S)
