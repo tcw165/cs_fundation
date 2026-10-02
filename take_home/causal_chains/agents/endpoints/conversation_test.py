@@ -1,6 +1,9 @@
 import asyncio
 from datetime import datetime, timezone
 
+import pytest
+from fastapi import HTTPException
+
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import (
     get_messages,
@@ -191,11 +194,33 @@ def test_post_message_stores_the_anchored_turn():
     assert saved.status is TurnStatus.queued
 
 
-def test_get_messages_returns_one_page():
+def test_post_message_rejects_a_second_turn():
     async def exercise():
         container, _runner, _store, _turn_store = _services()
         await post_message("1", PostMessageBody(text="first"), container)
         await post_message("1", PostMessageBody(text="second"), container)
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 409
+    assert raised.value.detail == "conversation already has a turn"
+
+
+def test_get_messages_returns_one_page():
+    async def exercise():
+        container, _runner, _store, _turn_store = _services()
+        await post_message("1", PostMessageBody(text="first"), container)
+        await container.messaging_store().append(
+            "1",
+            MarkdownMessage(
+                message_id="m_second",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.user,
+                text="second",
+                created_timestamp=datetime(2099, 1, 1, tzinfo=timezone.utc),
+            ),
+        )
         page = await get_messages("1", container, limit=1)
         assert page.next_cursor is not None
         rest = await get_messages("1", container, limit=1, start_message=page.next_cursor)
