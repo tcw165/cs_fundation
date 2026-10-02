@@ -246,5 +246,6 @@ def test_list_messages_pages_oldest_first_and_a_short_page_has_no_cursor():
     assert [message.text for message in rest.messages] == ["text-2"]
     assert rest.next_cursor is None
     assert short.next_cursor is None
+    assert [message.message_id for message in after_first.messages] == ["m_1", "m_2"]
     assert [message.text for message in after_first.messages] == ["text-1", "text-2"]
     assert missing.messages == []

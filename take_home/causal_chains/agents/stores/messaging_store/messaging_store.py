@@ -44,6 +44,15 @@ class MessagingStoreImpl(MessagingStore):
         limit: int,
         after_message: str | None = None,
     ) -> MessagePage:
+        """List one page of messages, oldest first.
+
+        Args:
+            conversation_id: Conversation to read.
+            limit: Maximum number of messages in the page.
+            after_message: Exclusive message id. The page starts after this
+                message and does not include it. None starts at the oldest
+                message.
+        """
         exclusive_start_sk = None
         if after_message is not None:
             exclusive_start_sk = self._sort_key_for_message(conversation_id, after_message)
@@ -62,6 +71,12 @@ class MessagingStoreImpl(MessagingStore):
             message_adapter.validate_python(row["message_json"])
             for row in rows
         ]
+        if after_message is not None:
+            messages = [
+                message
+                for message in messages
+                if message.message_id != after_message
+            ]
         next_cursor = None
         if next_sort_key is not None and messages:
             next_cursor = messages[-1].message_id
