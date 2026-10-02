@@ -119,6 +119,7 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
     ]
     assert sse_requests[-1].url.params["include_traces"] == "true"
     assert sse_requests[-1].url.params["after_message"]
+    assert sse_requests[-1].url.params["after_message_timestamp"]
 
 
 def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
@@ -135,7 +136,11 @@ def test_stream_echoes_each_chunk_before_the_next_read(monkeypatch):
         def json(self) -> dict[str, object]:
             return {
                 "turn": {"turn_id": "t_1", "from_message": "m_1"},
-                "received_message": {"kind": "markdown", "text": "hello"},
+                    "received_message": {
+                        "kind": "markdown",
+                        "text": "hello",
+                        "created_timestamp": "2026-09-30T00:00:00+00:00",
+                    },
             }
 
         def iter_text(self):

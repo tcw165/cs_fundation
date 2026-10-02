@@ -98,7 +98,10 @@ def test_post_message_and_sse_with_stub_runner():
     turn_id = body["turn"]["turn_id"]
     stream = client.get(
         f"/conversation/1/turn/{turn_id}/sse",
-        params={"after_message": body["turn"]["from_message"]},
+        params={
+            "after_message": body["turn"]["from_message"],
+            "after_message_timestamp": body["received_message"]["created_timestamp"],
+        },
     )
     assert stream.status_code == 200
     assert "echo: hello" in stream.text

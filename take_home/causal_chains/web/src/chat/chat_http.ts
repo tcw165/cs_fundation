@@ -22,21 +22,35 @@ export function create_chat_http(api_url: string): ChatPort {
       }
       return (await response.json()) as PostMessageResponse;
     },
-    list_messages: ({ conversation_id, limit, after_message, abort_signal }) => {
+    list_messages: ({
+      conversation_id,
+      limit,
+      after_message,
+      after_message_timestamp,
+      abort_signal,
+    }) => {
       return read_message_page(
         api_url,
         conversation_id,
         limit,
         after_message,
+        after_message_timestamp,
         abort_signal,
       );
     },
-    subscribe_turn: ({ conversation_id, turn_id, after_message, abort_signal }) => {
+    subscribe_turn: ({
+      conversation_id,
+      turn_id,
+      after_message,
+      after_message_timestamp,
+      abort_signal,
+    }) => {
       return read_turn_sse(
         api_url,
         conversation_id,
         turn_id,
         after_message,
+        after_message_timestamp,
         abort_signal,
       );
     },
@@ -48,11 +62,15 @@ async function read_message_page(
   conversation_id: string,
   limit: number,
   after_message: string | undefined,
+  after_message_timestamp: string | undefined,
   abort_signal?: AbortSignal,
 ): Promise<MessagePage> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (after_message !== undefined) {
     params.set("after_message", after_message);
+  }
+  if (after_message_timestamp !== undefined) {
+    params.set("after_message_timestamp", after_message_timestamp);
   }
   const response = await fetch(
     `${api_url}/conversation/${conversation_id}/messages?${params}`,
@@ -69,9 +87,10 @@ async function* read_turn_sse(
   conversation_id: string,
   turn_id: string,
   after_message: string,
+  after_message_timestamp: string,
   abort_signal?: AbortSignal,
 ): AsyncGenerator<ConversationMessagesResponse> {
-  const params = new URLSearchParams({ after_message });
+  const params = new URLSearchParams({ after_message, after_message_timestamp });
   const response = await fetch(
     `${api_url}/conversation/${conversation_id}/turn/${turn_id}/sse?${params}`,
     { signal: abort_signal },

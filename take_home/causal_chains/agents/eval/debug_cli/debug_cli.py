@@ -21,6 +21,7 @@ def post_and_read(
         params={
             "include_traces": True,
             "after_message": body["turn"]["from_message"],
+            "after_message_timestamp": body["received_message"]["created_timestamp"],
         },
     ) as response:
         response.raise_for_status()

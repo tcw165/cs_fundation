@@ -113,15 +113,23 @@ async def get_messages(
     limit: Annotated[int, Query(ge=1)],
     after_message: Annotated[
         str | None,
-        Query(description="Exclusive message id. The stream starts after this message."),
+        Query(description="Exclusive message id. The page starts after this message."),
+    ] = None,
+    after_message_timestamp: Annotated[
+        datetime | None,
+        Query(
+            description="created_timestamp of after_message. Required with the message id to find that message.",
+        ),
     ] = None,
 ) -> MessagePage:
+    _require_cursor_pair(after_message, after_message_timestamp)
     with bind_conversation_logger(conversation_id):
         logger().info("list messages")
         return await container.messaging_store().list_messages(
             conversation_id=conversation_id,
             limit=limit,
             after_message=after_message,
+            after_message_timestamp=after_message_timestamp,
         )
 
 
@@ -148,6 +156,7 @@ async def _poll_messages(
     messaging_store: MessagingStore,
     conversation_id: str,
     after_message: str,
+    after_message_timestamp: datetime,
     send: MemoryObjectSendStream[Message],
     stop: anyio.Event,
 ) -> None:
@@ -157,11 +166,13 @@ async def _poll_messages(
                 conversation_id=conversation_id,
                 limit=100,
                 after_message=after_message,
+                after_message_timestamp=after_message_timestamp,
             )
             for message in page.messages:
                 await send.send(message)
             if page.next_cursor is not None:
                 after_message = page.next_cursor
+                after_message_timestamp = page.messages[-1].created_timestamp
                 continue
             if stop.is_set():
                 return
@@ -194,6 +205,12 @@ async def turn_sse(
         str,
         Query(description="Exclusive message id. The stream starts after this message."),
     ],
+    after_message_timestamp: Annotated[
+        datetime,
+        Query(
+            description="created_timestamp of after_message. Required with the message id to find that message.",
+        ),
+    ],
     include_traces: Annotated[bool, Query()] = False,
 ) -> StreamingResponse:
     turn_store = container.turn_store()
@@ -221,6 +238,7 @@ async def turn_sse(
                         messaging_store=messaging_store,
                         conversation_id=conversation_id,
                         after_message=after_message,
+                        after_message_timestamp=after_message_timestamp,
                         send=send,
                         stop=stop,
                     ),
@@ -239,6 +257,17 @@ async def turn_sse(
                         )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+def _require_cursor_pair(
+    after_message: str | None,
+    after_message_timestamp: datetime | None,
+) -> None:
+    if (after_message is None) != (after_message_timestamp is None):
+        raise HTTPException(
+            status_code=422,
+            detail="after_message and after_message_timestamp are a pair",
+        )
 
 
 async def _require(
