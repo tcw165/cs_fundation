@@ -8,6 +8,9 @@ class _Both:
     def get_item(self, table_name: str, key: dict[str, object]) -> dict[str, object] | None:
         return None
 
+    def delete_item(self, table_name: str, key: dict[str, object]) -> None:
+        return None
+
     def query(
         self,
         table_name: str,

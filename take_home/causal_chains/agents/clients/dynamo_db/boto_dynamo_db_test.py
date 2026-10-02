@@ -21,6 +21,18 @@ class _FakeClient:
                 return {"Item": item}
         return {}
 
+    def delete_item(self, **kwargs: object) -> object:
+        table_name = str(kwargs["TableName"])
+        key = kwargs["Key"]
+        assert isinstance(key, dict)
+        kept = [
+            item
+            for item in self._items.get(table_name, [])
+            if any(item.get(name) != value for name, value in key.items())
+        ]
+        self._items[table_name] = kept
+        return {}
+
     def query(self, **kwargs: object) -> dict[str, object]:
         table_name = str(kwargs["TableName"])
         values = kwargs["ExpressionAttributeValues"]
@@ -71,6 +83,19 @@ def test_put_item_and_get_item_round_trip_a_string():
         "conversation_id": "1",
     }
     assert database.get_item("conversation", {"conversation_id": "missing"}) is None
+
+
+def test_delete_item_removes_the_matching_row():
+    client = _FakeClient()
+    database = BotoDynamoDb(client)
+    database.put_item("turn", {"turn_id": "t_1", "conversation_id": "1"})
+    database.put_item("turn", {"turn_id": "t_2", "conversation_id": "1"})
+    database.delete_item("turn", {"turn_id": "t_1"})
+    assert database.get_item("turn", {"turn_id": "t_1"}) is None
+    assert database.get_item("turn", {"turn_id": "t_2"}) == {
+        "turn_id": "t_2",
+        "conversation_id": "1",
+    }
 
 
 def test_query_returns_rows_whose_sort_key_has_the_prefix():
