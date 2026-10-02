@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from take_home.causal_chains.agents.di.deps import AppContainerDep
@@ -47,6 +47,7 @@ async def post_message(
     conversation_id: str,
     body: PostMessageBody,
     container: AppContainerDep,
+    background_tasks: BackgroundTasks,
 ) -> PostMessageResponse:
     turn_store = container.turn_store()
     messaging_store = container.messaging_store()
