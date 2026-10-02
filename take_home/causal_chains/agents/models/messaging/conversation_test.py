@@ -9,7 +9,11 @@ from take_home.causal_chains.agents.models.messaging.followup_question import (
     TextFollowupQuestion,
     UriFollowupQuestion,
 )
-from take_home.causal_chains.agents.models.messaging.plan import Plan, PlanStatus, PlanStep
+from take_home.causal_chains.agents.models.messaging.plan.plan import (
+    Plan,
+    PlanStatus,
+    PlanStep,
+)
 
 
 def _conversation(**overrides: object) -> Conversation:
