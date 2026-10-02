@@ -11,6 +11,9 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Message,
     message_adapter,
 )
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
+    BaseMessage,
+)
 from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
     MessagePage,
 )
@@ -54,12 +57,25 @@ class MessagingStoreImpl(MessagingStore):
                 message and does not include it. None starts at the oldest
                 message.
             after_message_timestamp: created_timestamp of after_message. None
-                when after_message is None.
+                when after_message is None. The page starts after
+                MSG#{timestamp}#{message_id} and does not include that message.
         """
         exclusive_start_sk = None
         if after_message is not None:
-            exclusive_start_sk = self._sort_key_for_message(conversation_id, after_message)
-            if exclusive_start_sk is None:
+            if after_message_timestamp is None:
+                raise ValueError("after_message_timestamp is required")
+            exclusive_start_sk = BaseMessage.message_sort_key(
+                after_message_timestamp,
+                after_message,
+            )
+            stored = self._dynamo_db.get_item(
+                "conversation",
+                {
+                    "PK": f"CONV#{conversation_id}",
+                    "SK": exclusive_start_sk,
+                },
+            )
+            if stored is None:
                 return MessagePage(messages=[])
         rows, next_sort_key = self._dynamo_db.query(
             "conversation",
@@ -87,33 +103,6 @@ class MessagingStoreImpl(MessagingStore):
             messages=messages,
             next_cursor=next_cursor,
         )
-
-    def _sort_key_for_message(
-        self,
-        conversation_id: str,
-        message_id: str,
-    ) -> str | None:
-        exclusive_start_sk: str | None = None
-        while True:
-            rows, next_sort_key = self._dynamo_db.query(
-                "conversation",
-                "PK",
-                f"CONV#{conversation_id}",
-                "SK",
-                "MSG#",
-                100,
-                exclusive_start_sk,
-            )
-            for row in rows:
-                if row.get("message_id") != message_id:
-                    continue
-                sort_key = row.get("SK")
-                if isinstance(sort_key, str):
-                    return sort_key
-                return None
-            if next_sort_key is None:
-                return None
-            exclusive_start_sk = next_sort_key
 
     @override
     async def save_message_with_ttl(

@@ -10,6 +10,7 @@ py_library(
         "//take_home/causal_chains/agents/clients/dynamo_db/protocol",
         "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/agents/models/messaging",
+        "//take_home/causal_chains/agents/models/messaging/protocol",
     ],
 )
 
