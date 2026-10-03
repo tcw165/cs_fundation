@@ -6,3 +6,4 @@ class RunConfig(BaseModel):
 
     include_traces: bool = False
     causal_chain_max_steps: int = Field(default=50, ge=1)
+    agent_timeout_s: float = Field(default=300, gt=0)
