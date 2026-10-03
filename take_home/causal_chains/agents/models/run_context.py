@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from take_home.causal_chains.agents.models.messaging.message import Message
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.time.protocol.protocol import Clock
@@ -13,3 +14,12 @@ class RunContext(BaseModel):
     turn_id: str
     run_config: RunConfig = Field(default_factory=RunConfig)
     clients: RunClients = Field(exclude=True)
+    conversation_history: tuple[Message, ...] = Field(
+        default_factory=tuple,
+        exclude=True,
+        description=(
+            "Prewarm messages, older messages from the input window, "
+            "and the latest user message. Oldest first. "
+            "A frozen copy of the list _build_model_messages returns."
+        ),
+    )
