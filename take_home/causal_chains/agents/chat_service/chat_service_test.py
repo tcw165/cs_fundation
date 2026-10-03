@@ -294,9 +294,11 @@ def test_run_turn_sends_the_window_and_the_latest_user_message_oldest_first():
     class _Recording:
         def __init__(self) -> None:
             self.inputs: list[list[Message]] = []
+            self.contexts: list[RunContext] = []
 
         async def stream(self, inputs: list[Message], context: RunContext):
             self.inputs.append(inputs)
+            self.contexts.append(context)
             return _CancellableStream(self._events())
 
         async def _events(self) -> AsyncIterator[Message]:
@@ -348,11 +350,15 @@ def test_run_turn_sends_the_window_and_the_latest_user_message_oldest_first():
         await service._turn_store.put_turn(turn)
         async for _event in service.run_turn(turn, [latest], RunConfig()):
             pass
-        return runner.inputs
+        return runner.inputs, runner.contexts
 
-    seen = asyncio.run(exercise())
+    seen, contexts = asyncio.run(exercise())
     assert [[message.message_id for message in batch] for batch in seen] == [
         ["m_recent", "m_latest"],
+    ]
+    assert [message.message_id for message in contexts[0].conversation_history] == [
+        "m_recent",
+        "m_latest",
     ]
 
 

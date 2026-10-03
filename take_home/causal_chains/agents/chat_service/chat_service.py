@@ -181,26 +181,28 @@ class ChatService:
         async with update_turn(self._turn_store, turn) as turn_is_open:
             if not turn_is_open:
                 return
-            context = RunContext(
-                conversation_id=turn.conversation_id,
-                clock=self._clock,
-                turn_id=turn.turn_id,
-                run_config=run_config,
-                clients=RunClients(
-                    causal_chain_store=self._causal_chain_store,
-                    messaging_store=self._messaging_store,
-                ),
-            )
             with trace(
                 workflow_name="chat_service",
                 group_id=turn.conversation_id,
                 metadata={"turn_id": turn.turn_id},
             ):
-                # The coroutine that generates content for the stream starts here.
                 model_messages = await self._build_model_messages(
                     conversation_id=turn.conversation_id,
                     inputs=inputs,
                 )
+                context = RunContext(
+                    conversation_id=turn.conversation_id,
+                    clock=self._clock,
+                    turn_id=turn.turn_id,
+                    run_config=run_config,
+                    clients=RunClients(
+                        causal_chain_store=self._causal_chain_store,
+                        messaging_store=self._messaging_store,
+                    ),
+                    conversation_history=tuple(model_messages),
+                )
+
+                # The coroutine that generates content for the stream starts here.
                 stream = await self._agent_runner.stream(model_messages, context)
 
                 async with anyio.create_task_group() as group:
