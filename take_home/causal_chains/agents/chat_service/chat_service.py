@@ -59,6 +59,13 @@ async def update_turn(turn_store: TurnStore, turn: Turn) -> AsyncIterator[bool]:
         await _put_status_unless_ended(turn_store, running, TurnStatus.completed)
 
 
+def format_sse(
+    event: MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage,
+) -> str:
+    payload = event.model_dump_json(exclude={"kind"})
+    return f"event: {event.kind}\ndata: {payload}\n\n"
+
+
 class ChatService:
     def __init__(
         self,
@@ -73,39 +80,6 @@ class ChatService:
         self._turn_store = turn_store
         self._causal_chain_store = causal_chain_store
         self._clock = clock
-
-    def _compute_prewarm_messages(self) -> list[Message]:
-        """Messages placed ahead of the conversation when a turn starts.
-
-        created_timestamp starts at 0, then 1, then 2, then 3, and so on.
-        A sort from oldest to newest keeps that order ahead of real messages.
-        """
-        return []
-
-    async def _build_model_messages(
-        self,
-        conversation_id: str,
-        inputs: list[Message],
-    ) -> list[Message]:
-        """Prewarm messages, the last 10 minutes, and the latest user messages.
-
-        Oldest first. A latest user message already in the window is not repeated.
-        """
-        prewarm = self._compute_prewarm_messages()
-        until = max(message.created_timestamp for message in inputs)
-        window = await self._messaging_store.search_messages(
-            conversation_id=conversation_id,
-            since=until - _INPUT_WINDOW,
-            until=until,
-        )
-        seen = {item.message_id for item in window}
-        latest_user_messages = [
-            message for message in inputs if message.message_id not in seen
-        ]
-        return sorted(
-            [*prewarm, *window, *latest_user_messages],
-            key=lambda message: message.created_timestamp,
-        )
 
     async def run_turn(
         self,
@@ -164,6 +138,39 @@ class ChatService:
                 await driver
             flush_traces()
 
+    def _compute_prewarm_messages(self) -> list[Message]:
+        """Messages placed ahead of the conversation when a turn starts.
+
+        created_timestamp starts at 0, then 1, then 2, then 3, and so on.
+        A sort from oldest to newest keeps that order ahead of real messages.
+        """
+        return []
+
+    async def _build_model_messages(
+        self,
+        conversation_id: str,
+        inputs: list[Message],
+    ) -> list[Message]:
+        """Prewarm messages, the last 10 minutes, and the latest user messages.
+
+        Oldest first. A latest user message already in the window is not repeated.
+        """
+        prewarm = self._compute_prewarm_messages()
+        until = max(message.created_timestamp for message in inputs)
+        window = await self._messaging_store.search_messages(
+            conversation_id=conversation_id,
+            since=until - _INPUT_WINDOW,
+            until=until,
+        )
+        seen = {item.message_id for item in window}
+        latest_user_messages = [
+            message for message in inputs if message.message_id not in seen
+        ]
+        return sorted(
+            [*prewarm, *window, *latest_user_messages],
+            key=lambda message: message.created_timestamp,
+        )
+
     async def _run_turn(
         self,
         turn: Turn,
@@ -221,13 +228,6 @@ class ChatService:
                             )
                         await send.send(message)
                     group.cancel_scope.cancel()
-
-
-def format_sse(
-    event: MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage,
-) -> str:
-    payload = event.model_dump_json(exclude={"kind"})
-    return f"event: {event.kind}\ndata: {payload}\n\n"
 
 
 async def _send_heartbeat(send: MemoryObjectSendStream[Message]) -> None:
