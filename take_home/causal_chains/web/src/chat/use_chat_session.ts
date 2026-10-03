@@ -181,7 +181,7 @@ export function use_chat_session(
     set_user_interaction_state((current) => ({
       text_input_state: "ENABLED",
       text_input_placeholder: current.text_input_placeholder,
-      thinking_state: { text: "Stopped" },
+      thinking_state: null,
     }));
     if (turn_id !== null) {
       void chat_port.stop_turn({ conversation_id, turn_id });
