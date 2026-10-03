@@ -6,6 +6,7 @@ py_library(
     name = "agent_tools",
     srcs = [
         "chain_tools.py",
+        "conversation_tools.py",
         "widgets.py",
     ],
     imports = ["../../../.."],
@@ -15,6 +16,8 @@ py_library(
         "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",
+        "//take_home/causal_chains/time/protocol",
         requirement("openai-agents"),
         requirement("pydantic"),
     ],
@@ -24,6 +27,7 @@ pytest_test(
     name = "agent_tools_test",
     srcs = [
         "chain_tools_test.py",
+        "conversation_tools_test.py",
         "widgets_test.py",
     ],
     imports = ["../../../.."],
@@ -32,6 +36,7 @@ pytest_test(
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/models/messaging",
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         requirement("openai-agents"),
     ],
 )
