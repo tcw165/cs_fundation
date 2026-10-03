@@ -429,7 +429,8 @@ def test_turn_sse_starts_at_the_oldest_message_without_a_cursor():
         return await _read_sse(container, posted.turn.turn_id, None, None)
 
     snapshots = _snapshots(asyncio.run(exercise()))
-    assert [snapshot.messages[0].text for snapshot in snapshots[:-1]] == ["hello"]
+    assert snapshots[0].messages == []
+    assert [snapshot.messages[0].text for snapshot in snapshots[1:-1]] == ["hello"]
     assert snapshots[-1].messages == []
 
 
@@ -580,10 +581,11 @@ def test_sse_streams_one_snapshot_per_emission():
 
     everything, replay, runner = asyncio.run(exercise())
     snapshots = _snapshots(everything)
-    assert [snapshot.messages[0].text for snapshot in snapshots[:-1]] == ["one", "two"]
+    assert snapshots[0].messages == []
+    assert [snapshot.messages[0].text for snapshot in snapshots[1:-1]] == ["one", "two"]
     assert snapshots[-1].messages == []
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
-    assert all(len(snapshot.messages) == 1 for snapshot in snapshots[:-1])
+    assert all(len(snapshot.messages) == 1 for snapshot in snapshots[1:-1])
     assert snapshots[0].user_interaction_state.text_input_state is TextInputState.ENABLED
     assert snapshots[0].user_interaction_state.thinking_state is None
     assert snapshots[-1].user_interaction_state.text_input_state is TextInputState.ENABLED
@@ -593,8 +595,41 @@ def test_sse_streams_one_snapshot_per_emission():
     assert snapshots[0].turn.queued == []
     assert runner.calls == 0
     replayed = _snapshots(replay)
-    assert [snapshot.messages[0].text for snapshot in replayed[:-1]] == ["one", "two"]
+    assert replayed[0].messages == []
+    assert [snapshot.messages[0].text for snapshot in replayed[1:-1]] == ["one", "two"]
     assert replayed[-1].messages == []
+
+
+def test_turn_sse_emits_thinking_before_the_first_message():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        response = await turn_sse(
+            "1",
+            posted.turn.turn_id,
+            container,
+            after_message=posted.turn.from_message,
+            after_message_timestamp=posted.received_message.created_timestamp,
+        )
+        first = await anext(response.body_iterator)
+        chunk = first if isinstance(first, str) else first.decode()
+        await turn_store.put_turn(
+            posted.turn.model_copy(update={"status": TurnStatus.completed}),
+        )
+        async for rest in response.body_iterator:
+            chunk += rest if isinstance(rest, str) else rest.decode()
+        return chunk
+
+    snapshots = _snapshots(asyncio.run(exercise()))
+    assert snapshots[0].messages == []
+    assert snapshots[0].user_interaction_state.text_input_state is TextInputState.SEND_DISABLED
+    assert snapshots[0].user_interaction_state.thinking_state is not None
+    assert snapshots[0].user_interaction_state.thinking_state.text == "Thinking"
 
 
 def test_snapshot_follows_the_turn_status():
