@@ -72,6 +72,14 @@ class ChatService:
         self._causal_chain_store = causal_chain_store
         self._clock = clock
 
+    def _compute_prewarm_messages(self) -> list[Message]:
+        """Messages placed ahead of the conversation when a turn starts.
+
+        created_timestamp starts at 0, then 1, then 2, then 3, and so on.
+        A sort from oldest to newest keeps that order ahead of real messages.
+        """
+        return []
+
     async def run_turn(
         self,
         turn: Turn,

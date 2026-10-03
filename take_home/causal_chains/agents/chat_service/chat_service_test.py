@@ -55,6 +55,17 @@ class _CancellableStream:
             await aclose()
 
 
+def test_compute_prewarm_messages_is_empty():
+    service = ChatService(
+        StubTurnRunner(),
+        MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
+        InMemoryTurnStore(),
+        _ChainStore(),
+        _FixedClock(),
+    )
+    assert service._compute_prewarm_messages() == []
+
+
 def test_stores_user_and_agent_messages_only():
     created = datetime(2026, 9, 30, tzinfo=timezone.utc)
     user = MarkdownMessage(
