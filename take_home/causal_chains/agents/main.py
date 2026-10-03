@@ -8,6 +8,9 @@ from braintrust.integrations.openai_agents import BraintrustTracingProcessor
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
+from take_home.causal_chains.agents.observability.endpoint_logging.endpoint_logging import (
+    silence_some_endpoints_log,
+)
 
 
 @click.command()
@@ -33,6 +36,7 @@ def main(host: str, port: int) -> None:
     container.config.user_uuid.from_value("user-1")
     container.config.agent_runner.from_value("openai" if openai_api_key else "stub")
     container.check_dependencies()
+    silence_some_endpoints_log()
     uvicorn.run(create_app(container), host=host, port=port)
 
 

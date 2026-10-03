@@ -1,0 +1,16 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "endpoint_logging",
+    srcs = ["endpoint_logging.py"],
+    imports = ["../../../../../"],
+    visibility = ["//visibility:public"],
+)
+
+pytest_test(
+    name = "endpoint_logging_test",
+    srcs = ["endpoint_logging_test.py"],
+    imports = ["../../../../../"],
+    deps = [":endpoint_logging"],
+)
