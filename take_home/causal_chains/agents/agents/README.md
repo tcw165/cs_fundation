@@ -29,6 +29,7 @@ flowchart TD
 
 - The runner passes the future and the remaining attempts. It does not call the store.
 - The input guardrail reads that same message first. It stops the run when the message is a prompt injection or a probe for system information.
+- When the message does not state a hypothetical future, the causal chain answers it in one message and does not create a case.
 - Now scout saves the present and returns that situation. The id is assigned when it is saved. The description includes the sources behind it.
 - Before each path step, the causal chain loads the open line from the present through the current situation, including each saved link, and puts that line in the direction.
 - Path builder takes one step. It either links the current situation to the terminal, or saves one next situation and links the current situation to it. The pricer names the input variables on that one link. The stored probability is the mean of those inputs.
