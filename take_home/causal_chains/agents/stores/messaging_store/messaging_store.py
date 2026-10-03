@@ -22,6 +22,9 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
 )
 
 
+_SEARCH_PAGE_SIZE = 100
+
+
 class MessagingStoreImpl(MessagingStore):
     def __init__(
         self,
@@ -103,6 +106,39 @@ class MessagingStoreImpl(MessagingStore):
             messages=messages,
             next_cursor=next_cursor,
         )
+
+    @override
+    async def search_messages(
+        self,
+        conversation_id: str,
+        since: datetime,
+        until: datetime,
+    ) -> list[Message]:
+        """Messages in the window, oldest first, inclusive of both ends."""
+        exclusive_start_sk = f"MSG#{since.isoformat()}"
+        found: list[Message] = []
+        while True:
+            rows, next_sort_key = self._dynamo_db.query(
+                "conversation",
+                "PK",
+                f"CONV#{conversation_id}",
+                "SK",
+                "MSG#",
+                _SEARCH_PAGE_SIZE,
+                exclusive_start_sk,
+            )
+            for row in rows:
+                message = message_adapter.validate_python(row["message_json"])
+                if not isinstance(message, BaseMessage):
+                    continue
+                if message.created_timestamp < since:
+                    continue
+                if message.created_timestamp > until:
+                    return found
+                found.append(message)
+            if next_sort_key is None:
+                return found
+            exclusive_start_sk = next_sort_key
 
     @override
     async def save_message_with_ttl(

@@ -213,6 +213,56 @@ def test_save_message_with_ttl_sets_time_to_live_and_list_conversations_uses_the
     assert conversations[0].user_uuid == "user-1"
 
 
+def test_search_messages_returns_the_inclusive_window_oldest_first():
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        created = [
+            datetime(2026, 9, 30, 1, tzinfo=timezone.utc),
+            datetime(2026, 9, 30, 2, tzinfo=timezone.utc),
+            datetime(2026, 9, 30, 3, tzinfo=timezone.utc),
+            datetime(2026, 9, 30, 4, tzinfo=timezone.utc),
+        ]
+        for index, timestamp in enumerate(created):
+            await store.append(
+                "1",
+                MarkdownMessage(
+                    message_id=f"m_{index}",
+                    conversation_id="1",
+                    user_uuid="user-1",
+                    role=Role.user,
+                    text=f"text-{index}",
+                    created_timestamp=timestamp,
+                ),
+            )
+        await store.append(
+            "2",
+            MarkdownMessage(
+                message_id="m_other",
+                conversation_id="2",
+                user_uuid="user-1",
+                role=Role.user,
+                text="other",
+                created_timestamp=created[2],
+            ),
+        )
+        window = await store.search_messages(
+            conversation_id="1",
+            since=created[1],
+            until=created[2],
+        )
+        listed = (await store.list_messages("1", 20)).messages
+        return window, listed
+
+    window, listed = asyncio.run(exercise())
+    assert [message.text for message in window] == ["text-1", "text-2"]
+    assert [message.text for message in listed] == [
+        "text-0",
+        "text-1",
+        "text-2",
+        "text-3",
+    ]
+
+
 def test_list_messages_pages_oldest_first_and_a_short_page_has_no_cursor():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
