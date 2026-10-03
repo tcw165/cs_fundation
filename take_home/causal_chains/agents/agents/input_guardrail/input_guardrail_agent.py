@@ -15,10 +15,7 @@ from take_home.causal_chains.agents.models.causal_chains.input_guardrail_decisio
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
-blocked_input_message = (
-    "I can only build a causal chain for a hypothetical future. "
-    "I won't change my instructions or reveal how I am set up."
-)
+blocked_input_message = "I can only build a causal chain for a hypothetical future."
 
 
 def _read_prompt(name: str) -> str:
