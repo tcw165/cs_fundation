@@ -212,6 +212,12 @@ async def turn_sse(
                             turn=current_turn,
                             message=message,
                         )
+                end_turn = await turn_store.get_turn(turn_id)
+                yield format_conversation_sse(
+                    conversation_id=conversation_id,
+                    turn=end_turn,
+                    message=None,
+                )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -219,7 +225,7 @@ async def turn_sse(
 def format_conversation_sse(
     conversation_id: str,
     turn: Turn | None,
-    message: Message,
+    message: Message | None,
 ) -> str:
     snapshot = _snapshot(conversation_id, turn, message)
     return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
@@ -294,12 +300,12 @@ async def _require(
 def _snapshot(
     conversation_id: str,
     turn: Turn | None,
-    message: Message,
+    message: Message | None,
 ) -> ConversationMessagesResponse:
     in_flight = turn is not None and not turn.status.is_ended()
     return ConversationMessagesResponse(
         conversation_id=conversation_id,
-        messages=[message],
+        messages=[] if message is None else [message],
         user_interaction_state=_user_interaction_state(turn),
         turn=TurnDescriptor(
             processing=[turn] if in_flight else [],

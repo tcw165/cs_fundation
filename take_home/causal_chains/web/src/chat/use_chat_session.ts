@@ -29,6 +29,7 @@ export function use_chat_session(
   const running_ref = useRef(false);
   const abort_ref = useRef<AbortController | null>(null);
   const turn_id_ref = useRef<string | null>(null);
+  const ignore_snapshots = useRef(false);
   const finished_id = useRef<string | null>(null);
   const messages_ref = useRef(create_message_store());
 
@@ -114,6 +115,7 @@ export function use_chat_session(
         return;
       }
       running_ref.current = true;
+      ignore_snapshots.current = false;
       const controller = new AbortController();
       abort_ref.current = controller;
       dispatch({
@@ -141,7 +143,9 @@ export function use_chat_session(
           after_message_timestamp: posted.received_message.created_timestamp,
           abort_signal: controller.signal,
         })) {
-          set_user_interaction_state(snapshot.user_interaction_state);
+          if (!ignore_snapshots.current) {
+            set_user_interaction_state(snapshot.user_interaction_state);
+          }
           for (const message of snapshot.messages) {
             if (!messages_ref.current.remember(message)) {
               continue;
@@ -169,6 +173,12 @@ export function use_chat_session(
   const stop = useCallback(() => {
     const turn_id = turn_id_ref.current;
     turn_id_ref.current = null;
+    ignore_snapshots.current = true;
+    set_user_interaction_state((current) => ({
+      text_input_state: "ENABLED",
+      text_input_placeholder: current.text_input_placeholder,
+      thinking_state: { text: "Stopped" },
+    }));
     if (turn_id !== null) {
       void chat_port.stop_turn({ conversation_id, turn_id });
     }

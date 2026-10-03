@@ -182,6 +182,62 @@ describe("thread composer", () => {
       await Promise.resolve();
     });
     expect(stopped).toEqual(["t_1"]);
+    expect(host.querySelector("[aria-label='Stop']")).toBeNull();
+    expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
+    expect(host.textContent).toContain("Stopped");
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("keeps Send after Stop when a later snapshot still says stop", async () => {
+    let release_next: (() => void) | undefined;
+    const next_snapshot = new Promise<void>((resolve) => {
+      release_next = resolve;
+    });
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: async function* () {
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+        await next_snapshot;
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+      },
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await send(host, "hello");
+    const stop = host.querySelector("[aria-label='Stop']");
+    await act(async () => {
+      stop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => {
+      release_next?.();
+      await Promise.resolve();
+    });
+    expect(host.querySelector("[aria-label='Stop']")).toBeNull();
+    expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
+    expect(host.textContent).toContain("Stopped");
     act(() => {
       root.unmount();
     });

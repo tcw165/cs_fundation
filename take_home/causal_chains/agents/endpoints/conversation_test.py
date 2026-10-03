@@ -429,7 +429,8 @@ def test_turn_sse_starts_at_the_oldest_message_without_a_cursor():
         return await _read_sse(container, posted.turn.turn_id, None, None)
 
     snapshots = _snapshots(asyncio.run(exercise()))
-    assert [snapshot.messages[0].text for snapshot in snapshots] == ["hello"]
+    assert [snapshot.messages[0].text for snapshot in snapshots[:-1]] == ["hello"]
+    assert snapshots[-1].messages == []
 
 
 def test_turn_sse_rejects_a_cursor_without_its_timestamp():
@@ -579,16 +580,21 @@ def test_sse_streams_one_snapshot_per_emission():
 
     everything, replay, runner = asyncio.run(exercise())
     snapshots = _snapshots(everything)
-    assert [snapshot.messages[0].text for snapshot in snapshots] == ["one", "two"]
+    assert [snapshot.messages[0].text for snapshot in snapshots[:-1]] == ["one", "two"]
+    assert snapshots[-1].messages == []
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
-    assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
+    assert all(len(snapshot.messages) == 1 for snapshot in snapshots[:-1])
     assert snapshots[0].user_interaction_state.text_input_state is TextInputState.ENABLED
     assert snapshots[0].user_interaction_state.thinking_state is None
+    assert snapshots[-1].user_interaction_state.text_input_state is TextInputState.ENABLED
+    assert snapshots[-1].user_interaction_state.thinking_state is None
     assert snapshots[0].turn is not None
     assert snapshots[0].turn.processing == []
     assert snapshots[0].turn.queued == []
     assert runner.calls == 0
-    assert [snapshot.messages[0].text for snapshot in _snapshots(replay)] == ["one", "two"]
+    replayed = _snapshots(replay)
+    assert [snapshot.messages[0].text for snapshot in replayed[:-1]] == ["one", "two"]
+    assert replayed[-1].messages == []
 
 
 def test_snapshot_follows_the_turn_status():
