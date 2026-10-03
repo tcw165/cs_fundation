@@ -13,6 +13,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/di",
         "//take_home/causal_chains/agents/endpoints",
+        "//take_home/causal_chains/agents/observability/endpoint_logging",
         requirement("braintrust"),
         requirement("click"),
         requirement("fastapi"),

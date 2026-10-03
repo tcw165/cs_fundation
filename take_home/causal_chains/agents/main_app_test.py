@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -8,6 +9,9 @@ from fastapi.testclient import TestClient
 
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.main_app import create_app
+from take_home.causal_chains.agents.observability.endpoint_logging.endpoint_logging import (
+    SkipPollingEndpointPaths,
+)
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
 
@@ -221,3 +225,18 @@ def test_app_runner_and_span_processor_share_memcache():
         SimpleNamespace(export=lambda: {"name": "now_scout"})
     )
     assert runner._memcache.flush() == json.dumps({"name": "now_scout"}) + "\n"
+
+
+def test_main_installs_one_polling_access_filter(monkeypatch):
+    monkeypatch.delenv("BRAINTRUST_ORGANIZATION_NAME", raising=False)
+    monkeypatch.setenv("BRAINTRUST_API_KEY", "")
+    monkeypatch.setenv("BRAINTRUST_PROJECT_ID", "")
+    _invoke_main(monkeypatch)
+    _invoke_main(monkeypatch)
+    access = logging.getLogger("uvicorn.access")
+    installed = [
+        item
+        for item in access.filters
+        if isinstance(item, SkipPollingEndpointPaths)
+    ]
+    assert len(installed) == 1
