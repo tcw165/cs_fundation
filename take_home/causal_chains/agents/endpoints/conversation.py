@@ -49,6 +49,14 @@ router = APIRouter(prefix="/api/v1")
 
 _WATCH_TURN_POLL_INTERVAL_S = 0.3
 _TAIL_MESSAGES_POLL_INTERVAL_S = 0.5
+_THINKING_TICK = object()
+"""Sentinel that opens the turn stream before any agent message.
+
+``_poll_messages`` sends this once. The stream yields it with ``message=None``
+so the client applies thinking state while the turn is still queued. Compare
+with ``is``: every ``Message`` is an ``object``, so ``isinstance`` cannot tell
+them apart.
+"""
 
 
 @router.post(
@@ -181,7 +189,7 @@ async def turn_sse(
 
     async def event_stream() -> AsyncIterator[str]:
         with bind_session_logger(conversation_id, turn_id):
-            send, receive = anyio.create_memory_object_stream[Message]()
+            send, receive = anyio.create_memory_object_stream[Message | object]()
             stop = anyio.Event()
 
             async with anyio.create_task_group() as group:
@@ -205,12 +213,12 @@ async def turn_sse(
                     ),
                 )
                 async with receive:
-                    async for message in receive:
+                    async for item in receive:
                         current_turn = await turn_store.get_turn(turn_id)
                         yield format_conversation_sse(
                             conversation_id=conversation_id,
                             turn=current_turn,
-                            message=message,
+                            message=None if item is _THINKING_TICK else item,
                         )
                 end_turn = await turn_store.get_turn(turn_id)
                 yield format_conversation_sse(
@@ -251,10 +259,11 @@ async def _poll_messages(
     conversation_id: str,
     after_message: str | None,
     after_message_timestamp: datetime | None,
-    send: MemoryObjectSendStream[Message],
+    send: MemoryObjectSendStream[Message | object],
     stop: anyio.Event,
 ) -> None:
     try:
+        await send.send(_THINKING_TICK)
         while True:
             page = await messaging_store.list_messages(
                 conversation_id=conversation_id,
