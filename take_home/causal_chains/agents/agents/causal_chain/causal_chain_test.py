@@ -37,7 +37,15 @@ def test_causal_chain_prompt_and_tools():
     )
     assert "Do not write the story until the last step." in prompt
     assert "Do not write the story during this repeat." in prompt
-    assert "The only answer is that story" in prompt
+    assert "the only answer is that story" in prompt
+    assert (
+        "If the message does not state a hypothetical future, answer it in one message "
+        "and stop. Do not create a case. Do not call a tool."
+    ) in prompt
+    assert (
+        "For a message that does not state a hypothetical future, the one message is "
+        "the answer, and you stop."
+    ) in prompt
     assert "A preamble is not an answer." in prompt
     assert (
         "Every message is one paragraph followed by `\\n\\n`. "
