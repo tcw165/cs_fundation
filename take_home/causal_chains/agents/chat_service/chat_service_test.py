@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
 from take_home.causal_chains.agents.chat_service.chat_service import (
     ChatService,
+    _put_turn_status_timeout,
     can_store_message,
     format_sse,
     update_turn,
@@ -21,6 +22,7 @@ from take_home.causal_chains.agents.models.messaging.message_widgets import (
 from take_home.causal_chains.agents.models.turn.turn import Turn
 from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from take_home.causal_chains.agents.models.run_clients import RunClients
+from take_home.causal_chains.agents.models.run_config import RunConfig
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.messaging_store.messaging_store import (
     MessagingStoreImpl,
@@ -256,6 +258,24 @@ def test_update_turn_keeps_a_cancelled_turn():
     assert untouched is not None and untouched.status is TurnStatus.cancelled
 
 
+def test_put_turn_status_timeout_skips_an_ended_turn():
+    async def exercise():
+        store = InMemoryTurnStore()
+        _message, turn = _user_turn()
+        await store.put_turn(turn.model_copy(update={"status": TurnStatus.running}))
+        await _put_turn_status_timeout(store, turn)
+        timed_out = await store.get_turn(turn.turn_id)
+
+        await store.put_turn(turn.model_copy(update={"status": TurnStatus.cancelled}))
+        await _put_turn_status_timeout(store, turn)
+        still_cancelled = await store.get_turn(turn.turn_id)
+        return timed_out, still_cancelled
+
+    timed_out, still_cancelled = asyncio.run(exercise())
+    assert timed_out is not None and timed_out.status is TurnStatus.timeout
+    assert still_cancelled is not None and still_cancelled.status is TurnStatus.cancelled
+
+
 def test_run_turn_yields_runner_messages_and_completes():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
@@ -270,7 +290,7 @@ def test_run_turn_yields_runner_messages_and_completes():
         message, turn = _user_turn()
         await store.append("1", message)
         await turn_store.put_turn(turn)
-        events = [event async for event in service.run_turn(turn, message.text)]
+        events = [event async for event in service.run_turn(turn, message.text, RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(turn.turn_id)
         return events, stored, saved
@@ -332,7 +352,7 @@ def test_run_turn_keeps_produced_messages_when_the_turn_is_cancelled():
         )
         await store.append("1", message)
         await turn_store.put_turn(turn)
-        events = [event async for event in service.run_turn(turn, message.text)]
+        events = [event async for event in service.run_turn(turn, message.text, RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(turn.turn_id)
         return events, stored, saved
@@ -392,7 +412,7 @@ def test_run_turn_skips_heartbeats_and_other_roles():
             _FixedClock(),
         )
         _message, turn = _user_turn()
-        events = [event async for event in service.run_turn(turn, "hello")]
+        events = [event async for event in service.run_turn(turn, "hello", RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         return events, stored
 
@@ -442,7 +462,7 @@ def test_run_turn_builds_run_clients():
             clock,
         )
         _message, turn = _user_turn()
-        async for _event in service.run_turn(turn, "hello"):
+        async for _event in service.run_turn(turn, "hello", RunConfig()):
             pass
         return runner.contexts
 
@@ -494,7 +514,7 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
             _FixedClock(),
         )
         _message, turn = _user_turn()
-        async for _event in service.run_turn(turn, "hello"):
+        async for _event in service.run_turn(turn, "hello", RunConfig()):
             pass
         return turn
 
@@ -567,7 +587,7 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
 
         marker = asyncio.create_task(mark_cancelled())
         events = await asyncio.wait_for(
-            _collect(service.run_turn(turn, message.text)),
+            _collect(service.run_turn(turn, message.text, RunConfig())),
             2,
         )
         await marker
@@ -582,3 +602,50 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
     assert runner.first_cancel_before_yield is True
     assert runner.cancel_calls >= 1
     assert saved is not None and saved.status is TurnStatus.cancelled
+
+
+def test_run_turn_stores_timeout_when_the_agent_times_out():
+    class _Blocked:
+        async def stream(self, inputs: list[str], context: RunContext):
+            del inputs, context
+            return self
+
+        def cancel(self) -> None:
+            return
+
+        def __aiter__(self) -> AsyncIterator[Message]:
+            return self._read()
+
+        async def _read(self) -> AsyncIterator[Message]:
+            await asyncio.Event().wait()
+            if False:
+                yield MarkdownMessage(
+                    message_id="m_late",
+                    conversation_id="1",
+                    user_uuid="user-1",
+                    role=Role.agent,
+                    text="late",
+                    created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+                )
+
+    async def exercise():
+        turn_store = InMemoryTurnStore()
+        _message, turn = _user_turn()
+        service = ChatService(
+            _Blocked(),
+            MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        await turn_store.put_turn(turn)
+        async for _event in service.run_turn(
+            turn,
+            "hello",
+            RunConfig(agent_timeout_s=0.05),
+        ):
+            pass
+        return await turn_store.get_turn(turn.turn_id)
+
+    saved = asyncio.run(exercise())
+    assert saved is not None and saved.status is TurnStatus.timeout
