@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from agents import Agent
+from agents import Agent, ModelSettings
+from openai.types.shared.reasoning import Reasoning
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_case,
@@ -33,6 +34,10 @@ causal_chain = Agent[RunContext](
     name="causal_chain",
     instructions=_read_prompt("causal_chain.md"),
     model="gpt-5.6-luna",
+    model_settings=ModelSettings(
+        reasoning=Reasoning(effort="medium"),
+        verbosity="low",
+    ),
     tools=[
         add_case,
         get_case,

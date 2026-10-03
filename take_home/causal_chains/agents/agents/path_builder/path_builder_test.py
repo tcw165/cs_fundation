@@ -26,6 +26,7 @@ def test_path_builder_prompt_model_and_search():
     assert "Return no situation" in prompt
     assert "mean of those inputs" in prompt
     assert path_builder.model == "gpt-5.6-luna"
+    assert path_builder.model_settings.reasoning.effort == "medium"
     assert path_builder.output_type is PathBuilderResult
     assert any(isinstance(tool, WebSearchTool) for tool in path_builder.tools)
     assert [tool.name for tool in path_builder.tools if not isinstance(tool, WebSearchTool)] == [

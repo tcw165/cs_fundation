@@ -21,6 +21,7 @@ def test_deeplinks_finder_returns_cards_for_the_case():
     assert "Do not include a version." in prompt
     assert "Do not write a story." in prompt
     assert deeplinks_finder.model == "gpt-5.6-luna"
+    assert deeplinks_finder.model_settings.reasoning.effort == "none"
     assert deeplinks_finder.output_type is DeeplinkResult
     assert deeplinks_finder.tools == []
     schema = AgentOutputSchema(DeeplinkResult).json_schema()

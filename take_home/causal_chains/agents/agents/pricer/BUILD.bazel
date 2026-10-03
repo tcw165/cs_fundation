@@ -11,6 +11,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/models/causal_chains",
         "//take_home/causal_chains/agents/models",
+        requirement("openai"),
         requirement("openai-agents"),
     ],
 )

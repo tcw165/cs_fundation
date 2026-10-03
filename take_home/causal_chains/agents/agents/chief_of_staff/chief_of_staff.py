@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from agents import Agent, handoff
+from agents import Agent, ModelSettings, handoff
+from openai.types.shared.reasoning import Reasoning
 
 from take_home.causal_chains.agents.agent_tools.conversation_tools import (
     build_conversation_tools,
@@ -31,6 +32,10 @@ def build_chief_of_staff(
         name="chief_of_staff",
         instructions=_read_prompt("chief_of_staff.md"),
         model="gpt-5.6-luna",
+        model_settings=ModelSettings(
+            reasoning=Reasoning(effort="medium"),
+            verbosity="low",
+        ),
         tools=[
             *build_conversation_tools(
                 conversation_id=conversation_id,

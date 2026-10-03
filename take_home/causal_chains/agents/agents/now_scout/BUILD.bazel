@@ -12,6 +12,7 @@ py_library(
         "//take_home/causal_chains/agents/agent_tools",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
+        requirement("openai"),
         requirement("openai-agents"),
         requirement("pydantic"),
     ],
