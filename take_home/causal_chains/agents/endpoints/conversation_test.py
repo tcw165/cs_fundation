@@ -109,10 +109,10 @@ class _Scripted:
         self.calls = 0
         self.contexts: list[RunContext] = []
 
-    async def stream(self, inputs: list[str], context: RunContext):
+    async def stream(self, inputs: list[Message], context: RunContext):
         return _CancellableStream(self._events(inputs, context))
 
-    async def _events(self, inputs: list[str], context: RunContext):
+    async def _events(self, inputs: list[Message], context: RunContext):
         del inputs
         self.calls += 1
         self.contexts.append(context)

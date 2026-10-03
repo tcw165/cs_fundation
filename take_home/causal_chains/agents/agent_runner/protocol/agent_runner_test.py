@@ -14,7 +14,7 @@ class _FixedClock:
 
 
 class _WithStream:
-    async def stream(self, inputs: list[str], context: RunContext):
+    async def stream(self, inputs: list[Message], context: RunContext):
         del inputs, context
         return _CancellableStream()
 
