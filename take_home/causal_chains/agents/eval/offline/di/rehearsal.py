@@ -86,6 +86,19 @@ def rehearse_persistence(
         next_cursor = page[-1].message_id if len(page) == limit else None
         return MessagePage(messages=page, next_cursor=next_cursor)
 
+    def search_messages(
+        conversation_id: str,
+        since: datetime,
+        until: datetime,
+    ) -> list[Message]:
+        matched = [
+            message
+            for stored_id, message in messages
+            if stored_id == conversation_id
+            and since <= message.created_timestamp <= until
+        ]
+        return sorted(matched, key=lambda message: message.created_timestamp)
+
     def remember_turn(
         turn: Turn,
     ) -> None:
@@ -234,6 +247,16 @@ def rehearse_persistence(
         _drive(messaging_store.list_messages(matchers.Anything())),
         ignore_extra_args=True,
     ).then_do(list_messages)
+    decoy.when(
+        _drive(
+            messaging_store.search_messages(
+                matchers.Anything(),
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
+        ignore_extra_args=True,
+    ).then_do(search_messages)
     decoy.when(
         _drive(turn_store.put_turn(matchers.Anything())),
         ignore_extra_args=True,
