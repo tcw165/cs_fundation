@@ -727,6 +727,58 @@ def test_run_turn_stays_cancelled_when_stopped_while_running():
     assert saved is not None and saved.status is TurnStatus.cancelled
 
 
+def test_run_turn_yields_a_heartbeat_without_storing_it(monkeypatch):
+    monkeypatch.setattr(chat_service_module, "_HEARTBEAT_INTERVAL_S", 0.01)
+
+    class _Hold:
+        def cancel(self) -> None:
+            return
+
+        def __aiter__(self) -> AsyncIterator[Message]:
+            return self._read()
+
+        async def _read(self) -> AsyncIterator[Message]:
+            await asyncio.Event().wait()
+            if False:
+                yield HeartbeatMessage()
+
+    async def exercise():
+        decoy = Decoy()
+        runner = decoy.mock(cls=AgentRunner)
+        stream = _Hold()
+        decoy.when(
+            await runner.stream(["hello"], matchers.Anything()),
+        ).then_return(stream)
+
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        turn_store = InMemoryTurnStore()
+        _message, turn = _user_turn()
+        service = ChatService(
+            runner,
+            store,
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        await turn_store.put_turn(turn)
+
+        events: list[Message] = []
+
+        async def _collect() -> None:
+            async for event in service.run_turn(turn, "hello", RunConfig()):
+                events.append(event)
+                if event.kind == "heartbeat":
+                    return
+
+        await asyncio.wait_for(_collect(), 2)
+        stored = (await store.list_messages("1", 20)).messages
+        return events, stored
+
+    events, stored = asyncio.run(exercise())
+    assert any(event.kind == "heartbeat" for event in events)
+    assert all(message.kind != "heartbeat" for message in stored)
+
+
 def test_run_turn_times_out_when_the_agent_outlasts_the_limit():
     class _Hold:
         def __init__(self) -> None:

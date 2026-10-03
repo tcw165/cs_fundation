@@ -34,6 +34,7 @@ from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import T
 from take_home.causal_chains.time.protocol.protocol import Clock
 
 _TURN_POLL_INTERVAL_S = 0.3
+_HEARTBEAT_INTERVAL_S = 3.0
 
 
 def can_store_message(message: Message) -> bool:
@@ -165,6 +166,12 @@ class ChatService:
                             stream=stream,
                         ),
                     )
+                    group.start_soon(
+                        partial(
+                            _send_heartbeat,
+                            send=send,
+                        ),
+                    )
 
                     async for message in stream:
                         if can_store_message(message):
@@ -181,6 +188,15 @@ def format_sse(
 ) -> str:
     payload = event.model_dump_json(exclude={"kind"})
     return f"event: {event.kind}\ndata: {payload}\n\n"
+
+
+async def _send_heartbeat(send: MemoryObjectSendStream[Message]) -> None:
+    try:
+        while True:
+            await anyio.sleep(_HEARTBEAT_INTERVAL_S)
+            await send.send(HeartbeatMessage())
+    except (anyio.BrokenResourceError, anyio.ClosedResourceError):
+        return
 
 
 async def _cancel_stream_when_turn_ends(
