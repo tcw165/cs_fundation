@@ -23,7 +23,6 @@ from take_home.causal_chains.agents.endpoints.models.user_interaction_state impo
 )
 from take_home.causal_chains.agents.http_models.post_message_body import PostMessageBody
 from take_home.causal_chains.agents.models.messaging.message import (
-    HeartbeatMessage,
     MarkdownMessage,
     Message,
     Role,
@@ -50,7 +49,6 @@ router = APIRouter(prefix="/api/v1")
 
 _WATCH_TURN_POLL_INTERVAL_S = 0.3
 _TAIL_MESSAGES_POLL_INTERVAL_S = 0.5
-_HEARTBEAT_INTERVAL_S = 3.0
 
 
 @router.post(
@@ -206,13 +204,6 @@ async def turn_sse(
                         stop=stop,
                     ),
                 )
-                group.start_soon(
-                    partial(
-                        _send_heartbeat,
-                        send=send,
-                        stop=stop,
-                    ),
-                )
                 async with receive:
                     async for message in receive:
                         current_turn = await turn_store.get_turn(turn_id)
@@ -276,21 +267,6 @@ async def _poll_messages(
             await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
     finally:
         await send.aclose()
-
-
-async def _send_heartbeat(
-    send: MemoryObjectSendStream[Message],
-    stop: anyio.Event,
-) -> None:
-    try:
-        while not stop.is_set():
-            with anyio.move_on_after(_HEARTBEAT_INTERVAL_S):
-                await stop.wait()
-            if stop.is_set():
-                return
-            await send.send(HeartbeatMessage())
-    except (anyio.BrokenResourceError, anyio.ClosedResourceError):
-        return
 
 
 def _require_cursor_pair(
