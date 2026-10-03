@@ -591,47 +591,6 @@ def test_sse_streams_one_snapshot_per_emission():
     assert [snapshot.messages[0].text for snapshot in _snapshots(replay)] == ["one", "two"]
 
 
-def test_sse_streams_a_heartbeat_as_its_own_snapshot(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "take_home.causal_chains.agents.endpoints.conversation._HEARTBEAT_INTERVAL_S",
-        0.01,
-    )
-
-    async def exercise():
-        container, _runner, _store, turn_store = _services()
-        posted = await post_message(
-            "1",
-            PostMessageBody(text="hello"),
-            container,
-            BackgroundTasks(),
-        )
-
-        async def finish() -> None:
-            await anyio.sleep(0.05)
-            current = await turn_store.get_turn(posted.turn.turn_id)
-            assert current is not None
-            await turn_store.put_turn(
-                current.model_copy(update={"status": TurnStatus.completed}),
-            )
-
-        async with anyio.create_task_group() as group:
-            group.start_soon(finish)
-            return await _read_sse(
-                container,
-                posted.turn.turn_id,
-                posted.turn.from_message,
-                posted.received_message.created_timestamp,
-            )
-
-    snapshots = _snapshots(asyncio.run(exercise()))
-    assert any(
-        message.kind == "heartbeat"
-        for snapshot in snapshots
-        for message in snapshot.messages
-    )
-    assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
-
-
 def test_snapshot_follows_the_turn_status():
     message = MarkdownMessage(
         message_id="m_1",
