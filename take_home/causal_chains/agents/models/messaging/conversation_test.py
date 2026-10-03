@@ -9,7 +9,7 @@ from take_home.causal_chains.agents.models.messaging.followup_question import (
     TextFollowupQuestion,
     UriFollowupQuestion,
 )
-from take_home.causal_chains.agents.models.messaging.plan.plan import (
+from take_home.causal_chains.agents.models.plan.plan import (
     Plan,
     PlanStatus,
     PlanStep,
