@@ -91,6 +91,16 @@ def test_health_reports_ready():
     assert response.json() == {"status": "ok"}
 
 
+def test_get_messages_rejects_a_limit_outside_1_to_100():
+    container = AppContainer()
+    container.causal_chain_store.override(providers.Object(object()))
+    _override_dynamo_db(container)
+    client = TestClient(create_app(container))
+    assert client.get("/api/v1/conversation/1/messages", params={"limit": 0}).status_code == 422
+    assert client.get("/api/v1/conversation/1/messages", params={"limit": 101}).status_code == 422
+    assert client.get("/api/v1/conversation/1/messages", params={"limit": 100}).status_code == 200
+
+
 def test_post_message_rejects_text_outside_the_length_bounds():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
