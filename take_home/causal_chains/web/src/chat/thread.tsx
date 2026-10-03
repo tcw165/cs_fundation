@@ -236,9 +236,6 @@ export function Thread({
           void send(draft);
         }}
       >
-        {user_interaction_state.thinking_state === null ? null : (
-          <p className="composer-thinking">{user_interaction_state.thinking_state.text}</p>
-        )}
         {user_interaction_state.text_input_state === "HIDDEN" ? null : (
           <textarea
             className="composer-input"

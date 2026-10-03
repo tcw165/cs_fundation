@@ -108,7 +108,7 @@ async function send(host: HTMLElement, text: string) {
 }
 
 describe("thread composer", () => {
-  it("shows Stop and thinking text from the snapshot", async () => {
+  it("shows Stop and the thinking indicator without a composer label", async () => {
     const chat_port: ChatPort = {
       stop_turn: async ({ turn_id }) => ({
         turn_id,
@@ -147,7 +147,8 @@ describe("thread composer", () => {
     expect(stop?.classList.contains("composer-send")).toBe(true);
     expect(stop?.querySelector("rect")).not.toBeNull();
     expect(host.querySelector("[aria-label='Send']")).toBeNull();
-    expect(host.textContent).toContain("Looking up the chain");
+    expect(host.textContent).not.toContain("Looking up the chain");
+    expect(host.querySelector(".composer-thinking")).toBeNull();
     expect(host.querySelector("[aria-label='Thinking']")).not.toBeNull();
     expect(host.querySelector("textarea")?.getAttribute("placeholder")).toBe(
       "Ask about a chain",
@@ -199,6 +200,8 @@ describe("thread composer", () => {
     const { host, root } = render(<Harness chat_port={chat_port} />);
     await send(host, "hello");
     expect(host.querySelector("[aria-label='Thinking']")).not.toBeNull();
+    expect(host.querySelector(".composer-thinking")).toBeNull();
+    expect(host.textContent).not.toContain("Looking up the chain");
     const stop = host.querySelector("[aria-label='Stop']");
     await act(async () => {
       stop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
