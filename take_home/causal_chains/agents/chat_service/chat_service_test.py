@@ -2,7 +2,10 @@ import asyncio
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
+from decoy import Decoy, matchers
+
 import take_home.causal_chains.agents.chat_service.chat_service as chat_service_module
+from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.chat_service.chat_service import (
     ChatService,
     _put_turn_status_timeout,
@@ -645,6 +648,136 @@ def test_run_turn_stores_timeout_when_the_agent_times_out():
             RunConfig(agent_timeout_s=0.05),
         ):
             pass
+        return await turn_store.get_turn(turn.turn_id)
+
+    saved = asyncio.run(exercise())
+    assert saved is not None and saved.status is TurnStatus.timeout
+
+
+def test_run_turn_stays_cancelled_when_stopped_while_running():
+    class _YieldThenWait:
+        def __init__(self, message: Message) -> None:
+            self._message = message
+            self.cancel_calls = 0
+            self.yielded = asyncio.Event()
+            self._release = asyncio.Event()
+
+        def cancel(self) -> None:
+            self.cancel_calls += 1
+            self._release.set()
+
+        def __aiter__(self) -> AsyncIterator[Message]:
+            return self._read()
+
+        async def _read(self) -> AsyncIterator[Message]:
+            yield self._message
+            self.yielded.set()
+            await self._release.wait()
+
+    async def exercise():
+        decoy = Decoy()
+        runner = decoy.mock(cls=AgentRunner)
+        mock_agent_msg = MarkdownMessage(
+            message_id="m_partial",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.agent,
+            text="partial",
+            created_timestamp=datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc),
+        )
+        stream = _YieldThenWait(mock_agent_msg)
+        decoy.when(
+            await runner.stream(["hello"], matchers.Anything()),
+        ).then_return(stream)
+
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        turn_store = InMemoryTurnStore()
+        message, turn = _user_turn()
+        service = ChatService(
+            runner,
+            store,
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        await store.append("1", message)
+        await turn_store.put_turn(turn)
+
+        async def mark_cancelled() -> None:
+            await stream.yielded.wait()
+            await turn_store.put_turn(
+                turn.model_copy(update={"status": TurnStatus.cancelled}),
+            )
+
+        marker = asyncio.create_task(mark_cancelled())
+
+        async def _collect() -> list[Message]:
+            return [event async for event in service.run_turn(turn, "hello", RunConfig())]
+
+        events = await asyncio.wait_for(_collect(), 2)
+        await marker
+        stored = (await store.list_messages("1", 20)).messages
+        saved = await turn_store.get_turn(turn.turn_id)
+        return events, stored, saved, stream
+
+    events, stored, saved, stream = asyncio.run(exercise())
+    assert [event.text for event in events if isinstance(event, MarkdownMessage)] == ["partial"]
+    assert [item.text for item in stored] == ["hello", "partial"]
+    assert stream.cancel_calls >= 1
+    assert saved is not None and saved.status is TurnStatus.cancelled
+
+
+def test_run_turn_times_out_when_the_agent_outlasts_the_limit():
+    class _Hold:
+        def __init__(self) -> None:
+            self._hold = asyncio.Event()
+
+        def cancel(self) -> None:
+            return
+
+        def __aiter__(self) -> AsyncIterator[Message]:
+            return self._read()
+
+        async def _read(self) -> AsyncIterator[Message]:
+            await self._hold.wait()
+            if False:
+                yield MarkdownMessage(
+                    message_id="m_late",
+                    conversation_id="1",
+                    user_uuid="user-1",
+                    role=Role.agent,
+                    text="late",
+                    created_timestamp=datetime(2026, 9, 30, tzinfo=timezone.utc),
+                )
+
+    async def exercise():
+        decoy = Decoy()
+        runner = decoy.mock(cls=AgentRunner)
+        stream = _Hold()
+        decoy.when(
+            await runner.stream(["hello"], matchers.Anything()),
+        ).then_return(stream)
+
+        turn_store = InMemoryTurnStore()
+        _message, turn = _user_turn()
+        service = ChatService(
+            runner,
+            MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
+            turn_store,
+            _ChainStore(),
+            _FixedClock(),
+        )
+        await turn_store.put_turn(turn)
+
+        async def _drain() -> None:
+            async for _event in service.run_turn(
+                turn,
+                "hello",
+                RunConfig(agent_timeout_s=0.05),
+            ):
+                pass
+
+        await asyncio.wait_for(_drain(), 2)
         return await turn_store.get_turn(turn.turn_id)
 
     saved = asyncio.run(exercise())
