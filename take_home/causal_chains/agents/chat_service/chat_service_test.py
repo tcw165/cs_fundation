@@ -290,6 +290,72 @@ def test_put_turn_status_timeout_skips_an_ended_turn():
     assert still_cancelled is not None and still_cancelled.status is TurnStatus.cancelled
 
 
+def test_run_turn_sends_the_window_and_the_latest_user_message_oldest_first():
+    class _Recording:
+        def __init__(self) -> None:
+            self.inputs: list[list[Message]] = []
+
+        async def stream(self, inputs: list[Message], context: RunContext):
+            self.inputs.append(inputs)
+            return _CancellableStream(self._events())
+
+        async def _events(self) -> AsyncIterator[Message]:
+            if False:
+                yield HeartbeatMessage()
+
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        runner = _Recording()
+        service = ChatService(
+            runner,
+            store,
+            InMemoryTurnStore(),
+            _ChainStore(),
+            _FixedClock(),
+        )
+        old = MarkdownMessage(
+            message_id="m_old",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.user,
+            text="old",
+            created_timestamp=datetime(2026, 9, 30, 0, 0, tzinfo=timezone.utc),
+        )
+        recent = MarkdownMessage(
+            message_id="m_recent",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.agent,
+            text="recent",
+            created_timestamp=datetime(2026, 9, 30, 1, 0, tzinfo=timezone.utc),
+        )
+        latest = MarkdownMessage(
+            message_id="m_latest",
+            conversation_id="1",
+            user_uuid="user-1",
+            role=Role.user,
+            text="latest",
+            created_timestamp=datetime(2026, 9, 30, 1, 5, tzinfo=timezone.utc),
+        )
+        await store.append("1", old)
+        await store.append("1", recent)
+        turn = Turn(
+            turn_id="t_1",
+            conversation_id="1",
+            status=TurnStatus.queued,
+            from_message=latest.message_id,
+        )
+        await service._turn_store.put_turn(turn)
+        async for _event in service.run_turn(turn, [latest], RunConfig()):
+            pass
+        return runner.inputs
+
+    seen = asyncio.run(exercise())
+    assert [[message.message_id for message in batch] for batch in seen] == [
+        ["m_recent", "m_latest"],
+    ]
+
+
 def test_run_turn_yields_runner_messages_and_completes():
     async def exercise():
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
