@@ -9,6 +9,7 @@ from fastapi import BackgroundTasks, HTTPException
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import (
+    format_conversation_sse,
     get_messages,
     post_message,
     stop_turn,
@@ -581,9 +582,7 @@ def test_sse_streams_one_snapshot_per_emission():
     assert [snapshot.messages[0].text for snapshot in snapshots] == ["one", "two"]
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
     assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
-    assert snapshots[0].user_interaction_state.text_input_state is (
-        TextInputState.SEND_ENABLED_WITH_STOP_BUTTON
-    )
+    assert snapshots[0].user_interaction_state.text_input_state is TextInputState.ENABLED
     assert snapshots[0].user_interaction_state.thinking_state is None
     assert snapshots[0].turn is not None
     assert snapshots[0].turn.processing == []
@@ -631,3 +630,53 @@ def test_sse_streams_a_heartbeat_as_its_own_snapshot(monkeypatch: pytest.MonkeyP
         for message in snapshot.messages
     )
     assert all(len(snapshot.messages) == 1 for snapshot in snapshots)
+
+
+def test_snapshot_follows_the_turn_status():
+    message = MarkdownMessage(
+        message_id="m_1",
+        conversation_id="1",
+        user_uuid="user-1",
+        role=Role.agent,
+        text="one",
+        created_timestamp=datetime(2099, 1, 1, tzinfo=timezone.utc),
+    )
+    turn = Turn(
+        turn_id="t_1",
+        conversation_id="1",
+        status=TurnStatus.queued,
+        from_message="m_user",
+    )
+
+    def interaction(status: TurnStatus | None):
+        current = None if status is None else turn.model_copy(update={"status": status})
+        snapshot = _snapshots(format_conversation_sse("1", current, message))[0]
+        return snapshot.user_interaction_state, snapshot.turn
+
+    running, running_turn = interaction(TurnStatus.running)
+    assert running.text_input_state is TextInputState.SEND_ENABLED_WITH_STOP_BUTTON
+    assert running.thinking_state is None
+    assert running_turn is not None and len(running_turn.processing) == 1
+
+    completed, completed_turn = interaction(TurnStatus.completed)
+    assert completed.text_input_state is TextInputState.ENABLED
+    assert completed.thinking_state is None
+    assert completed_turn is not None and completed_turn.processing == []
+
+    cancelled, _cancelled_turn = interaction(TurnStatus.cancelled)
+    assert cancelled.text_input_state is TextInputState.ENABLED
+    assert cancelled.thinking_state is not None
+    assert cancelled.thinking_state.text == "Stopped"
+
+    failed, _failed_turn = interaction(TurnStatus.failed)
+    assert failed.thinking_state is not None
+    assert failed.thinking_state.text == "Failed"
+
+    timed_out, _timed_out_turn = interaction(TurnStatus.timeout)
+    assert timed_out.thinking_state is not None
+    assert timed_out.thinking_state.text == "Timed out"
+
+    missing, missing_turn = interaction(None)
+    assert missing.text_input_state is TextInputState.ENABLED
+    assert missing.thinking_state is None
+    assert missing_turn is not None and missing_turn.processing == []
