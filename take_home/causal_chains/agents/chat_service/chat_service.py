@@ -188,6 +188,12 @@ async def _cancel_stream_when_turn_ends(
     turn_id: str,
     stream: AgentStream,
 ) -> None:
+    """Cancel the stream once the stored turn has ended.
+
+    The stream blocks on the model, so this poll runs beside it. Every
+    ``_TURN_POLL_INTERVAL_S`` seconds it reads the turn. An ended status
+    calls ``stream.cancel()`` and the poll returns.
+    """
     while True:
         if await _turn_is_ended(turn_store, turn_id):
             stream.cancel()
