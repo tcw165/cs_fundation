@@ -307,10 +307,7 @@ def _snapshot(
         conversation_id=conversation_id,
         messages=[] if message is None else [message],
         user_interaction_state=_user_interaction_state(turn),
-        turn=TurnDescriptor(
-            processing=[turn] if in_flight else [],
-            queued=[],
-        ),
+        turn=TurnDescriptor(processing=[turn], queued=[]) if in_flight else None,
     )
 
 

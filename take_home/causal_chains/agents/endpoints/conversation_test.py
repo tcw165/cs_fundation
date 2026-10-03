@@ -588,9 +588,7 @@ def test_sse_streams_one_snapshot_per_emission():
     assert snapshots[0].user_interaction_state.thinking_state is None
     assert snapshots[-1].user_interaction_state.text_input_state is TextInputState.ENABLED
     assert snapshots[-1].user_interaction_state.thinking_state is None
-    assert snapshots[0].turn is not None
-    assert snapshots[0].turn.processing == []
-    assert snapshots[0].turn.queued == []
+    assert snapshots[0].turn is None
     assert runner.calls == 0
     replayed = _snapshots(replay)
     assert [snapshot.messages[0].text for snapshot in replayed[:-1]] == ["one", "two"]
@@ -626,22 +624,25 @@ def test_snapshot_follows_the_turn_status():
     completed, completed_turn = interaction(TurnStatus.completed)
     assert completed.text_input_state is TextInputState.ENABLED
     assert completed.thinking_state is None
-    assert completed_turn is not None and completed_turn.processing == []
+    assert completed_turn is None
 
-    cancelled, _cancelled_turn = interaction(TurnStatus.cancelled)
+    cancelled, cancelled_turn = interaction(TurnStatus.cancelled)
     assert cancelled.text_input_state is TextInputState.ENABLED
     assert cancelled.thinking_state is not None
     assert cancelled.thinking_state.text == "Stopped"
+    assert cancelled_turn is None
 
-    failed, _failed_turn = interaction(TurnStatus.failed)
+    failed, failed_turn = interaction(TurnStatus.failed)
     assert failed.thinking_state is not None
     assert failed.thinking_state.text == "Failed"
+    assert failed_turn is None
 
-    timed_out, _timed_out_turn = interaction(TurnStatus.timeout)
+    timed_out, timed_out_turn = interaction(TurnStatus.timeout)
     assert timed_out.thinking_state is not None
     assert timed_out.thinking_state.text == "Timed out"
+    assert timed_out_turn is None
 
     missing, missing_turn = interaction(None)
     assert missing.text_input_state is TextInputState.ENABLED
     assert missing.thinking_state is None
-    assert missing_turn is not None and missing_turn.processing == []
+    assert missing_turn is None
