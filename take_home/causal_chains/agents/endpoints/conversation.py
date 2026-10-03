@@ -70,7 +70,13 @@ async def post_message(
     if existing_turn is not None and not existing_turn.status.is_ended():
         raise HTTPException(status_code=409, detail="conversation already has a turn")
 
-    async def _run_turn() -> None:
+    async def _run_turn_in_background() -> None:
+        """Keep the agent turn running after the post response returns.
+
+        ``post_message`` stores the user message and the queued turn, then
+        returns. This task drives ``chat_service.run_turn`` so those messages
+        stay stored and the turn reaches an ended status.
+        """
         with bind_session_logger(conversation_id, turn_id):
             async for streamed in chat_service.run_turn(
                 turn,
@@ -99,7 +105,7 @@ async def post_message(
         await turn_store.put_turn(turn)
         logger().info("received user message")
 
-        background_tasks.add_task(_run_turn)
+        background_tasks.add_task(_run_turn_in_background)
         logger().info("queued turn")
         return PostMessageResponse(turn=turn, received_message=message)
 
