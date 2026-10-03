@@ -258,28 +258,28 @@ class AppAgentRunner(AgentRunner):
                     await self._generator.aclose()
 
             async def _read(self) -> AsyncGenerator[Message, None]:
+                # Keep this trace open until the model stream is consumed. Closing it
+                # after run_streamed returns drops the parent of every later span.
                 with trace(
                     "app_agent_runner",
                     group_id=context.conversation_id,
                     metadata={"turn_id": context.turn_id},
                 ):
                     self._run_result = runner._stream_agent_run(inputs, context)
-
-                # Now translate the RunResultStreaming into a stream of Messages.
-                send, receive = anyio.create_memory_object_stream[Message]()
-                async with anyio.create_task_group() as group:
-                    group.start_soon(
-                        partial(
-                            runner._stream_messages,
-                            self._run_result,
-                            context,
-                            send.clone(),
-                        ),
-                    )
-                    await send.aclose()
-                    async with receive:
-                        async for message in receive:
-                            yield message
+                    send, receive = anyio.create_memory_object_stream[Message]()
+                    async with anyio.create_task_group() as group:
+                        group.start_soon(
+                            partial(
+                                runner._stream_messages,
+                                self._run_result,
+                                context,
+                                send.clone(),
+                            ),
+                        )
+                        await send.aclose()
+                        async with receive:
+                            async for message in receive:
+                                yield message
 
         return AppAgentStream()
 
