@@ -19,6 +19,7 @@ def test_input_guardrail_agent_prompt_and_decision():
     assert input_guardrail_agent.instructions == prompt
     assert input_guardrail_agent.name == "input_guardrail"
     assert input_guardrail_agent.model == "gpt-5.6-luna"
+    assert input_guardrail_agent.model_settings.reasoning.effort == "none"
     assert input_guardrail_agent.output_type is InputGuardrailDecision
     assert input_guardrail_agent.tools == []
     assert "# Goal" in prompt and "# Key Rules" in prompt

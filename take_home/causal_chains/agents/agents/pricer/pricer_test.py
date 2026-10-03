@@ -14,5 +14,6 @@ def test_pricer_prompt_model_and_search():
     assert "Search the web" in prompt
     assert "link_situations" not in prompt
     assert pricer.model == "gpt-5.6-luna"
+    assert pricer.model_settings.reasoning.effort == "medium"
     assert pricer.output_type is LinkInputs
     assert any(isinstance(tool, WebSearchTool) for tool in pricer.tools)

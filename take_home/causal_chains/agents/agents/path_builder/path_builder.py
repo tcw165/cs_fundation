@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from agents import Agent, WebSearchTool
+from agents import Agent, ModelSettings, WebSearchTool
+from openai.types.shared.reasoning import Reasoning
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_situation,
@@ -21,6 +22,10 @@ path_builder = Agent[RunContext](
     name="path_builder",
     instructions=_read_prompt("path_builder.md"),
     model="gpt-5.6-luna",
+    model_settings=ModelSettings(
+        reasoning=Reasoning(effort="medium"),
+        verbosity="low",
+    ),
     tools=[
         WebSearchTool(),
         add_situation,

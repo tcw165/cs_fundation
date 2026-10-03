@@ -11,6 +11,7 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.instructions == prompt
     assert causal_chain.name == "causal_chain"
     assert causal_chain.model == "gpt-5.6-luna"
+    assert causal_chain.model_settings.reasoning.effort == "medium"
     assert causal_chain.output_type is str
     assert "# Goal & Role" in prompt
     assert "You are a helper to connect now to the hypothetical future." in prompt

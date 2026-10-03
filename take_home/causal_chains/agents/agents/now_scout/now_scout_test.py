@@ -16,6 +16,7 @@ def test_now_scout_prompt_model_and_search():
     assert "Use the case id from the input." in prompt
     assert "Do not invent a case id." in prompt
     assert now_scout.model == "gpt-5.6-luna"
+    assert now_scout.model_settings.reasoning.effort == "medium"
     assert now_scout.output_type is StartSituation
     assert any(isinstance(tool, WebSearchTool) for tool in now_scout.tools)
     assert [tool.name for tool in now_scout.tools if not isinstance(tool, WebSearchTool)] == [

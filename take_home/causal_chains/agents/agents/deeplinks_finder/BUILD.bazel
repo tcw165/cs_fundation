@@ -11,6 +11,7 @@ py_library(
     deps = [
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/messaging",
+        requirement("openai"),
         requirement("openai-agents"),
         requirement("pydantic"),
     ],

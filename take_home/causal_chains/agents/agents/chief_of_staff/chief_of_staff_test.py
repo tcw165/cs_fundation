@@ -32,6 +32,7 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert chief_of_staff.instructions == prompt
     assert chief_of_staff.name == "chief_of_staff"
     assert chief_of_staff.model == "gpt-5.6-luna"
+    assert chief_of_staff.model_settings.reasoning.effort == "medium"
     assert chief_of_staff.output_type is str
     assert "# Goal" in prompt
     assert "# Key Rules" in prompt
