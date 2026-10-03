@@ -10,6 +10,7 @@ py_library(
     deps = [
         requirement("openai-agents"),
         requirement("anyio"),
+        "//take_home/causal_chains/agents/constants:messaging",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
         "//take_home/causal_chains/agents/models/messaging",

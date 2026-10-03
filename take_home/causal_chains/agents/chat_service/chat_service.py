@@ -2,7 +2,6 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
 from functools import partial
 
 import anyio
@@ -11,6 +10,7 @@ from agents import flush_traces, trace
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
+from take_home.causal_chains.agents.constants.messaging import INPUT_WINDOW
 from take_home.causal_chains.agents.models.messaging.message import (
     HeartbeatMessage,
     MarkdownMessage,
@@ -36,7 +36,6 @@ from take_home.causal_chains.time.protocol.protocol import Clock
 
 _TURN_POLL_INTERVAL_S = 0.3
 _HEARTBEAT_INTERVAL_S = 3.0
-_INPUT_WINDOW = timedelta(minutes=10)
 
 
 def can_store_message(message: Message) -> bool:
@@ -159,7 +158,7 @@ class ChatService:
         until = max(message.created_timestamp for message in inputs)
         window = await self._messaging_store.search_messages(
             conversation_id=conversation_id,
-            since=until - _INPUT_WINDOW,
+            since=until - INPUT_WINDOW,
             until=until,
         )
         seen = {item.message_id for item in window}
