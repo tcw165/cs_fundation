@@ -20,8 +20,8 @@ from openai.types.responses import ResponseTextDeltaEvent
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
-from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
-    causal_chain,
+from take_home.causal_chains.agents.agents.chief_of_staff.chief_of_staff import (  # pragma: allowlist secret
+    chief_of_staff,
 )
 from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
     blocked_input_message,
@@ -221,7 +221,7 @@ class AppAgentRunner(AgentRunner):
             f"ask_len={len(user_ask)}",
         )
         return Runner.run_streamed(
-            causal_chain,
+            chief_of_staff,
             input=user_ask,
             context=context,
             max_turns=context.run_config.causal_chain_max_steps,
