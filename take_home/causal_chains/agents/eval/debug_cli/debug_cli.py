@@ -19,7 +19,6 @@ def post_and_read(
         "GET",
         f"{base_url}/api/v1/conversation/{conversation_id}/turn/{turn_id}/sse",
         params={
-            "include_traces": True,
             "after_message": body["turn"]["from_message"],
             "after_message_timestamp": body["received_message"]["created_timestamp"],
         },

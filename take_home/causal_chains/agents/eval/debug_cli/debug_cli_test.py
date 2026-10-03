@@ -1,11 +1,16 @@
+import asyncio
+import threading
+
 import anyio
 import httpx
 from click.testing import CliRunner
 from dependency_injector import providers
 
 from take_home.causal_chains.agents.di.container import AppContainer
+from take_home.causal_chains.agents.endpoints import conversation
 from take_home.causal_chains.agents.eval.debug_cli.debug_cli import main
 from take_home.causal_chains.agents.main_app import create_app
+from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 
 
 class _FakeDynamoDb:
@@ -68,26 +73,91 @@ class _FakeDynamoDb:
 
 class _SyncAsgiTransport(httpx.BaseTransport):
     def __init__(self, app: object) -> None:
-        self._transport = httpx.ASGITransport(app=app)
+        self._app = app
         self.requests: list[httpx.Request] = []
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread.start()
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
+        future = asyncio.run_coroutine_threadsafe(self._send(request), self._loop)
+        return future.result(timeout=10)
 
-        async def send() -> httpx.Response:
-            response = await self._transport.handle_async_request(request)
-            body = await response.aread()
-            await response.aclose()
-            return httpx.Response(
-                status_code=response.status_code,
-                headers=response.headers,
-                content=body,
-            )
+    async def _send(self, request: httpx.Request) -> httpx.Response:
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": request.method,
+            "headers": [(key.lower(), value) for key, value in request.headers.raw],
+            "scheme": request.url.scheme,
+            "path": request.url.path,
+            "raw_path": request.url.raw_path.split(b"?")[0],
+            "query_string": request.url.query,
+            "server": (request.url.host, request.url.port),
+            "client": ("127.0.0.1", 123),
+            "root_path": "",
+        }
+        sent = False
+        status_code: int | None = None
+        response_headers: list[tuple[bytes, bytes]] | None = None
+        body_parts: list[bytes] = []
+        response_complete = asyncio.Event()
 
-        return anyio.run(send)
+        async def receive() -> dict[str, object]:
+            nonlocal sent
+            if sent:
+                await response_complete.wait()
+                return {"type": "http.disconnect"}
+            sent = True
+            return {"type": "http.request", "body": request.content, "more_body": False}
+
+        async def send(message: dict[str, object]) -> None:
+            nonlocal status_code, response_headers
+            if message["type"] == "http.response.start":
+                status_code = int(message["status"])
+                response_headers = list(message.get("headers", []))
+                return
+            if message["type"] != "http.response.body":
+                return
+            chunk = message.get("body", b"")
+            if isinstance(chunk, bytes) and chunk:
+                body_parts.append(chunk)
+            if not message.get("more_body", False):
+                response_complete.set()
+
+        task = asyncio.create_task(self._app(scope, receive, send))
+        task.add_done_callback(
+            lambda done: response_complete.set() if not response_complete.is_set() else None,
+        )
+        await response_complete.wait()
+        if task.done() and task.exception() is not None and status_code is None:
+            task.result()
+        assert status_code is not None
+        return httpx.Response(
+            status_code=status_code,
+            headers=response_headers or [],
+            content=b"".join(body_parts),
+        )
 
 
 def test_query_hello_prints_markdown_and_done(monkeypatch):
+    release_runner = threading.Event()
+    original_stream = StubTurnRunner.stream
+    original_require = conversation._require
+
+    async def wait_for_the_stream(self, inputs, context):
+        await asyncio.to_thread(release_runner.wait)
+        return await original_stream(self, inputs, context)
+
+    async def require_then_release(*args, **kwargs):
+        turn = await original_require(*args, **kwargs)
+        release_runner.set()
+        return turn
+
+    monkeypatch.setattr(StubTurnRunner, "stream", wait_for_the_stream)
+    monkeypatch.setattr(conversation, "_require", require_then_release)
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.config.user_uuid.from_value("user-1")
@@ -117,7 +187,6 @@ def test_query_hello_prints_markdown_and_done(monkeypatch):
         for request in transport.requests
         if request.url.path.endswith("/sse")
     ]
-    assert sse_requests[-1].url.params["include_traces"] == "true"
     assert sse_requests[-1].url.params["after_message"]
     assert sse_requests[-1].url.params["after_message_timestamp"]
 
