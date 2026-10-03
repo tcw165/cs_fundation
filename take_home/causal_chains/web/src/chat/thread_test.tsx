@@ -133,6 +133,55 @@ describe("thread composer", () => {
     expect(host.querySelector("textarea")?.getAttribute("placeholder")).toBe(
       "Ask about a chain",
     );
+    const square = stop?.querySelector("rect");
+    expect(square?.getAttribute("width")).toBe("12");
+    expect(square?.getAttribute("height")).toBe("12");
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("posts stop for the turn when Stop is clicked", async () => {
+    const stopped: string[] = [];
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => {
+        stopped.push(turn_id);
+        return {
+          turn_id,
+          conversation_id: "1",
+          status: "cancelled",
+          from_message: "m_user",
+        };
+      },
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: async function* () {
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+      },
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await send(host, "hello");
+    const stop = host.querySelector("[aria-label='Stop']");
+    await act(async () => {
+      stop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(stopped).toEqual(["t_1"]);
     act(() => {
       root.unmount();
     });

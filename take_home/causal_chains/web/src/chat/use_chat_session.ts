@@ -159,7 +159,6 @@ export function use_chat_session(
         });
       } finally {
         abort_ref.current = null;
-        turn_id_ref.current = null;
         running_ref.current = false;
         dispatch({ type: "run", running: false });
       }
@@ -169,6 +168,7 @@ export function use_chat_session(
 
   const stop = useCallback(() => {
     const turn_id = turn_id_ref.current;
+    turn_id_ref.current = null;
     if (turn_id !== null) {
       void chat_port.stop_turn({ conversation_id, turn_id });
     }
