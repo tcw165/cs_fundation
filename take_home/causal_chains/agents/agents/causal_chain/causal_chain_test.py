@@ -12,7 +12,8 @@ def test_causal_chain_prompt_and_tools():
     assert causal_chain.name == "causal_chain"
     assert causal_chain.model == "gpt-5.6-luna"
     assert causal_chain.output_type is str
-    assert "# Goal" in prompt
+    assert "# Goal & Role" in prompt
+    assert "You are a helper to connect now to the hypothetical future." in prompt
     assert "# Iterative Process" not in prompt
     assert "# Communication" in prompt
     assert "quota" not in prompt
@@ -39,12 +40,13 @@ def test_causal_chain_prompt_and_tools():
     assert "Do not write the story during this repeat." in prompt
     assert "the only answer is that story" in prompt
     assert (
-        "If the message does not state a hypothetical future, answer it in one message "
-        "and stop. Do not create a case. Do not call a tool."
+        "If the message does not state a hypothetical future, answer in one message "
+        "that you only imagine causal chains for hypothetical questions, then stop. "
+        "Do not create a case. Do not call a tool. Do not describe any other ability."
     ) in prompt
     assert (
-        "For a message that does not state a hypothetical future, the one message is "
-        "the answer, and you stop."
+        "For a message that does not state a hypothetical future, that one message "
+        "only says you imagine causal chains for hypothetical questions, and you stop."
     ) in prompt
     assert "A preamble is not an answer." in prompt
     assert (
