@@ -16,6 +16,7 @@ from take_home.causal_chains.agents.endpoints.models.post_message_response impor
     PostMessageResponse,
 )
 from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
+from take_home.causal_chains.agents.endpoints.models.thinking_state import ThinkingState
 from take_home.causal_chains.agents.endpoints.models.turn_descriptor import TurnDescriptor
 from take_home.causal_chains.agents.endpoints.models.user_interaction_state import (
     UserInteractionState,
@@ -229,8 +230,7 @@ def format_conversation_sse(
     turn: Turn | None,
     message: Message,
 ) -> str:
-    nullable_turn = turn if turn is not None and not turn.status.is_ended() else None
-    snapshot = _snapshot(conversation_id, nullable_turn, message)
+    snapshot = _snapshot(conversation_id, turn, message)
     return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
 
 
@@ -320,14 +320,36 @@ def _snapshot(
     turn: Turn | None,
     message: Message,
 ) -> ConversationMessagesResponse:
+    in_flight = turn is not None and not turn.status.is_ended()
     return ConversationMessagesResponse(
         conversation_id=conversation_id,
         messages=[message],
-        user_interaction_state=UserInteractionState(
-            text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,
-        ),
+        user_interaction_state=_user_interaction_state(turn),
         turn=TurnDescriptor(
-            processing=[] if turn is None else [turn],
+            processing=[turn] if in_flight else [],
             queued=[],
         ),
     )
+
+
+def _user_interaction_state(turn: Turn | None) -> UserInteractionState:
+    if turn is not None and not turn.status.is_ended():
+        return UserInteractionState(
+            text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,
+        )
+    return UserInteractionState(
+        text_input_state=TextInputState.ENABLED,
+        thinking_state=_thinking_for_ended_turn(turn),
+    )
+
+
+def _thinking_for_ended_turn(turn: Turn | None) -> ThinkingState | None:
+    if turn is None or turn.status is TurnStatus.completed:
+        return None
+    if turn.status is TurnStatus.cancelled:
+        return ThinkingState(text="Stopped")
+    if turn.status is TurnStatus.failed:
+        return ThinkingState(text="Failed")
+    if turn.status is TurnStatus.timeout:
+        return ThinkingState(text="Timed out")
+    return None
