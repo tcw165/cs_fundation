@@ -148,7 +148,7 @@ describe("thread composer", () => {
     expect(stop?.querySelector("rect")).not.toBeNull();
     expect(host.querySelector("[aria-label='Send']")).toBeNull();
     expect(host.textContent).toContain("Looking up the chain");
-    expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
+    expect(host.querySelector("[aria-label='Thinking']")).not.toBeNull();
     expect(host.querySelector("textarea")?.getAttribute("placeholder")).toBe(
       "Ask about a chain",
     );
@@ -190,7 +190,10 @@ describe("thread composer", () => {
       }),
       list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
-        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null), live_turn());
+        yield page(
+          interaction("SEND_ENABLED_WITH_STOP_BUTTON", "Looking up the chain"),
+          live_turn(),
+        );
       },
     };
     const { host, root } = render(<Harness chat_port={chat_port} />);
@@ -212,7 +215,7 @@ describe("thread composer", () => {
     host.remove();
   });
 
-  it("hides the thinking indicator when the snapshot turn is null", async () => {
+  it("hides the thinking indicator when thinking state is null", async () => {
     const chat_port: ChatPort = {
       stop_turn: async ({ turn_id }) => ({
         turn_id,
@@ -237,7 +240,7 @@ describe("thread composer", () => {
       }),
       list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
-        yield page(interaction("ENABLED", null), null);
+        yield page(interaction("ENABLED", null), live_turn());
       },
     };
     const { host, root } = render(<Harness chat_port={chat_port} />);
