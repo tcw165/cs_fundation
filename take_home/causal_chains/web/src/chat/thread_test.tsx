@@ -9,6 +9,7 @@ import type {
   ChatPort,
   ConversationMessagesResponse,
   Message,
+  TurnDescriptor,
   UserInteractionState,
 } from "./chat_port";
 import { fast_timing } from "./reveal_timing";
@@ -47,7 +48,24 @@ function interaction(
   };
 }
 
-function page(state: UserInteractionState): ConversationMessagesResponse {
+function live_turn(): TurnDescriptor {
+  return {
+    processing: [
+      {
+        turn_id: "t_1",
+        conversation_id: "1",
+        status: "running",
+        from_message: "m_user",
+      },
+    ],
+    queued: [],
+  };
+}
+
+function page(
+  state: UserInteractionState,
+  turn: TurnDescriptor | null = null,
+): ConversationMessagesResponse {
   return {
     conversation_id: "1",
     messages: [
@@ -60,7 +78,7 @@ function page(state: UserInteractionState): ConversationMessagesResponse {
       },
     ],
     user_interaction_state: state,
-    turn: { processing: [], queued: [] },
+    turn,
   };
 }
 
@@ -130,6 +148,7 @@ describe("thread composer", () => {
     expect(stop?.querySelector("rect")).not.toBeNull();
     expect(host.querySelector("[aria-label='Send']")).toBeNull();
     expect(host.textContent).toContain("Looking up the chain");
+    expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
     expect(host.querySelector("textarea")?.getAttribute("placeholder")).toBe(
       "Ask about a chain",
     );
@@ -171,11 +190,12 @@ describe("thread composer", () => {
       }),
       list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
-        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null), live_turn());
       },
     };
     const { host, root } = render(<Harness chat_port={chat_port} />);
     await send(host, "hello");
+    expect(host.querySelector("[aria-label='Thinking']")).not.toBeNull();
     const stop = host.querySelector("[aria-label='Stop']");
     await act(async () => {
       stop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -184,7 +204,45 @@ describe("thread composer", () => {
     expect(stopped).toEqual(["t_1"]);
     expect(host.querySelector("[aria-label='Stop']")).toBeNull();
     expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
+    expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
     expect(host.textContent).toContain("Stopped");
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("hides the thinking indicator when the snapshot turn is null", async () => {
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: async function* () {
+        yield page(interaction("ENABLED", null), null);
+      },
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await send(host, "hello");
+    expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
     act(() => {
       root.unmount();
     });
@@ -220,9 +278,9 @@ describe("thread composer", () => {
       }),
       list_messages: async () => ({ messages: [], next_cursor: null }),
       subscribe_turn: async function* () {
-        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null), live_turn());
         await next_snapshot;
-        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null));
+        yield page(interaction("SEND_ENABLED_WITH_STOP_BUTTON", null), live_turn());
       },
     };
     const { host, root } = render(<Harness chat_port={chat_port} />);
@@ -237,6 +295,7 @@ describe("thread composer", () => {
     });
     expect(host.querySelector("[aria-label='Stop']")).toBeNull();
     expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
+    expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
     expect(host.textContent).toContain("Stopped");
     act(() => {
       root.unmount();
