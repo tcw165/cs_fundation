@@ -115,7 +115,7 @@ async def post_message(
 async def get_messages(
     conversation_id: str,
     container: AppContainerDep,
-    limit: Annotated[int, Query(ge=1)],
+    limit: Annotated[int, Query(ge=1, le=100)],
     after_message: Annotated[
         str | None,
         Query(description="Exclusive message id. The page starts after this message. Absent to start at the oldest message."),
