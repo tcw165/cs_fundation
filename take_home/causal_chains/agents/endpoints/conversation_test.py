@@ -628,10 +628,10 @@ def test_snapshot_follows_the_turn_status():
     assert completed.thinking_state is None
     assert completed_turn is not None and completed_turn.processing == []
 
-    cancelled, _cancelled_turn = interaction(TurnStatus.cancelled)
+    cancelled, cancelled_turn = interaction(TurnStatus.cancelled)
     assert cancelled.text_input_state is TextInputState.ENABLED
-    assert cancelled.thinking_state is not None
-    assert cancelled.thinking_state.text == "Stopped"
+    assert cancelled.thinking_state is None
+    assert cancelled_turn is not None and cancelled_turn.processing == []
 
     failed, _failed_turn = interaction(TurnStatus.failed)
     assert failed.thinking_state is not None

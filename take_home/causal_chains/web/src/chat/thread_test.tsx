@@ -205,7 +205,7 @@ describe("thread composer", () => {
     expect(host.querySelector("[aria-label='Stop']")).toBeNull();
     expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
     expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
-    expect(host.textContent).toContain("Stopped");
+    expect(host.textContent).not.toContain("Stopped");
     act(() => {
       root.unmount();
     });
@@ -296,7 +296,7 @@ describe("thread composer", () => {
     expect(host.querySelector("[aria-label='Stop']")).toBeNull();
     expect(host.querySelector("[aria-label='Send']")).not.toBeNull();
     expect(host.querySelector("[aria-label='Thinking']")).toBeNull();
-    expect(host.textContent).toContain("Stopped");
+    expect(host.textContent).not.toContain("Stopped");
     act(() => {
       root.unmount();
     });
