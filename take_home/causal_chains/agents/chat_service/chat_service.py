@@ -159,7 +159,7 @@ class ChatService:
                     # stream blocks on the model, so the poll has to run beside it.
                     group.start_soon(
                         partial(
-                            _cancel_when_ended,
+                            _cancel_stream_when_turn_ends,
                             turn_store=self._turn_store,
                             turn_id=turn.turn_id,
                             stream=stream,
@@ -183,7 +183,7 @@ def format_sse(
     return f"event: {event.kind}\ndata: {payload}\n\n"
 
 
-async def _cancel_when_ended(
+async def _cancel_stream_when_turn_ends(
     turn_store: TurnStore,
     turn_id: str,
     stream: AgentStream,
