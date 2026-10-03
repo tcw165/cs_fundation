@@ -1,0 +1,29 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "chief_of_staff",
+    srcs = ["chief_of_staff.py"],
+    data = ["//take_home/causal_chains/agents/agents/chief_of_staff/prompts:chief_of_staff.md"],  # pragma: allowlist secret
+    imports = ["../../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/agents/causal_chain",  # pragma: allowlist secret
+        "//take_home/causal_chains/agents/agents/input_guardrail",  # pragma: allowlist secret
+        "//take_home/causal_chains/agents/models",  # pragma: allowlist secret
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "chief_of_staff_test",
+    srcs = ["chief_of_staff_test.py"],
+    data = ["//take_home/causal_chains/agents/agents/chief_of_staff/prompts:chief_of_staff.md"],  # pragma: allowlist secret
+    imports = ["../../../../.."],
+    deps = [
+        ":chief_of_staff",
+        "//take_home/causal_chains/agents/agents/causal_chain",  # pragma: allowlist secret
+        requirement("openai-agents"),
+    ],
+)
