@@ -1,14 +1,18 @@
 import asyncio
 import json
 import logging
+import threading
 from types import SimpleNamespace
 from uuid import UUID
 
+import httpx
 from dependency_injector import providers
 from fastapi.testclient import TestClient
 
 from take_home.causal_chains.agents.di.container import AppContainer
+from take_home.causal_chains.agents.endpoints import conversation
 from take_home.causal_chains.agents.main_app import create_app
+from take_home.causal_chains.agents.stub_runner.stub_turn_runner import StubTurnRunner
 from take_home.causal_chains.agents.observability.endpoint_logging.endpoint_logging import (
     SkipPollingEndpointPaths,
 )
@@ -119,13 +123,106 @@ def test_post_message_rejects_text_outside_the_length_bounds():
     assert stored == []
 
 
-def test_post_message_and_sse_with_stub_runner():
+class _OpenStreamTransport(httpx.BaseTransport):
+    """Returns the HTTP body before Starlette background tasks finish.
+
+    The stub turn stays blocked until the stream loads the turn, so a later
+    SSE request still sees a live turn.
+    """
+
+    def __init__(self, app: object) -> None:
+        self._app = app
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._thread.start()
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        future = asyncio.run_coroutine_threadsafe(self._send(request), self._loop)
+        return future.result(timeout=10)
+
+    async def _send(self, request: httpx.Request) -> httpx.Response:
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": request.method,
+            "headers": [(key.lower(), value) for key, value in request.headers.raw],
+            "scheme": request.url.scheme,
+            "path": request.url.path,
+            "raw_path": request.url.raw_path.split(b"?")[0],
+            "query_string": request.url.query,
+            "server": (request.url.host, request.url.port),
+            "client": ("127.0.0.1", 123),
+            "root_path": "",
+        }
+        sent = False
+        status_code: int | None = None
+        response_headers: list[tuple[bytes, bytes]] | None = None
+        body_parts: list[bytes] = []
+        response_complete = asyncio.Event()
+
+        async def receive() -> dict[str, object]:
+            nonlocal sent
+            if sent:
+                await response_complete.wait()
+                return {"type": "http.disconnect"}
+            sent = True
+            return {"type": "http.request", "body": request.content, "more_body": False}
+
+        async def send(message: dict[str, object]) -> None:
+            nonlocal status_code, response_headers
+            if message["type"] == "http.response.start":
+                status_code = int(message["status"])
+                response_headers = list(message.get("headers", []))
+                return
+            if message["type"] != "http.response.body":
+                return
+            chunk = message.get("body", b"")
+            if isinstance(chunk, bytes) and chunk:
+                body_parts.append(chunk)
+            if not message.get("more_body", False):
+                response_complete.set()
+
+        task = asyncio.create_task(self._app(scope, receive, send))
+        task.add_done_callback(
+            lambda done: response_complete.set() if not response_complete.is_set() else None,
+        )
+        await response_complete.wait()
+        if task.done() and task.exception() is not None and status_code is None:
+            task.result()
+        assert status_code is not None
+        return httpx.Response(
+            status_code=status_code,
+            headers=response_headers or [],
+            content=b"".join(body_parts),
+        )
+
+
+def test_post_message_and_sse_with_stub_runner(monkeypatch):
+    release_runner = threading.Event()
+    original_stream = StubTurnRunner.stream
+    original_require = conversation._require
+
+    async def wait_for_the_stream(self, inputs, context):
+        await asyncio.to_thread(release_runner.wait)
+        return await original_stream(self, inputs, context)
+
+    async def require_then_release(*args, **kwargs):
+        turn = await original_require(*args, **kwargs)
+        release_runner.set()
+        return turn
+
+    monkeypatch.setattr(StubTurnRunner, "stream", wait_for_the_stream)
+    monkeypatch.setattr(conversation, "_require", require_then_release)
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.config.user_uuid.from_value("user-1")
     container.causal_chain_store.override(providers.Object(object()))
     _override_dynamo_db(container)
-    client = TestClient(create_app(container))
+    client = httpx.Client(
+        transport=_OpenStreamTransport(create_app(container)),
+        base_url="http://test",
+    )
     created = client.post("/api/v1/conversation/1/messages", json={"text": "hello"})
     assert created.status_code == 200
     body = created.json()

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import anyio
 import pytest
 from fastapi import BackgroundTasks, HTTPException
+from fastapi.responses import StreamingResponse
 
 from take_home.causal_chains.agents.chat_service.chat_service import ChatService
 from take_home.causal_chains.agents.endpoints.conversation import (
@@ -179,12 +180,18 @@ def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurn
     return _Container(service, store, turn_store), runner, store, turn_store
 
 
+async def _drain_sse(response: StreamingResponse) -> str:
+    chunks: list[str] = []
+    async for chunk in response.body_iterator:
+        chunks.append(chunk if isinstance(chunk, str) else chunk.decode())
+    return "".join(chunks)
+
+
 async def _read_sse(
     container: _Container,
     turn_id: str,
     after_message: str | None,
     after_message_timestamp: datetime | None,
-    include_traces: bool = False,
 ) -> str:
     response = await turn_sse(
         "1",
@@ -192,12 +199,8 @@ async def _read_sse(
         container,
         after_message=after_message,
         after_message_timestamp=after_message_timestamp,
-        include_traces=include_traces,
     )
-    chunks: list[str] = []
-    async for chunk in response.body_iterator:
-        chunks.append(chunk if isinstance(chunk, str) else chunk.decode())
-    return "".join(chunks)
+    return await _drain_sse(response)
 
 
 def test_post_message_stores_the_anchored_turn():
@@ -423,10 +426,11 @@ def test_turn_sse_starts_at_the_oldest_message_without_a_cursor():
             container,
             BackgroundTasks(),
         )
+        response = await turn_sse("1", posted.turn.turn_id, container)
         await turn_store.put_turn(
             posted.turn.model_copy(update={"status": TurnStatus.completed}),
         )
-        return await _read_sse(container, posted.turn.turn_id, None, None)
+        return await _drain_sse(response)
 
     snapshots = _snapshots(asyncio.run(exercise()))
     assert snapshots[0].messages == []
@@ -563,41 +567,55 @@ def test_sse_streams_one_snapshot_per_emission():
                 created_timestamp=datetime(2099, 1, 2, tzinfo=timezone.utc),
             ),
         )
-        completed = posted.turn.model_copy(update={"status": TurnStatus.completed})
-        await turn_store.put_turn(completed)
-        everything = await _read_sse(
-            container,
+        response = await turn_sse(
+            "1",
             posted.turn.turn_id,
-            posted.turn.from_message,
-            posted.received_message.created_timestamp,
-        )
-        replay = await _read_sse(
             container,
-            posted.turn.turn_id,
-            posted.turn.from_message,
-            posted.received_message.created_timestamp,
+            after_message=posted.turn.from_message,
+            after_message_timestamp=posted.received_message.created_timestamp,
         )
-        return everything, replay, runner
+        await turn_store.put_turn(
+            posted.turn.model_copy(update={"status": TurnStatus.completed}),
+        )
+        everything = await _drain_sse(response)
+        return everything, runner
 
-    everything, replay, runner = asyncio.run(exercise())
+    everything, runner = asyncio.run(exercise())
     snapshots = _snapshots(everything)
     assert snapshots[0].messages == []
     assert [snapshot.messages[0].text for snapshot in snapshots[1:-1]] == ["one", "two"]
     assert snapshots[-1].messages == []
     assert all(snapshot.conversation_id == "1" for snapshot in snapshots)
     assert all(len(snapshot.messages) == 1 for snapshot in snapshots[1:-1])
-    assert snapshots[0].user_interaction_state.text_input_state is TextInputState.ENABLED
-    assert snapshots[0].user_interaction_state.thinking_state is None
+    assert snapshots[0].user_interaction_state.text_input_state is TextInputState.SEND_DISABLED
+    assert snapshots[0].user_interaction_state.thinking_state is not None
+    assert snapshots[0].user_interaction_state.thinking_state.text == "Thinking"
     assert snapshots[-1].user_interaction_state.text_input_state is TextInputState.ENABLED
     assert snapshots[-1].user_interaction_state.thinking_state is None
     assert snapshots[0].turn is not None
-    assert snapshots[0].turn.processing == []
+    assert len(snapshots[0].turn.processing) == 1
     assert snapshots[0].turn.queued == []
     assert runner.calls == 0
-    replayed = _snapshots(replay)
-    assert replayed[0].messages == []
-    assert [snapshot.messages[0].text for snapshot in replayed[1:-1]] == ["one", "two"]
-    assert replayed[-1].messages == []
+
+
+def test_turn_sse_rejects_an_ended_turn():
+    async def exercise():
+        container, _runner, _store, turn_store = _services()
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        await turn_store.put_turn(
+            posted.turn.model_copy(update={"status": TurnStatus.completed}),
+        )
+        await turn_sse("1", posted.turn.turn_id, container)
+
+    with pytest.raises(HTTPException) as raised:
+        asyncio.run(exercise())
+    assert raised.value.status_code == 404
+    assert raised.value.detail == "turn already ended"
 
 
 def test_turn_sse_emits_thinking_before_the_first_message():
