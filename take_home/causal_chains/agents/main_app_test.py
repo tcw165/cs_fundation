@@ -91,6 +91,24 @@ def test_health_reports_ready():
     assert response.json() == {"status": "ok"}
 
 
+def test_post_message_rejects_text_outside_the_length_bounds():
+    container = AppContainer()
+    container.config.agent_runner.from_value("stub")
+    container.config.user_uuid.from_value("user-1")
+    container.causal_chain_store.override(providers.Object(object()))
+    _override_dynamo_db(container)
+    client = TestClient(create_app(container))
+    empty = client.post("/api/v1/conversation/1/messages", json={"text": ""})
+    oversized = client.post(
+        "/api/v1/conversation/1/messages",
+        json={"text": "a" * 10_000},
+    )
+    assert empty.status_code == 422
+    assert oversized.status_code == 422
+    stored = asyncio.run(container.messaging_store().list_messages("1", 20)).messages
+    assert stored == []
+
+
 def test_post_message_and_sse_with_stub_runner():
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
