@@ -14,7 +14,7 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 
 
 class _StubStream:
-    def __init__(self, inputs: list[str], context: RunContext) -> None:
+    def __init__(self, inputs: list[Message], context: RunContext) -> None:
         self._inputs = inputs
         self._context = context
         self._generator: AsyncGenerator[Message, None] | None = None
@@ -31,7 +31,7 @@ class _StubStream:
             await self._generator.aclose()
 
     async def _read(self) -> AsyncGenerator[Message, None]:
-        text = "\n".join(self._inputs)
+        text = "\n".join(message.openai_text() for message in self._inputs)
         yield MarkdownMessage(
             message_id=str(uuid.uuid4()),
             conversation_id=self._context.conversation_id,
@@ -46,7 +46,7 @@ class StubTurnRunner(AgentRunner):
     @override
     async def stream(
         self,
-        inputs: list[str],
+        inputs: list[Message],
         context: RunContext,
     ) -> AgentStream:
         return _StubStream(inputs, context)

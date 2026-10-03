@@ -207,7 +207,7 @@ def _user_turn(message_id: str = "m_user") -> tuple[MarkdownMessage, Turn]:
 def test_update_turn_completes_or_fails():
     async def succeed():
         store = InMemoryTurnStore()
-        _message, turn = _user_turn()
+        message, turn = _user_turn()
         async with update_turn(store, turn) as turn_is_open:
             assert turn_is_open is True
             running = await store.get_turn(turn.turn_id)
@@ -235,7 +235,7 @@ def test_update_turn_completes_or_fails():
 def test_update_turn_keeps_a_cancelled_turn():
     async def cancelled_while_running():
         store = InMemoryTurnStore()
-        _message, turn = _user_turn()
+        message, turn = _user_turn()
         await store.put_turn(turn)
         async with update_turn(store, turn):
             current = await store.get_turn(turn.turn_id)
@@ -264,7 +264,7 @@ def test_update_turn_keeps_a_cancelled_turn():
 def test_put_turn_status_timeout_skips_an_ended_turn():
     async def exercise():
         store = InMemoryTurnStore()
-        _message, turn = _user_turn()
+        message, turn = _user_turn()
         await store.put_turn(turn.model_copy(update={"status": TurnStatus.running}))
         await _put_turn_status_timeout(store, turn)
         timed_out = await store.get_turn(turn.turn_id)
@@ -293,7 +293,7 @@ def test_run_turn_yields_runner_messages_and_completes():
         message, turn = _user_turn()
         await store.append("1", message)
         await turn_store.put_turn(turn)
-        events = [event async for event in service.run_turn(turn, message.text, RunConfig())]
+        events = [event async for event in service.run_turn(turn, [message], RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(turn.turn_id)
         return events, stored, saved
@@ -316,10 +316,10 @@ def test_run_turn_keeps_produced_messages_when_the_turn_is_cancelled():
             self._turn_store = turn_store
             self._turn = turn
 
-        async def stream(self, inputs: list[str], context: RunContext):
+        async def stream(self, inputs: list[Message], context: RunContext):
             return _CancellableStream(self._events(inputs, context))
 
-        async def _events(self, inputs: list[str], context: RunContext):
+        async def _events(self, inputs: list[Message], context: RunContext):
             del inputs, context
             created = datetime(2026, 9, 30, 0, 1, tzinfo=timezone.utc)
             yield MarkdownMessage(
@@ -355,7 +355,7 @@ def test_run_turn_keeps_produced_messages_when_the_turn_is_cancelled():
         )
         await store.append("1", message)
         await turn_store.put_turn(turn)
-        events = [event async for event in service.run_turn(turn, message.text, RunConfig())]
+        events = [event async for event in service.run_turn(turn, [message], RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         saved = await turn_store.get_turn(turn.turn_id)
         return events, stored, saved
@@ -371,10 +371,10 @@ def test_run_turn_keeps_produced_messages_when_the_turn_is_cancelled():
 
 def test_run_turn_skips_heartbeats_and_other_roles():
     class _Mixed:
-        async def stream(self, inputs: list[str], context: RunContext):
+        async def stream(self, inputs: list[Message], context: RunContext):
             return _CancellableStream(self._events(inputs, context))
 
-        async def _events(self, inputs: list[str], context: RunContext):
+        async def _events(self, inputs: list[Message], context: RunContext):
             del inputs, context
             yield HeartbeatMessage()
             yield DeeplinkCardMessage(
@@ -414,8 +414,8 @@ def test_run_turn_skips_heartbeats_and_other_roles():
             _ChainStore(),
             _FixedClock(),
         )
-        _message, turn = _user_turn()
-        events = [event async for event in service.run_turn(turn, "hello", RunConfig())]
+        message, turn = _user_turn()
+        events = [event async for event in service.run_turn(turn, [message], RunConfig())]
         stored = (await store.list_messages("1", 20)).messages
         return events, stored
 
@@ -440,10 +440,10 @@ def test_run_turn_builds_run_clients():
         def __init__(self) -> None:
             self.contexts: list[RunContext] = []
 
-        async def stream(self, inputs: list[str], context: RunContext):
+        async def stream(self, inputs: list[Message], context: RunContext):
             return _CancellableStream(self._events(inputs, context))
 
-        async def _events(self, inputs: list[str], context: RunContext):
+        async def _events(self, inputs: list[Message], context: RunContext):
             self.contexts.append(context)
             if False:
                 yield MarkdownMessage(
@@ -464,8 +464,8 @@ def test_run_turn_builds_run_clients():
             chain_store,
             clock,
         )
-        _message, turn = _user_turn()
-        async for _event in service.run_turn(turn, "hello", RunConfig()):
+        message, turn = _user_turn()
+        async for _event in service.run_turn(turn, [message], RunConfig()):
             pass
         return runner.contexts
 
@@ -516,8 +516,8 @@ def test_run_turn_traces_chat_service_then_flushes(monkeypatch):
             _ChainStore(),
             _FixedClock(),
         )
-        _message, turn = _user_turn()
-        async for _event in service.run_turn(turn, "hello", RunConfig()):
+        message, turn = _user_turn()
+        async for _event in service.run_turn(turn, [message], RunConfig()):
             pass
         return turn
 
@@ -537,7 +537,7 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
             self.started = asyncio.Event()
             self._release = asyncio.Event()
 
-        async def stream(self, inputs: list[str], context: RunContext):
+        async def stream(self, inputs: list[Message], context: RunContext):
             del inputs, context
             return self
 
@@ -590,7 +590,7 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
 
         marker = asyncio.create_task(mark_cancelled())
         events = await asyncio.wait_for(
-            _collect(service.run_turn(turn, message.text, RunConfig())),
+            _collect(service.run_turn(turn, [message], RunConfig())),
             2,
         )
         await marker
@@ -609,7 +609,7 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
 
 def test_run_turn_stores_timeout_when_the_agent_times_out():
     class _Blocked:
-        async def stream(self, inputs: list[str], context: RunContext):
+        async def stream(self, inputs: list[Message], context: RunContext):
             del inputs, context
             return self
 
@@ -633,7 +633,7 @@ def test_run_turn_stores_timeout_when_the_agent_times_out():
 
     async def exercise():
         turn_store = InMemoryTurnStore()
-        _message, turn = _user_turn()
+        message, turn = _user_turn()
         service = ChatService(
             _Blocked(),
             MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
@@ -644,7 +644,7 @@ def test_run_turn_stores_timeout_when_the_agent_times_out():
         await turn_store.put_turn(turn)
         async for _event in service.run_turn(
             turn,
-            "hello",
+            [message],
             RunConfig(agent_timeout_s=0.05),
         ):
             pass
@@ -675,6 +675,7 @@ def test_run_turn_stays_cancelled_when_stopped_while_running():
             await self._release.wait()
 
     async def exercise():
+        message, turn = _user_turn()
         decoy = Decoy()
         runner = decoy.mock(cls=AgentRunner)
         mock_agent_msg = MarkdownMessage(
@@ -687,12 +688,11 @@ def test_run_turn_stays_cancelled_when_stopped_while_running():
         )
         stream = _YieldThenWait(mock_agent_msg)
         decoy.when(
-            await runner.stream(["hello"], matchers.Anything()),
+            await runner.stream([message], matchers.Anything()),
         ).then_return(stream)
 
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
         turn_store = InMemoryTurnStore()
-        message, turn = _user_turn()
         service = ChatService(
             runner,
             store,
@@ -712,7 +712,7 @@ def test_run_turn_stays_cancelled_when_stopped_while_running():
         marker = asyncio.create_task(mark_cancelled())
 
         async def _collect() -> list[Message]:
-            return [event async for event in service.run_turn(turn, "hello", RunConfig())]
+            return [event async for event in service.run_turn(turn, [message], RunConfig())]
 
         events = await asyncio.wait_for(_collect(), 2)
         await marker
@@ -743,16 +743,16 @@ def test_run_turn_yields_a_heartbeat_without_storing_it(monkeypatch):
                 yield HeartbeatMessage()
 
     async def exercise():
+        message, turn = _user_turn()
         decoy = Decoy()
         runner = decoy.mock(cls=AgentRunner)
         stream = _Hold()
         decoy.when(
-            await runner.stream(["hello"], matchers.Anything()),
+            await runner.stream([message], matchers.Anything()),
         ).then_return(stream)
 
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
         turn_store = InMemoryTurnStore()
-        _message, turn = _user_turn()
         service = ChatService(
             runner,
             store,
@@ -765,7 +765,7 @@ def test_run_turn_yields_a_heartbeat_without_storing_it(monkeypatch):
         events: list[Message] = []
 
         async def _collect() -> None:
-            async for event in service.run_turn(turn, "hello", RunConfig()):
+            async for event in service.run_turn(turn, [message], RunConfig()):
                 events.append(event)
                 if event.kind == "heartbeat":
                     return
@@ -803,15 +803,15 @@ def test_run_turn_times_out_when_the_agent_outlasts_the_limit():
                 )
 
     async def exercise():
+        message, turn = _user_turn()
         decoy = Decoy()
         runner = decoy.mock(cls=AgentRunner)
         stream = _Hold()
         decoy.when(
-            await runner.stream(["hello"], matchers.Anything()),
+            await runner.stream([message], matchers.Anything()),
         ).then_return(stream)
 
         turn_store = InMemoryTurnStore()
-        _message, turn = _user_turn()
         service = ChatService(
             runner,
             MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
@@ -824,7 +824,7 @@ def test_run_turn_times_out_when_the_agent_outlasts_the_limit():
         async def _drain() -> None:
             async for _event in service.run_turn(
                 turn,
-                "hello",
+                [message],
                 RunConfig(agent_timeout_s=0.05),
             ):
                 pass

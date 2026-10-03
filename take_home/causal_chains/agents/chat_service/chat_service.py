@@ -75,7 +75,7 @@ class ChatService:
     async def run_turn(
         self,
         turn: Turn,
-        text: str,
+        inputs: list[Message],
         run_config: RunConfig,
     ) -> AsyncIterator[Message]:
         """Yield this turn's messages until the agent finishes or the time limit hits.
@@ -105,7 +105,7 @@ class ChatService:
                 await asyncio.wait_for(
                     self._run_turn(
                         turn=turn,
-                        text=text,
+                        inputs=inputs,
                         run_config=run_config,
                         send=send,
                     ),
@@ -132,7 +132,7 @@ class ChatService:
     async def _run_turn(
         self,
         turn: Turn,
-        text: str,
+        inputs: list[Message],
         run_config: RunConfig,
         send: MemoryObjectSendStream[Message],
     ) -> None:
@@ -154,7 +154,7 @@ class ChatService:
                 metadata={"turn_id": turn.turn_id},
             ):
                 # The coroutine that generates content for the stream starts here.
-                stream = await self._agent_runner.stream([text], context)
+                stream = await self._agent_runner.stream(inputs, context)
 
                 async with anyio.create_task_group() as group:
                     # stream blocks on the model, so the poll has to run beside it.

@@ -112,7 +112,7 @@ async def run_offline(
     messages: list[Message] = []
     async for item in service.run_turn(
         turn,
-        query,
+        [message],
         RunConfig(include_traces=True),
     ):
         messages.append(item)

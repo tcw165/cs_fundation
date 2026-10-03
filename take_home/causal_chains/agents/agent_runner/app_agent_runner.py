@@ -210,19 +210,19 @@ class AppAgentRunner(AgentRunner):
 
     def _stream_agent_run(
         self,
-        inputs: list[str],
+        inputs: list[Message],
         context: RunContext,
     ) -> RunResultStreaming:
-        user_ask = "\n".join(inputs)
+        model_input = [message.to_openai_message() for message in inputs]
         logger().info(
             "agent run start "
             f"conversation_id={context.conversation_id} "
             f"turn_id={context.turn_id} "
-            f"ask_len={len(user_ask)}",
+            f"ask_len={sum(len(message.openai_text()) for message in inputs)}",
         )
         return Runner.run_streamed(
             chief_of_staff,
-            input=user_ask,
+            input=model_input,
             context=context,
             max_turns=context.run_config.causal_chain_max_steps,
             run_config=RunConfig(
@@ -233,7 +233,7 @@ class AppAgentRunner(AgentRunner):
     @override
     async def stream(
         self,
-        inputs: list[str],
+        inputs: list[Message],
         context: RunContext,
     ) -> AgentStream:
         runner = self
