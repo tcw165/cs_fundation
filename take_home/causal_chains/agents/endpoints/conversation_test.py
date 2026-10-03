@@ -618,9 +618,16 @@ def test_snapshot_follows_the_turn_status():
         snapshot = _snapshots(format_conversation_sse("1", current, message))[0]
         return snapshot.user_interaction_state, snapshot.turn
 
+    queued, queued_turn = interaction(TurnStatus.queued)
+    assert queued.text_input_state is TextInputState.SEND_DISABLED
+    assert queued.thinking_state is not None
+    assert queued.thinking_state.text == "Thinking"
+    assert queued_turn is not None and len(queued_turn.processing) == 1
+
     running, running_turn = interaction(TurnStatus.running)
     assert running.text_input_state is TextInputState.SEND_ENABLED_WITH_STOP_BUTTON
-    assert running.thinking_state is None
+    assert running.thinking_state is not None
+    assert running.thinking_state.text == "Thinking"
     assert running_turn is not None and len(running_turn.processing) == 1
 
     completed, completed_turn = interaction(TurnStatus.completed)

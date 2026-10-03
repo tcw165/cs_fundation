@@ -315,9 +315,15 @@ def _snapshot(
 
 
 def _user_interaction_state(turn: Turn | None) -> UserInteractionState:
-    if turn is not None and not turn.status.is_ended():
+    if turn is not None and turn.status == TurnStatus.queued:
+        return UserInteractionState(
+            text_input_state=TextInputState.SEND_DISABLED,
+            thinking_state=ThinkingState(text="Thinking"),
+        )
+    if turn is not None and turn.status == TurnStatus.running:
         return UserInteractionState(
             text_input_state=TextInputState.SEND_ENABLED_WITH_STOP_BUTTON,
+            thinking_state=ThinkingState(text="Thinking"),
         )
     return UserInteractionState(
         text_input_state=TextInputState.ENABLED,
