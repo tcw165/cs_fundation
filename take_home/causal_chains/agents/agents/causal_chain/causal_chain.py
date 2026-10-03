@@ -13,9 +13,6 @@ from take_home.causal_chains.agents.agent_tools.widgets import show_deeplink_wid
 from take_home.causal_chains.agents.agents.deeplinks_finder.deeplinks_finder import (
     deeplinks_finder,
 )
-from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
-    input_guardrail,
-)
 from take_home.causal_chains.agents.agents.now_scout.now_scout import now_scout
 from take_home.causal_chains.agents.agents.path_builder.path_builder import path_builder
 from take_home.causal_chains.agents.models.causal_chains.now_scout_models import (
@@ -78,6 +75,5 @@ causal_chain = Agent[RunContext](
         ),
         show_deeplink_widget,
     ],
-    input_guardrails=[input_guardrail],
     output_type=str,
 )
