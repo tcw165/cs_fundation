@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 from functools import partial
 
 import anyio
@@ -35,6 +36,7 @@ from take_home.causal_chains.time.protocol.protocol import Clock
 
 _TURN_POLL_INTERVAL_S = 0.3
 _HEARTBEAT_INTERVAL_S = 3.0
+_INPUT_WINDOW = timedelta(minutes=10)
 
 
 def can_store_message(message: Message) -> bool:
@@ -79,6 +81,31 @@ class ChatService:
         A sort from oldest to newest keeps that order ahead of real messages.
         """
         return []
+
+    async def _build_model_messages(
+        self,
+        conversation_id: str,
+        inputs: list[Message],
+    ) -> list[Message]:
+        """Prewarm messages, the last 10 minutes, and the latest user messages.
+
+        Oldest first. A latest user message already in the window is not repeated.
+        """
+        prewarm = self._compute_prewarm_messages()
+        until = max(message.created_timestamp for message in inputs)
+        window = await self._messaging_store.search_messages(
+            conversation_id=conversation_id,
+            since=until - _INPUT_WINDOW,
+            until=until,
+        )
+        seen = {item.message_id for item in window}
+        latest_user_messages = [
+            message for message in inputs if message.message_id not in seen
+        ]
+        return sorted(
+            [*prewarm, *window, *latest_user_messages],
+            key=lambda message: message.created_timestamp,
+        )
 
     async def run_turn(
         self,
@@ -162,7 +189,11 @@ class ChatService:
                 metadata={"turn_id": turn.turn_id},
             ):
                 # The coroutine that generates content for the stream starts here.
-                stream = await self._agent_runner.stream(inputs, context)
+                model_messages = await self._build_model_messages(
+                    conversation_id=turn.conversation_id,
+                    inputs=inputs,
+                )
+                stream = await self._agent_runner.stream(model_messages, context)
 
                 async with anyio.create_task_group() as group:
                     # stream blocks on the model, so the poll has to run beside it.
