@@ -45,6 +45,14 @@ class _Both:
     ) -> list[Conversation]:
         return []
 
+    async def search_messages(
+        self,
+        conversation_id: str,
+        since: datetime,
+        until: datetime,
+    ) -> list[Message]:
+        return []
+
 
 class _AppendOnly:
     async def append(

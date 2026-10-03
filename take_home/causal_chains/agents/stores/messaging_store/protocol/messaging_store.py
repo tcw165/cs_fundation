@@ -37,6 +37,21 @@ class MessagingStore(Protocol):
         """
         ...
 
+    async def search_messages(
+        self,
+        conversation_id: str,
+        since: datetime,
+        until: datetime,
+    ) -> list[Message]:
+        """Messages in the window, oldest first.
+
+        Args:
+            conversation_id: Conversation to read.
+            since: Inclusive start. A message at this timestamp is included.
+            until: Inclusive end. A message at this timestamp is included.
+        """
+        ...
+
     async def save_message_with_ttl(
         self,
         conversation_id: str,
