@@ -9,9 +9,12 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/agent_tools",  # pragma: allowlist secret
         "//take_home/causal_chains/agents/agents/causal_chain",  # pragma: allowlist secret
         "//take_home/causal_chains/agents/agents/input_guardrail",  # pragma: allowlist secret
         "//take_home/causal_chains/agents/models",  # pragma: allowlist secret
+        "//take_home/causal_chains/agents/stores/messaging_store/protocol",  # pragma: allowlist secret
+        "//take_home/causal_chains/time/protocol",  # pragma: allowlist secret
         requirement("openai-agents"),
     ],
 )

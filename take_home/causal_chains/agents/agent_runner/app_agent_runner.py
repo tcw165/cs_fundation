@@ -21,7 +21,7 @@ from openai.types.responses import ResponseTextDeltaEvent
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
 from take_home.causal_chains.agents.agents.chief_of_staff.chief_of_staff import (  # pragma: allowlist secret
-    chief_of_staff,
+    build_chief_of_staff,
 )
 from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
     blocked_input_message,
@@ -220,8 +220,13 @@ class AppAgentRunner(AgentRunner):
             f"turn_id={context.turn_id} "
             f"ask_len={sum(len(message.openai_text()) for message in inputs)}",
         )
+        agent = build_chief_of_staff(
+            conversation_id=context.conversation_id,
+            messaging_store=context.clients.messaging_store,
+            clock=context.clock,
+        )
         return Runner.run_streamed(
-            chief_of_staff,
+            agent,
             input=model_input,
             context=context,
             max_turns=context.run_config.causal_chain_max_steps,

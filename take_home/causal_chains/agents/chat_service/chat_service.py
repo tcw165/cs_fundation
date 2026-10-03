@@ -181,6 +181,7 @@ class ChatService:
                 run_config=run_config,
                 clients=RunClients(
                     causal_chain_store=self._causal_chain_store,
+                    messaging_store=self._messaging_store,
                 ),
             )
             with trace(

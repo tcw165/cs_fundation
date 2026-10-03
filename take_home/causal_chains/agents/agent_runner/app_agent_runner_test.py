@@ -17,9 +17,6 @@ from take_home.causal_chains.agents.agent_runner.app_agent_runner import (
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
     causal_chain,
 )
-from take_home.causal_chains.agents.agents.chief_of_staff.chief_of_staff import (  # pragma: allowlist secret
-    chief_of_staff,
-)
 from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
     blocked_input_message,
 )
@@ -119,7 +116,8 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
 
     events = asyncio.run(collect())
     assert contexts == [context]
-    assert seen == [chief_of_staff]
+    assert [agent.name for agent in seen] == ["chief_of_staff"]
+    assert [tool.name for tool in seen[0].tools] == ["search_messages"]
     assert prompts == [[_user_ask().to_openai_message()]]
     assert seen_max_turns == [2]
     assert [type(event) for event in events] == [MarkdownMessage]
@@ -795,7 +793,8 @@ def test_app_agent_runner_refuses_a_blocked_input(monkeypatch):
             max_turns=None,
             run_config=None,
         ):
-            assert agent is chief_of_staff
+            assert agent.name == "chief_of_staff"
+            assert [tool.name for tool in agent.tools] == ["search_messages"]
             return FakeResult()
 
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)
