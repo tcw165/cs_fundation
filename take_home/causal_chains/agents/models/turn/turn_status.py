@@ -7,10 +7,12 @@ class TurnStatus(StrEnum):
     completed = "completed"
     failed = "failed"
     cancelled = "cancelled"
+    timeout = "timeout"
 
     def is_ended(self) -> bool:
         return self in {
             TurnStatus.completed,
             TurnStatus.failed,
             TurnStatus.cancelled,
+            TurnStatus.timeout,
         }

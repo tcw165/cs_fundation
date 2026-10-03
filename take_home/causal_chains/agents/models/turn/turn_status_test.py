@@ -11,6 +11,7 @@ def test_turn_status_values():
     assert TurnStatus.completed == "completed"
     assert TurnStatus.failed == "failed"
     assert TurnStatus.cancelled == "cancelled"
+    assert TurnStatus.timeout == "timeout"
 
 
 def test_turn_status_is_ended_for_a_finished_turn():
@@ -19,6 +20,7 @@ def test_turn_status_is_ended_for_a_finished_turn():
     assert TurnStatus.completed.is_ended() is True
     assert TurnStatus.failed.is_ended() is True
     assert TurnStatus.cancelled.is_ended() is True
+    assert TurnStatus.timeout.is_ended() is True
 
 
 def test_turn_status_rejects_unknown():
