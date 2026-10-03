@@ -321,7 +321,7 @@ def test_run_turn_sends_the_window_and_the_latest_user_message_oldest_first():
             user_uuid="user-1",
             role=Role.user,
             text="old",
-            created_timestamp=datetime(2026, 9, 30, 0, 0, tzinfo=timezone.utc),
+            created_timestamp=datetime(2026, 9, 28, 0, 0, tzinfo=timezone.utc),
         )
         recent = MarkdownMessage(
             message_id="m_recent",
