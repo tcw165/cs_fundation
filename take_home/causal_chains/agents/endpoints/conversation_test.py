@@ -264,7 +264,7 @@ def test_post_message_accepts_another_turn_after_the_first_finishes():
 
 @pytest.mark.parametrize(
     "status",
-    [TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled],
+    [TurnStatus.completed, TurnStatus.failed, TurnStatus.cancelled, TurnStatus.timeout],
 )
 def test_post_message_accepts_a_turn_when_the_stored_one_has_ended(status: TurnStatus):
     async def exercise():
