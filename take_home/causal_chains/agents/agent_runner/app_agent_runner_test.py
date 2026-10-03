@@ -681,9 +681,12 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
         def __exit__(self, exc_type, exc, tb) -> None:
             active["value"] = False
 
+    streamed_inside: list[bool] = []
+
     class FakeResult:
         def stream_events(self):
             async def empty():
+                streamed_inside.append(active["value"])
                 if False:
                     yield None
 
@@ -719,6 +722,8 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
 
     events = asyncio.run(collect())
     assert ran_inside == [True]
+    assert streamed_inside == [True]
+    assert active["value"] is False
     assert opened == [("app_agent_runner", "1", {"turn_id": "t_1"})]
     assert events == []
 
