@@ -5,7 +5,7 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 py_library(
     name = "plan",
     srcs = ["plan.py"],
-    imports = ["../../../../../../"],
+    imports = ["../../../../../"],
     visibility = ["//visibility:public"],
     deps = [requirement("pydantic")],
 )
@@ -13,7 +13,7 @@ py_library(
 pytest_test(
     name = "plan_test",
     srcs = ["plan_test.py"],
-    imports = ["../../../../../../"],
+    imports = ["../../../../../"],
     deps = [
         ":plan",
         requirement("pydantic"),

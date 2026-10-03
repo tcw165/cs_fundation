@@ -18,7 +18,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "//take_home/causal_chains/agents/models/causal_chains",
-        "//take_home/causal_chains/agents/models/messaging/plan",
+        "//take_home/causal_chains/agents/models/plan",
         "//take_home/causal_chains/agents/models/messaging/protocol",
         requirement("openai"),
         requirement("pydantic"),
@@ -41,7 +41,7 @@ pytest_test(
     deps = [
         ":messaging",
         "//take_home/causal_chains/agents/models/causal_chains",
-        "//take_home/causal_chains/agents/models/messaging/plan",
+        "//take_home/causal_chains/agents/models/plan",
         requirement("pydantic"),
     ],
 )

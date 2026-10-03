@@ -11,7 +11,7 @@ from take_home.causal_chains.agents.models.messaging.entry_context import EntryC
 from take_home.causal_chains.agents.models.messaging.followup_question import (
     FollowupQuestion,
 )
-from take_home.causal_chains.agents.models.messaging.plan.plan import Plan
+from take_home.causal_chains.agents.models.plan.plan import Plan
 
 
 class Conversation(BaseModel):
