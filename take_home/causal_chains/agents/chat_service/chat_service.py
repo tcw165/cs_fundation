@@ -1,8 +1,11 @@
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import partial
 
 import anyio
+from anyio.streams.memory import MemoryObjectSendStream
 from agents import flush_traces, trace
 
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
@@ -72,49 +75,105 @@ class ChatService:
         self,
         turn: Turn,
         text: str,
-        run_config: RunConfig | None = None,
+        run_config: RunConfig,
     ) -> AsyncIterator[Message]:
-        try:
-            async with update_turn(self._turn_store, turn) as turn_is_open:
-                if not turn_is_open:
-                    return
-                context = RunContext(
-                    conversation_id=turn.conversation_id,
-                    clock=self._clock,
-                    turn_id=turn.turn_id,
-                    run_config=run_config or RunConfig(),
-                    clients=RunClients(
-                        causal_chain_store=self._causal_chain_store,
+        """Yield this turn's messages until the agent finishes or the time limit hits.
+
+        ``run_config.agent_timeout_s`` is the limit. The default is 5 minutes.
+        ``TimeoutError`` stays inside this method. The generator ends, and
+        messages already stored stay stored.
+
+        corner cases:
+
+        when the frontend stops the turn while the agent is still running:
+            The stop stores ``cancelled`` and returns before the agent stops.
+            The poll calls ``stream.cancel()`` within about 0.3 seconds.
+            The time limit does not fire. The stored status stays ``cancelled``.
+
+        when the agent would run past ``agent_timeout_s``:
+            The run is cut at the limit, not when the model would have finished.
+            Cancelling the turn stops the SDK run without waiting for the model.
+            The stored status stays ``running`` through that unwind, then becomes
+            ``timeout``.
+        """
+        send, receive = anyio.create_memory_object_stream[Message]()
+
+        async def _time_bounded_run() -> None:
+            """Run the turn until agent_timeout_s, then store status timeout."""
+            try:
+                await asyncio.wait_for(
+                    self._run_turn(
+                        turn=turn,
+                        text=text,
+                        run_config=run_config,
+                        send=send,
                     ),
+                    run_config.agent_timeout_s,
                 )
-                with trace(
-                    workflow_name="chat_service",
-                    group_id=turn.conversation_id,
-                    metadata={"turn_id": turn.turn_id},
-                ):
-                    stream = await self._agent_runner.stream([text], context)
+            except TimeoutError:
+                await _put_turn_status_timeout(self._turn_store, turn)
+            finally:
+                await send.aclose()
 
-                    async with anyio.create_task_group() as group:
-                        # stream blocks on the model, so the poll has to run beside it.
-                        group.start_soon(
-                            partial(
-                                _cancel_when_ended,
-                                turn_store=self._turn_store,
-                                turn_id=turn.turn_id,
-                                stream=stream,
-                            ),
-                        )
-
-                        async for message in stream:
-                            if can_store_message(message):
-                                await self._messaging_store.append(
-                                    turn.conversation_id,
-                                    message,
-                                )
-                            yield message
-                        group.cancel_scope.cancel()
+        driver = asyncio.create_task(_time_bounded_run())
+        try:
+            async with receive:
+                async for message in receive:
+                    yield message
+            await driver
         finally:
+            if not driver.done():
+                driver.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await driver
             flush_traces()
+
+    async def _run_turn(
+        self,
+        turn: Turn,
+        text: str,
+        run_config: RunConfig,
+        send: MemoryObjectSendStream[Message],
+    ) -> None:
+        async with update_turn(self._turn_store, turn) as turn_is_open:
+            if not turn_is_open:
+                return
+            context = RunContext(
+                conversation_id=turn.conversation_id,
+                clock=self._clock,
+                turn_id=turn.turn_id,
+                run_config=run_config,
+                clients=RunClients(
+                    causal_chain_store=self._causal_chain_store,
+                ),
+            )
+            with trace(
+                workflow_name="chat_service",
+                group_id=turn.conversation_id,
+                metadata={"turn_id": turn.turn_id},
+            ):
+                # The coroutine that generates content for the stream starts here.
+                stream = await self._agent_runner.stream([text], context)
+
+                async with anyio.create_task_group() as group:
+                    # stream blocks on the model, so the poll has to run beside it.
+                    group.start_soon(
+                        partial(
+                            _cancel_when_ended,
+                            turn_store=self._turn_store,
+                            turn_id=turn.turn_id,
+                            stream=stream,
+                        ),
+                    )
+
+                    async for message in stream:
+                        if can_store_message(message):
+                            await self._messaging_store.append(
+                                turn.conversation_id,
+                                message,
+                            )
+                        await send.send(message)
+                    group.cancel_scope.cancel()
 
 
 def format_sse(
@@ -139,6 +198,12 @@ async def _cancel_when_ended(
 async def _turn_is_ended(turn_store: TurnStore, turn_id: str) -> bool:
     current = await turn_store.get_turn(turn_id)
     return current is not None and current.status.is_ended()
+
+
+async def _put_turn_status_timeout(turn_store: TurnStore, turn: Turn) -> None:
+    if await _turn_is_ended(turn_store, turn.turn_id):
+        return
+    await turn_store.put_turn(turn.model_copy(update={"status": TurnStatus.timeout}))
 
 
 async def _put_status_unless_ended(
