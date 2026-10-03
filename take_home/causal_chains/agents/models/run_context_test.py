@@ -27,7 +27,9 @@ def test_run_context_round_trip():
         },
     }
     assert context.clock is clock
+    assert context.conversation_history == ()
     assert "clock" not in context.model_dump()
+    assert "conversation_history" not in context.model_dump()
 
 
 def test_clients_stay_off_the_dump():

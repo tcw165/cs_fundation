@@ -12,6 +12,7 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/models/messaging",
         "//take_home/causal_chains/agents/stores/causal_chain_store/protocol",
         "//take_home/causal_chains/agents/stores/messaging_store/protocol",
         "//take_home/causal_chains/time/protocol",
