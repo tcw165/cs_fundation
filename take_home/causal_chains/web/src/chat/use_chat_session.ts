@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { chat_item_from_message } from "./chat_item";
-import type { ChatPort, Message, UserInteractionState } from "./chat_port";
+import type { ChatPort, Message, TurnDescriptor, UserInteractionState } from "./chat_port";
 import { create_message_store } from "./message_store";
 import { initial_reveal_state, reveal_reducer } from "./reveal_state";
 import type { RevealTiming } from "./reveal_timing";
@@ -26,6 +26,7 @@ export function use_chat_session(
   const [draft, set_draft] = useState("");
   const [user_interaction_state, set_user_interaction_state] =
     useState<UserInteractionState>(idle_interaction);
+  const [turn, set_turn] = useState<TurnDescriptor | null>(null);
   const running_ref = useRef(false);
   const abort_ref = useRef<AbortController | null>(null);
   const turn_id_ref = useRef<string | null>(null);
@@ -132,6 +133,7 @@ export function use_chat_session(
           abort_signal: controller.signal,
         });
         turn_id_ref.current = posted.turn.turn_id;
+        set_turn({ processing: [posted.turn], queued: [] });
         messages_ref.current.remember(posted.received_message);
         if (posted.received_message.kind === "heartbeat") {
           return;
@@ -145,6 +147,7 @@ export function use_chat_session(
         })) {
           if (!ignore_snapshots.current) {
             set_user_interaction_state(snapshot.user_interaction_state);
+            set_turn(snapshot.turn);
           }
           for (const message of snapshot.messages) {
             if (!messages_ref.current.remember(message)) {
@@ -174,6 +177,7 @@ export function use_chat_session(
     const turn_id = turn_id_ref.current;
     turn_id_ref.current = null;
     ignore_snapshots.current = true;
+    set_turn(null);
     set_user_interaction_state((current) => ({
       text_input_state: "ENABLED",
       text_input_placeholder: current.text_input_placeholder,
@@ -185,5 +189,5 @@ export function use_chat_session(
     abort_ref.current?.abort();
   }, [chat_port, conversation_id]);
 
-  return { state, draft, set_draft, send, finish, timing, user_interaction_state, stop };
+  return { state, draft, set_draft, send, finish, timing, user_interaction_state, turn, stop };
 }

@@ -7,6 +7,7 @@ import { MessageView } from "./message_view";
 import type { TranscriptEntry } from "./reveal_state";
 import { Suggestions } from "./suggestions";
 import { distance_from_bottom, still_following } from "./thread_follow";
+import { turn_is_live } from "./turn_live";
 import type { use_chat_session } from "./use_chat_session";
 
 import "./thread.css";
@@ -62,8 +63,9 @@ export function Thread({
   session: Session;
   on_open_link: (link: string, title?: string) => void;
 }) {
-  const { state, draft, set_draft, send, finish, timing, user_interaction_state, stop } =
+  const { state, draft, set_draft, send, finish, timing, user_interaction_state, turn, stop } =
     session;
+  const show_thinking = turn_is_live(turn);
   const show_stop =
     user_interaction_state.text_input_state === "SEND_ENABLED_WITH_STOP_BUTTON";
   const send_disabled =
@@ -217,6 +219,13 @@ export function Thread({
           );
         })}
         {state.error !== null ? <p className="chat-error">{state.error}</p> : null}
+        {show_thinking ? (
+          <p className="typing-indicator" role="status" aria-label="Thinking">
+            <span />
+            <span />
+            <span />
+          </p>
+        ) : null}
       </div>
       <form
         className="composer"
