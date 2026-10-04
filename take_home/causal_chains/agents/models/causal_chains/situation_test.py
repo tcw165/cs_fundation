@@ -6,8 +6,6 @@ from pydantic import TypeAdapter, ValidationError
 
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
     require_single_start,
 )
 
@@ -44,7 +42,7 @@ def test_situation_fields():
         properties["created_timestamp"]["description"]
         == "When this situation was saved."
     )
-    assert properties["kind"]["description"] == "A mid-chain situation."
+    assert properties["kind"]["description"] == "start, situation, or terminal."
 
 
 def test_situation_json_is_not_a_terminal_situation():
@@ -54,7 +52,7 @@ def test_situation_json_is_not_a_terminal_situation():
         "desc": "now",
     }
     with pytest.raises(ValidationError):
-        TerminalSituation.model_validate(payload)
+        Situation.model_validate(payload)
 
 
 def test_situation_rejects_the_ask_field():
@@ -80,7 +78,7 @@ def test_situation_rejects_potential_drivers():
 
 
 def test_start_situation_carries_the_drivers():
-    start = StartSituation(
+    start = Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -92,28 +90,27 @@ def test_start_situation_carries_the_drivers():
     assert start.remained_drivers == ["blockade", "rejected deal"]
     assert start.kind == "start"
     assert isinstance(start, Situation)
-    properties = StartSituation.model_json_schema()["properties"]
-    assert properties["kind"]["description"] == "The saved present."
+    properties = Situation.model_json_schema()["properties"]
+    assert properties["kind"]["description"] == "start, situation, or terminal."
 
 
-def test_terminal_situation_carries_the_ask():
-    terminal = TerminalSituation(
+def test_terminal_situation_is_one_situation():
+    terminal = Situation(
         situation_id=DEAL_ID,
         version=1,
         created_timestamp=CREATED,
         kind="terminal",
         title="Republicans win the House while Democrats take the Senate.",
         desc="Republicans win the House while Democrats take the Senate.",
-        original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
         remained_drivers=[],
     )
     assert "Senate" in terminal.desc
-    assert terminal.original_ask.endswith("Midterm.")
-    assert not isinstance(terminal, StartSituation)
+    assert terminal.kind == "terminal"
+    assert isinstance(terminal, Situation)
 
 
 def test_path_return_is_a_list_or_one_terminal():
-    adapter = TypeAdapter(list[Situation] | TerminalSituation)
+    adapter = TypeAdapter(list[Situation] | Situation)
     situations = adapter.validate_python(
         [
             {
@@ -139,10 +136,10 @@ def test_path_return_is_a_list_or_one_terminal():
             "title": "the end",
             "desc": "the end",
             "remained_drivers": [],
-            "original_ask": "the ask",
         }
     )
-    assert isinstance(terminal, TerminalSituation)
+    assert isinstance(terminal, Situation)
+    assert terminal.kind == "terminal"
 
     with pytest.raises(ValidationError):
         adapter.validate_python(
@@ -160,7 +157,7 @@ def test_path_return_is_a_list_or_one_terminal():
 
 def test_second_start_rejected():
     situations = [
-        StartSituation(
+        Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -169,7 +166,7 @@ def test_second_start_rejected():
             desc="now",
                     remained_drivers=[],
 ),
-        StartSituation(
+        Situation(
             situation_id=DEAL_ID,
             version=1,
             created_timestamp=CREATED,

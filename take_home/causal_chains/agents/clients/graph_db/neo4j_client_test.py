@@ -140,7 +140,6 @@ def test_merge_situation_writes_node_fields():
         [],
         CLEAR_ID,
         "start",
-        "",
     )
     query, params = driver.calls[0]
     assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
@@ -159,7 +158,6 @@ def test_merge_situation_writes_node_fields():
         "remained_drivers": [],
         "case_id": str(CLEAR_ID),
         "kind": "start",
-        "original_ask": "",
     }
 
 
@@ -210,7 +208,6 @@ def test_list_situations_reads_versioned_rows():
                     "desc": "now",
                     "remained_drivers": [],
                     "kind": "start",
-                    "original_ask": "",
                     "case_id": str(CLEAR_ID),
                 }
             ]
@@ -225,7 +222,6 @@ def test_list_situations_reads_versioned_rows():
             "now",
             [],
             "start",
-            "",
             CLEAR_ID,
         ),
     ]

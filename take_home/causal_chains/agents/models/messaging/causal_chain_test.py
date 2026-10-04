@@ -7,8 +7,6 @@ from pydantic import ValidationError
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 
 CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
@@ -18,7 +16,7 @@ DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
 def test_causal_chain_keeps_one_start():
-    start = StartSituation(
+    start = Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -30,12 +28,12 @@ def test_causal_chain_keeps_one_start():
     deal = Situation(situation_id=DEAL_ID, version=1, created_timestamp=CREATED, kind="situation", title="deal", desc="deal", remained_drivers=[])
     chain = CausalChain(situations=[start, deal], links=[])
     assert chain.situations == [start, deal]
-    assert type(chain.situations[0]) is StartSituation
+    assert type(chain.situations[0]) is Situation
     assert chain.links == []
 
 
 def test_causal_chain_keeps_a_terminal():
-    start = StartSituation(
+    start = Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -44,19 +42,17 @@ def test_causal_chain_keeps_a_terminal():
         desc="now",
         remained_drivers=[],
     )
-    terminal = TerminalSituation(
+    terminal = Situation(
         situation_id=DEAL_ID,
         version=1,
         created_timestamp=CREATED,
         kind="terminal",
         title="the end",
         desc="the end",
-        original_ask="the ask",
         remained_drivers=[],
     )
     chain = CausalChain(situations=[start, terminal], links=[])
-    assert type(chain.situations[1]) is TerminalSituation
-    assert chain.situations[1].original_ask == "the ask"
+    assert chain.situations[1].kind == "terminal"
 
 
 def test_causal_chain_parses_the_start_before_a_plain_situation():
@@ -80,19 +76,18 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "desc": "the end",
                     "kind": "terminal",
                     "remained_drivers": [],
-                    "original_ask": "the ask",
                 },
             ],
             "links": [],
         }
     )
-    assert type(chain.situations[0]) is StartSituation
-    assert type(chain.situations[1]) is TerminalSituation
+    assert chain.situations[0].kind == "start"
+    assert chain.situations[1].kind == "terminal"
 
 
 def test_causal_chain_rejects_two_starts():
     situations = [
-        StartSituation(
+        Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -101,7 +96,7 @@ def test_causal_chain_rejects_two_starts():
             desc="now",
                     remained_drivers=[],
 ),
-        StartSituation(
+        Situation(
             situation_id=DEAL_ID,
             version=1,
             created_timestamp=CREATED,

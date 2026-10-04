@@ -9,8 +9,6 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import I
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.graph_causal_chain_store import (
     GraphCausalChainStore,
@@ -41,14 +39,14 @@ class _FakeGraphDb:
     def __init__(self) -> None:
         self.case_calls: list[tuple[UUID, str, str, str]] = []
         self.situation_calls: list[
-            tuple[UUID, int, str, str, str, list[str], UUID, str, str]
+            tuple[UUID, int, str, str, str, list[str], UUID, str]
         ] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]
         ] = []
         self._situations: dict[
             tuple[UUID, int],
-            tuple[UUID, int, str, str, str, list[str], str, str, UUID],
+            tuple[UUID, int, str, str, str, list[str], str, UUID],
         ] = {}
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]
@@ -121,7 +119,6 @@ class _FakeGraphDb:
         remained_drivers: list[str],
         case_id: UUID,
         kind: str,
-        original_ask: str,
     ) -> None:
         self.situation_calls.append(
             (
@@ -133,7 +130,6 @@ class _FakeGraphDb:
                 remained_drivers,
                 case_id,
                 kind,
-                original_ask,
             )
         )
         self._situations[(situation_id, version)] = (
@@ -144,7 +140,6 @@ class _FakeGraphDb:
             desc,
             remained_drivers,
             kind,
-            original_ask,
             case_id,
         )
 
@@ -170,7 +165,7 @@ class _FakeGraphDb:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
         return list(self._situations.values())
 
     def list_leads_to(
@@ -188,7 +183,7 @@ def test_add_situation_and_link_situations_record_calls():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
         case = _case(CASE_ID)
-        now = StartSituation(
+        now = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -226,9 +221,9 @@ def test_add_situation_and_link_situations_record_calls():
         (CASE_ID, "1", CREATED.isoformat(), CREATED.isoformat())
     ]
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, CREATED.isoformat(), "now", "now", [], CASE_ID, "start", ""),
-        (NOW_ID, 1, CREATED.isoformat(), "now", "now", [], CASE_ID, "start", ""),
-        (DEAL_ID, 1, CREATED.isoformat(), "deal", "deal", [], CASE_ID, "situation", ""),
+        (NOW_ID, 1, CREATED.isoformat(), "now", "now", [], CASE_ID, "start"),
+        (NOW_ID, 1, CREATED.isoformat(), "now", "now", [], CASE_ID, "start"),
+        (DEAL_ID, 1, CREATED.isoformat(), "deal", "deal", [], CASE_ID, "situation"),
     ]
     assert graph_db.link_calls == [
         (
@@ -259,7 +254,7 @@ def test_get_chains_returns_one_chain_per_root():
     async def exercise():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
-        now = StartSituation(
+        now = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -268,7 +263,7 @@ def test_get_chains_returns_one_chain_per_root():
             desc="now",
             remained_drivers=[],
         )
-        other = StartSituation(
+        other = Situation(
             situation_id=OTHER_ROOT_ID,
             version=1,
             created_timestamp=CREATED,
@@ -299,7 +294,7 @@ def test_get_chains_returns_one_chain_per_root():
         return await store.get_chains()
 
     chains = asyncio.run(exercise())
-    now = StartSituation(
+    now = Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -308,7 +303,7 @@ def test_get_chains_returns_one_chain_per_root():
         desc="now",
         remained_drivers=[],
     )
-    other = StartSituation(
+    other = Situation(
         situation_id=OTHER_ROOT_ID,
         version=1,
         created_timestamp=CREATED,
@@ -339,7 +334,7 @@ def test_get_chains_keeps_each_case_separate():
         store = GraphCausalChainStore(graph_db)
         case = _case(CASE_ID)
         other_case = _case(OTHER_CASE_ID)
-        now = StartSituation(
+        now = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -348,7 +343,7 @@ def test_get_chains_keeps_each_case_separate():
             desc="now",
             remained_drivers=[],
         )
-        elsewhere = StartSituation(
+        elsewhere = Situation(
             situation_id=OTHER_ROOT_ID,
             version=1,
             created_timestamp=CREATED,
@@ -377,7 +372,7 @@ def test_get_case_and_leaf_lookup():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
         case = _case(CASE_ID)
-        start = StartSituation(
+        start = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -408,7 +403,7 @@ def test_reaches_terminal_reads_the_graph():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
         case = _case(CASE_ID)
-        start = StartSituation(
+        start = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
@@ -417,14 +412,13 @@ def test_reaches_terminal_reads_the_graph():
             desc="now",
             remained_drivers=[],
         )
-        terminal = TerminalSituation(
+        terminal = Situation(
             situation_id=DEAL_ID,
             version=1,
             created_timestamp=CREATED,
             kind="terminal",
             title="the end",
             desc="the end",
-            original_ask="the ask",
             remained_drivers=[],
         )
         graph_db.reaches = True
@@ -438,7 +432,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
         graph_db = _FakeGraphDb()
         store = GraphCausalChainStore(graph_db)
         case = _case(CASE_ID)
-        start = StartSituation(
+        start = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,

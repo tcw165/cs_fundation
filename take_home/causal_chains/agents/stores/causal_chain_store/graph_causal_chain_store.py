@@ -1,6 +1,6 @@
 from collections import deque
 from datetime import datetime
-from typing import override
+from typing import Literal, override
 from uuid import UUID
 
 from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import GraphDb
@@ -12,11 +12,7 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
 )
 from take_home.causal_chains.agents.models.causal_chains.input_variable import InputVariable
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import (
-    Situation,
-    StartSituation,
-    TerminalSituation,
-)
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
 )
@@ -29,10 +25,10 @@ def _key(
     return (situation_id, version)
 
 
-def _ask(situation: Situation) -> str:
-    if isinstance(situation, TerminalSituation):
-        return situation.original_ask
-    return ""
+def _stored_kind(kind: str) -> Literal["start", "situation", "terminal"]:
+    if kind == "start" or kind == "situation" or kind == "terminal":
+        return kind
+    raise ValueError("situation kind is missing")
 
 
 def _situation_from_graph(
@@ -43,35 +39,12 @@ def _situation_from_graph(
     desc: str,
     remained_drivers: list[str],
     kind: str,
-    original_ask: str,
 ) -> Situation:
-    saved_at = datetime.fromisoformat(created_timestamp)
-    if kind == "start":
-        return StartSituation(
-            situation_id=situation_id,
-            version=version,
-            kind="start",
-            created_timestamp=saved_at,
-            title=title,
-            desc=desc,
-            remained_drivers=remained_drivers,
-        )
-    if kind == "terminal":
-        return TerminalSituation(
-            situation_id=situation_id,
-            version=version,
-            kind="terminal",
-            created_timestamp=saved_at,
-            title=title,
-            desc=desc,
-            remained_drivers=remained_drivers,
-            original_ask=original_ask,
-        )
     return Situation(
         situation_id=situation_id,
         version=version,
-        kind="situation",
-        created_timestamp=saved_at,
+        kind=_stored_kind(kind),
+        created_timestamp=datetime.fromisoformat(created_timestamp),
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
@@ -96,7 +69,7 @@ def chains_for(
         ).append(link)
     chains: list[CausalChain] = []
     for situation in unique.values():
-        if not isinstance(situation, StartSituation):
+        if situation.kind != "start":
             continue
         chains.append(_chain_from(situation, unique, outgoing))
     return chains
@@ -117,7 +90,7 @@ def _chain_from(
         for link in outgoing.get(current_key, []):
             dest_key = _key(link.to_situation_id, link.to_version)
             dest = unique.get(dest_key)
-            if dest is None or isinstance(dest, StartSituation):
+            if dest is None or dest.kind == "start":
                 continue
             chain_links.append(link)
             if dest_key not in seen:
@@ -179,7 +152,6 @@ class GraphCausalChainStore(CausalChainStore):
             list(situation.remained_drivers),
             case.case_id,
             situation.kind,
-            _ask(situation),
         )
 
     @override
@@ -205,7 +177,7 @@ class GraphCausalChainStore(CausalChainStore):
     async def lookup_leaf_situations(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> list[Situation]:
         return [
             Situation(
@@ -235,8 +207,8 @@ class GraphCausalChainStore(CausalChainStore):
     async def reaches_terminal(
         self,
         case: Case,
-        start: StartSituation,
-        terminal: TerminalSituation,
+        start: Situation,
+        terminal: Situation,
     ) -> bool:
         return self._graph_db.reaches_terminal(
             case.case_id,
@@ -250,7 +222,7 @@ class GraphCausalChainStore(CausalChainStore):
     async def lookup_chain_so_far(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> ChainSoFar:
         row = self._graph_db.lookup_chain_so_far(
             case.case_id,
@@ -308,7 +280,7 @@ class GraphCausalChainStore(CausalChainStore):
                 )
             )
         return ChainSoFar(
-            start=StartSituation(
+            start=Situation(
                 situation_id=start_id,
                 version=start_version,
                 kind="start",
@@ -333,7 +305,6 @@ class GraphCausalChainStore(CausalChainStore):
             desc,
             remained_drivers,
             kind,
-            original_ask,
             case_id,
         ) in self._graph_db.list_situations():
             grouped.setdefault(case_id, []).append(
@@ -345,7 +316,6 @@ class GraphCausalChainStore(CausalChainStore):
                     desc,
                     remained_drivers,
                     kind,
-                    original_ask,
                 )
             )
         links = [

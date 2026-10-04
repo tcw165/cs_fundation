@@ -303,12 +303,6 @@ function SituationCard({
       </button>
       <div className="node-detail">
         <p>{situation.desc}</p>
-        {situation.original_ask !== undefined ? (
-          <>
-            <h3>Original ask</h3>
-            <p>{situation.original_ask}</p>
-          </>
-        ) : null}
         <dl className="node-meta">
           <div>
             <dt>situation_id</dt>

@@ -31,8 +31,6 @@ from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
@@ -77,22 +75,22 @@ class _Store:
     async def lookup_leaf_situations(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> list[Situation]:
         return list(self.leaves)
 
     async def reaches_terminal(
         self,
         case: Case,
-        start: StartSituation,
-        terminal: TerminalSituation,
+        start: Situation,
+        terminal: Situation,
     ) -> bool:
         return self.reaches
 
     async def lookup_chain_so_far(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> ChainSoFar:
         if self.line is None:
             return ChainSoFar(start=start)
@@ -165,7 +163,6 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             "case": case_payload,
             "title": "Ships clear",
             "desc": "ships clear",
-            "original_ask": "the strait opens",
             "remained_drivers": [],
         },
     )
@@ -203,12 +200,11 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         context,
         {"case": case_payload, "start": now.model_dump(mode="json")},
     )
-    assert isinstance(now, StartSituation)
+    assert isinstance(now, Situation)
     assert now.kind == "start"
     assert now.remained_drivers == ["blockade"]
     assert type(deal) is Situation
-    assert isinstance(terminal, TerminalSituation)
-    assert terminal.original_ask == "the strait opens"
+    assert terminal.kind == "terminal"
     assert isinstance(link, LeadsTo)
     assert "Save the present" in add_start_situation.description
     assert "Save one mid-chain situation" in add_situation.description

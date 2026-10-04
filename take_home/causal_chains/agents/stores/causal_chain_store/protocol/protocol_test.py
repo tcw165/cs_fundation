@@ -9,8 +9,6 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import Cha
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -64,22 +62,22 @@ class _Both:
     async def lookup_leaf_situations(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> list[Situation]:
         return []
 
     async def reaches_terminal(
         self,
         case: Case,
-        start: StartSituation,
-        terminal: TerminalSituation,
+        start: Situation,
+        terminal: Situation,
     ) -> bool:
         return False
 
     async def lookup_chain_so_far(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> ChainSoFar:
         return ChainSoFar(start=start)
 
@@ -112,7 +110,7 @@ def test_fake_records_a_situation_and_a_link():
             created_timestamp=CREATED,
             updated_timestamp=CREATED,
         )
-        now = StartSituation(
+        now = Situation(
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,

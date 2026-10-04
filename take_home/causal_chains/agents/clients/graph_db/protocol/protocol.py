@@ -31,7 +31,6 @@ class GraphDb(Protocol):
         remained_drivers: list[str],
         case_id: UUID,
         kind: str,
-        original_ask: str,
     ) -> None: ...
 
     def merge_leads_to(
@@ -46,7 +45,7 @@ class GraphDb(Protocol):
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, str, UUID]]: ...
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]: ...
 
     def list_leaf_situations(
         self,

@@ -7,7 +7,7 @@ from dependency_injector import providers
 from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.endpoints.causal_chains import get_causal_chains
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
-from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
@@ -29,7 +29,7 @@ class _Chains:
 
 
 def test_get_causal_chains_returns_every_root_chain():
-    root = StartSituation(
+    root = Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,

@@ -50,7 +50,6 @@ MERGE (c:Case {case_id: $case_id})
 MERGE (s:Situation {situation_id: $situation_id, version: $version})
 ON CREATE SET s.desc = $desc,
     s.kind = $kind,
-    s.original_ask = $original_ask,
     s.created_timestamp = $created_timestamp
 SET s.title = $title,
     s.remained_drivers = $remained_drivers
@@ -142,7 +141,6 @@ RETURN s.situation_id AS situation_id,
     s.desc AS desc,
     s.remained_drivers AS remained_drivers,
     s.kind AS kind,
-    s.original_ask AS original_ask,
     c.case_id AS case_id
 """
 
@@ -330,7 +328,6 @@ class Neo4jClient(GraphDb):
         remained_drivers: list[str],
         case_id: UUID,
         kind: str,
-        original_ask: str,
     ) -> None:
         with self._driver.session() as session:
             session.run(
@@ -343,7 +340,6 @@ class Neo4jClient(GraphDb):
                 remained_drivers=remained_drivers,
                 case_id=str(case_id),
                 kind=kind,
-                original_ask=original_ask,
             )
 
     @override
@@ -379,12 +375,11 @@ class Neo4jClient(GraphDb):
     @override
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_SITUATIONS))
-        rows: list[tuple[UUID, int, str, str, str, list[str], str, str, UUID]] = []
+        rows: list[tuple[UUID, int, str, str, str, list[str], str, UUID]] = []
         for record in records:
-            original_ask = record["original_ask"]
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
@@ -394,7 +389,6 @@ class Neo4jClient(GraphDb):
                     str(record["desc"]),
                     _strings(record["remained_drivers"]),
                     str(record["kind"]),
-                    "" if original_ask is None else str(original_ask),
                     UUID(str(record["case_id"])),
                 )
             )

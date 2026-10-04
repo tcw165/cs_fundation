@@ -12,8 +12,6 @@ from take_home.causal_chains.agents.models.causal_chains.path_builder_models imp
 )
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 
 CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
@@ -23,8 +21,8 @@ DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 END_ID = UUID("33333333-3333-4333-8333-333333333333")
 
 
-def _start() -> StartSituation:
-    return StartSituation(
+def _start() -> Situation:
+    return Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -47,15 +45,14 @@ def _mid() -> Situation:
     )
 
 
-def _terminal() -> TerminalSituation:
-    return TerminalSituation(
+def _terminal() -> Situation:
+    return Situation(
         situation_id=END_ID,
         version=1,
         created_timestamp=CREATED,
         kind="terminal",
         title="The strait opens.",
         desc="The strait opens.",
-        original_ask="the strait opens",
         remained_drivers=[],
     )
 
@@ -66,7 +63,7 @@ def test_request_keeps_a_start_and_a_mid_situation():
         terminal_situation=_terminal(),
         prompt="one variable: the blockade lifts",
     )
-    assert isinstance(from_start.from_situation, StartSituation)
+    assert isinstance(from_start.from_situation, Situation)
     assert from_start.from_situation.kind == "start"
 
     from_mid = PathBuilderRequest(
