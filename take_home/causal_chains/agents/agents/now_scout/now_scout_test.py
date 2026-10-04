@@ -14,6 +14,7 @@ def test_now_scout_prompt_model_and_search():
     assert "add_start_situation" not in prompt
     assert "The input gives the case and the future." in prompt
     assert "Write a short title for the present, much shorter than the description." in prompt
+    assert "Include several drivers behind that present." in prompt
     assert "Use the case id from the input." in prompt
     assert "Do not invent a case id." in prompt
     assert now_scout.model == "gpt-5.6-luna"

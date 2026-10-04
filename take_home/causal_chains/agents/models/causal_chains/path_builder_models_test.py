@@ -149,6 +149,7 @@ def test_model_shape_with_description():
     assert "The saved future this chain is moving toward." in request_text
     assert "The direction for this one step." in request_text
     assert "including each saved link" in request_text
+    assert "the one driver to change." in request_text
     assert "remained_situation_quota" not in request_text
 
     result_text = "\n".join(
@@ -156,5 +157,6 @@ def test_model_shape_with_description():
     )
     assert "The one saved mid-chain situation" in result_text
     assert "already linked from the current situation" in result_text
+    assert "with one driver changed." in result_text
     assert "None means no new situation was saved" in result_text
     assert "is already linked to the terminal" in result_text

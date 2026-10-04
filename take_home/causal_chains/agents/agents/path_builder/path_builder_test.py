@@ -17,9 +17,11 @@ def test_path_builder_prompt_model_and_search():
     assert "link_situations" not in prompt
     assert "pricer" not in prompt
     assert "case id" in prompt
-    assert "one key-factor" in prompt
+    assert "one driver" in prompt
+    assert "key-factor" not in prompt
     assert "Write a short title for that one mid-chain situation." in prompt
-    assert "Name that key-factor in the description." in prompt
+    assert "change only one driver from the start" in prompt
+    assert "Name that driver in the description." in prompt
     assert "Save that link once the step is sorted out." in prompt
     assert "including each saved link" in prompt
     assert "remained_situation_quota" not in prompt

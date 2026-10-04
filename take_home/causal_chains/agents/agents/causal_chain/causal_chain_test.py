@@ -31,7 +31,10 @@ def test_causal_chain_prompt_and_tools():
         "Write the story of how the current situation evolves to the asked situation "
         "only after that path exists."
     ) in prompt
-    assert "The direction starts with the case id, then the open line, then the one change." in prompt
+    assert (
+        "The direction starts with the case id, then the open line, then the one driver to change. "
+        "That driver comes from the start, and this line has not already changed it."
+    ) in prompt
     assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
     assert "Write a short title for the future." in prompt
@@ -135,6 +138,8 @@ def test_causal_chain_prompt_and_tools():
     assert "Either link the current situation to the terminal" in (
         path_builder_tool.description
     )
+    assert "the one driver to change" in path_builder_tool.description
+    assert "this line has not already changed it" in path_builder_tool.description
     now_scout_tool = next(
         tool for tool in causal_chain.tools if tool.name == "now_scout"
     )
