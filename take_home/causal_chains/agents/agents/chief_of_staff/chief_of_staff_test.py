@@ -36,6 +36,7 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert chief_of_staff.output_type is str
     assert prompt.startswith("# Role & Goal\n")
     assert "# Key Rules" in prompt
+    assert "# Communication Primitive" in prompt
     assert "# Examples" not in prompt
     assert "You are the chief of staff." in prompt
     assert "The latest user message is the question." in prompt
