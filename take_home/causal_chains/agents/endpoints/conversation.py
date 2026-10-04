@@ -27,6 +27,7 @@ from take_home.causal_chains.agents.models.messaging.message import (
     Message,
     Role,
 )
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import BaseMessage
 from take_home.causal_chains.agents.models.turn.turn import Turn
 from take_home.causal_chains.agents.models.turn.turn_status import TurnStatus
 from anyio.streams.memory import MemoryObjectSendStream
@@ -272,11 +273,20 @@ async def _poll_messages(
             )
             for message in page.messages:
                 await send.send(message)
+                if isinstance(message, BaseMessage):
+                    after_message = message.message_id
+                    after_message_timestamp = message.created_timestamp
             if page.next_cursor is not None:
-                after_message = page.next_cursor
-                after_message_timestamp = page.messages[-1].created_timestamp
                 continue
             if stop.is_set():
+                trailing = await messaging_store.list_messages(
+                    conversation_id=conversation_id,
+                    limit=100,
+                    after_message=after_message,
+                    after_message_timestamp=after_message_timestamp,
+                )
+                for message in trailing.messages:
+                    await send.send(message)
                 return
             await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
     finally:

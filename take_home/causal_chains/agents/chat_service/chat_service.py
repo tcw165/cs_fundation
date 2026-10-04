@@ -18,7 +18,9 @@ from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
     Message,
     Role,
+    SystemMessage,
 )
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import BaseMessage
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
     DeeplinkCardMessage,
 )
@@ -38,10 +40,11 @@ from take_home.causal_chains.time.protocol.protocol import Clock
 
 _TURN_POLL_INTERVAL_S = 0.3
 _HEARTBEAT_INTERVAL_S = 3.0
+_TIMEOUT_TEXT = "This turn timed out. Send your message again."
 
 
 def can_store_message(message: Message) -> bool:
-    return message.role is Role.user or message.role is Role.agent
+    return message.role in {Role.user, Role.agent, Role.system}
 
 
 @asynccontextmanager
@@ -122,6 +125,13 @@ class ChatService:
                     run_config.agent_timeout_s,
                 )
             except TimeoutError:
+                notice = _timeout_notice(turn, inputs, self._clock.now())
+                await self._messaging_store.append(turn.conversation_id, notice)
+                with contextlib.suppress(
+                    anyio.BrokenResourceError,
+                    anyio.ClosedResourceError,
+                ):
+                    await send.send(notice)
                 await _put_turn_status_timeout(self._turn_store, turn)
             finally:
                 await send.aclose()
@@ -288,6 +298,21 @@ async def _cancel_stream_when_turn_ends(
 async def _turn_is_ended(turn_store: TurnStore, turn_id: str) -> bool:
     current = await turn_store.get_turn(turn_id)
     return current is not None and current.status.is_ended()
+
+
+def _timeout_notice(turn: Turn, inputs: list[Message], created: datetime) -> SystemMessage:
+    user_uuid = ""
+    for message in reversed(inputs):
+        if isinstance(message, BaseMessage):
+            user_uuid = message.user_uuid
+            break
+    return SystemMessage(
+        message_id=f"timeout_{turn.turn_id}",
+        conversation_id=turn.conversation_id,
+        user_uuid=user_uuid,
+        text=_TIMEOUT_TEXT,
+        created_timestamp=created,
+    )
 
 
 async def _put_turn_status_timeout(turn_store: TurnStore, turn: Turn) -> None:
