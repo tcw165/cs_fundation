@@ -9,6 +9,9 @@ from agents import (
     input_guardrail,
 )
 
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    decorate_tail_messages,
+)
 from take_home.causal_chains.agents.models.causal_chains.input_guardrail_decision import (
     InputGuardrailDecision,
 )
@@ -44,6 +47,7 @@ async def input_guardrail(
         input_guardrail_agent,
         agent_input,
         context=context.context,
+        run_config=decorate_tail_messages(),
     )
     decision = result.final_output_as(InputGuardrailDecision)
     return GuardrailFunctionOutput(

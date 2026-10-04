@@ -3,6 +3,9 @@ from pathlib import Path
 from agents import Agent, ModelSettings
 from openai.types.shared.reasoning import Reasoning
 
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_case,
     add_terminal_situation,
@@ -49,6 +52,7 @@ causal_chain = Agent[RunContext](
                 "It comes back saved as the start."
             ),
             parameters=NowScoutRequest,
+            run_config=decorate_tail_messages(),
         ),
         add_terminal_situation,
         reaches_terminal,
@@ -64,6 +68,7 @@ causal_chain = Agent[RunContext](
                 "or save one next situation and link the current situation to it."
             ),
             parameters=PathBuilderRequest,
+            run_config=decorate_tail_messages(),
         ),
         deeplinks_finder.as_tool(
             tool_name="deeplinks_finder",
@@ -77,6 +82,7 @@ causal_chain = Agent[RunContext](
                 "Do not save anything. Do not write a story."
             ),
             parameters=DeeplinkRequest,
+            run_config=decorate_tail_messages(),
         ),
         show_deeplink_widget,
     ],

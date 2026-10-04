@@ -11,6 +11,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/agent_run_config",
         "//take_home/causal_chains/agents/agent_tools",
         "//take_home/causal_chains/agents/agents/pricer",
         "//take_home/causal_chains/agents/models",
