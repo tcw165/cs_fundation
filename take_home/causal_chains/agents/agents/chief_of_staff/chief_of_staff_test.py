@@ -46,7 +46,9 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert "Do not build the chain yourself." in prompt
     assert "not exploring a causal chain" in prompt
     assert "Do not hand the turn off." in prompt
-    assert [tool.name for tool in chief_of_staff.tools] == ["search_messages"]
+    assert [tool.name for tool in chief_of_staff.tools] == [
+        "search_conversation_messages",
+    ]
     assert len(chief_of_staff.handoffs) == 1
     causal_handoff = chief_of_staff.handoffs[0]
     assert causal_handoff.agent_name == causal_chain.name

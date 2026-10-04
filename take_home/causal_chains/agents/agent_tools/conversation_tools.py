@@ -16,7 +16,7 @@ def build_conversation_tools(
     clock: Clock,
 ) -> tuple[FunctionTool, ...]:
     @function_tool
-    async def search_messages(
+    async def search_conversation_messages(
         since_minutes_ago: Annotated[
             int,
             "Minutes before now where the window starts. A message at that time is included.",
@@ -26,7 +26,10 @@ def build_conversation_tools(
             "Minutes before now where the window ends. 0 is the current time. A message at that time is included.",
         ] = 0,
     ) -> list[Message]:
-        """Messages in a window before now, oldest first."""
+        """Search the conversation for messages in a window before now, oldest first.
+
+        Use this when you notice context missing from the messages you were given.
+        """
         now = clock.now()
         return await messaging_store.search_messages(
             conversation_id=conversation_id,
@@ -34,4 +37,4 @@ def build_conversation_tools(
             until=now - timedelta(minutes=until_minutes_ago),
         )
 
-    return (search_messages,)
+    return (search_conversation_messages,)
