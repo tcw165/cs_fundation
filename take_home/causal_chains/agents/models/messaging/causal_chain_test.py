@@ -21,7 +21,7 @@ def test_causal_chain_keeps_one_start():
         version=1,
         title="now",
         desc="now",
-        potential_factors=["blockade"],
+        potential_drivers=["blockade"],
     )
     deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
     chain = CausalChain(situations=[start, deal], links=[])
@@ -36,7 +36,7 @@ def test_causal_chain_keeps_a_terminal():
         version=1,
         title="now",
         desc="now",
-        potential_factors=["blockade"],
+        potential_drivers=["blockade"],
     )
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
@@ -59,7 +59,7 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "version": 1,
                     "title": "now",
                     "desc": "now",
-                    "potential_factors": ["blockade"],
+                    "potential_drivers": ["blockade"],
                 },
                 {
                     "situation_id": str(DEAL_ID),
@@ -83,14 +83,14 @@ def test_causal_chain_rejects_two_starts():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             title="deal",
             desc="deal",
-            potential_factors=["talks"],
+            potential_drivers=["talks"],
         ),
     ]
     with pytest.raises(ValidationError, match="expected one start"):

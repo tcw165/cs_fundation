@@ -108,7 +108,7 @@ describe("app chat", () => {
               version: 1,
               title: "Strait shut",
               desc: "strait shut",
-              potential_factors: ["blockade"],
+              potential_drivers: ["blockade"],
             },
           ],
           links: [],

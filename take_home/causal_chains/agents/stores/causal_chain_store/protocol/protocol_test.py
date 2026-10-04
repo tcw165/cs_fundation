@@ -117,7 +117,7 @@ def test_fake_records_a_situation_and_a_link():
             version=1,
             title="now",
             desc="now",
-            potential_factors=[],
+            potential_drivers=[],
         )
         deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         link = LeadsTo(

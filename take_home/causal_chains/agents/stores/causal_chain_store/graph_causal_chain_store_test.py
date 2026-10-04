@@ -119,7 +119,7 @@ class _FakeGraphDb:
         desc: str,
         case_id: UUID,
         kind: str,
-        potential_factors: list[str],
+        potential_drivers: list[str],
         original_ask: str,
     ) -> None:
         self.situation_calls.append(
@@ -130,7 +130,7 @@ class _FakeGraphDb:
                 desc,
                 case_id,
                 kind,
-                potential_factors,
+                potential_drivers,
                 original_ask,
             )
         )
@@ -140,7 +140,7 @@ class _FakeGraphDb:
             title,
             desc,
             kind,
-            potential_factors,
+            potential_drivers,
             original_ask,
             case_id,
         )
@@ -190,7 +190,7 @@ def test_add_situation_and_link_situations_record_calls():
             version=1,
             title="now",
             desc="now",
-            potential_factors=[],
+            potential_drivers=[],
         )
         deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         await store.add_case(case)
@@ -253,14 +253,14 @@ def test_get_chains_returns_one_chain_per_root():
             version=1,
             title="now",
             desc="now",
-            potential_factors=[],
+            potential_drivers=[],
         )
         other = StartSituation(
             situation_id=OTHER_ROOT_ID,
             version=1,
             title="other",
             desc="other",
-            potential_factors=[],
+            potential_drivers=[],
         )
         deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
@@ -286,14 +286,14 @@ def test_get_chains_returns_one_chain_per_root():
         version=1,
         title="now",
         desc="now",
-        potential_factors=[],
+        potential_drivers=[],
     )
     other = StartSituation(
         situation_id=OTHER_ROOT_ID,
         version=1,
         title="other",
         desc="other",
-        potential_factors=[],
+        potential_drivers=[],
     )
     deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
     leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
@@ -322,14 +322,14 @@ def test_get_chains_keeps_each_case_separate():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         )
         elsewhere = StartSituation(
             situation_id=OTHER_ROOT_ID,
             version=1,
             title="elsewhere",
             desc="elsewhere",
-            potential_factors=["talks"],
+            potential_drivers=["talks"],
         )
         deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         await store.add_situation(case, now)
@@ -341,7 +341,7 @@ def test_get_chains_keeps_each_case_separate():
     assert len(chains) == 2
     assert [chain.case_id for chain in chains] == [CASE_ID, OTHER_CASE_ID]
     assert [chain.situations[0].desc for chain in chains] == ["now", "elsewhere"]
-    assert chains[0].situations[0].potential_factors == ["blockade"]
+    assert chains[0].situations[0].potential_drivers == ["blockade"]
     assert chains[0].links[0].to_situation_id == DEAL_ID
     assert chains[1].links == []
 
@@ -356,7 +356,7 @@ def test_get_case_and_leaf_lookup():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         )
         await store.add_case(case)
         graph_db.leaf_rows = [(LEAF_ID, 1, "leaf", "leaf")]
@@ -385,7 +385,7 @@ def test_reaches_terminal_reads_the_graph():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         )
         terminal = TerminalSituation(
             situation_id=DEAL_ID,
@@ -410,7 +410,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         )
         graph_db.chain_row = (
             (NOW_ID, 1, "now", "now", ["blockade"]),
@@ -443,7 +443,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
 
     empty, linked, missing = asyncio.run(exercise())
     assert empty.hops == []
-    assert empty.start.potential_factors == ["blockade"]
+    assert empty.start.potential_drivers == ["blockade"]
     assert linked.hops[0].situation.desc == "talks open"
     assert linked.hops[0].link.from_situation_id == NOW_ID
     assert linked.hops[0].link.to_situation_id == DEAL_ID

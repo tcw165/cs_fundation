@@ -27,7 +27,7 @@ def _start() -> StartSituation:
         version=1,
         title="Strait shut.",
         desc="Strait shut.",
-        potential_factors=["blockade"],
+        potential_drivers=["blockade"],
     )
 
 

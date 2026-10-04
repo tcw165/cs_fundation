@@ -57,7 +57,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         version=1,
         title="now",
         desc="now",
-        potential_factors=[],
+        potential_drivers=[],
     )
     later = Situation(
         situation_id=uuid4(),

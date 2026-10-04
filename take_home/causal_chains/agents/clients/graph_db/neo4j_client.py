@@ -50,7 +50,7 @@ MERGE (c:Case {case_id: $case_id})
 MERGE (s:Situation {situation_id: $situation_id, version: $version})
 ON CREATE SET s.desc = $desc,
     s.kind = $kind,
-    s.potential_factors = $potential_factors,
+    s.potential_drivers = $potential_drivers,
     s.original_ask = $original_ask
 SET s.title = $title
 REMOVE s.is_root
@@ -80,7 +80,7 @@ RETURN start.situation_id AS start_situation_id,
     start.version AS start_version,
     start.title AS start_title,
     start.desc AS start_desc,
-    start.potential_factors AS potential_factors,
+    start.potential_drivers AS potential_drivers,
     CASE
         WHEN path IS NULL THEN []
         ELSE [n IN nodes(path)[1..] | {{
@@ -134,7 +134,7 @@ RETURN s.situation_id AS situation_id,
     s.title AS title,
     s.desc AS desc,
     s.kind AS kind,
-    s.potential_factors AS potential_factors,
+    s.potential_drivers AS potential_drivers,
     s.original_ask AS original_ask,
     c.case_id AS case_id
 """
@@ -313,7 +313,7 @@ class Neo4jClient(GraphDb):
         desc: str,
         case_id: UUID,
         kind: str,
-        potential_factors: list[str],
+        potential_drivers: list[str],
         original_ask: str,
     ) -> None:
         with self._driver.session() as session:
@@ -325,7 +325,7 @@ class Neo4jClient(GraphDb):
                 desc=desc,
                 case_id=str(case_id),
                 kind=kind,
-                potential_factors=potential_factors,
+                potential_drivers=potential_drivers,
                 original_ask=original_ask,
             )
 
@@ -371,7 +371,7 @@ class Neo4jClient(GraphDb):
                     str(record["title"]),
                     str(record["desc"]),
                     str(record["kind"]),
-                    _strings(record["potential_factors"]),
+                    _strings(record["potential_drivers"]),
                     "" if original_ask is None else str(original_ask),
                     UUID(str(record["case_id"])),
                 )
@@ -454,7 +454,7 @@ class Neo4jClient(GraphDb):
                 int(record["start_version"]),
                 str(record["start_title"]),
                 str(record["start_desc"]),
-                _strings(record["potential_factors"]),
+                _strings(record["potential_drivers"]),
             ),
             _hop_rows(record["hops"]),
             _link_rows(record["links"]),

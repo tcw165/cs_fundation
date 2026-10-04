@@ -249,7 +249,7 @@ def test_get_causal_chains_returns_the_stored_chains():
         version=1,
         title="now",
         desc="now",
-        potential_factors=[],
+        potential_drivers=[],
     )
     chain = CausalChain(situations=[root], links=[])
 

@@ -26,7 +26,7 @@ def _start() -> StartSituation:
         version=1,
         title="Strait shut.",
         desc="Strait shut.",
-        potential_factors=["blockade"],
+        potential_drivers=["blockade"],
     )
 
 
@@ -56,7 +56,7 @@ def test_request_keeps_a_start_and_a_mid_situation():
         prompt="one variable: the blockade lifts",
     )
     assert isinstance(from_start.from_situation, StartSituation)
-    assert from_start.from_situation.potential_factors == ["blockade"]
+    assert from_start.from_situation.potential_drivers == ["blockade"]
 
     from_mid = PathBuilderRequest(
         from_situation=_mid(),
@@ -105,7 +105,7 @@ def test_result_rejects_a_start_or_a_terminal():
                     "situation_id": str(NOW_ID),
                     "version": 1,
                     "desc": "now",
-                    "potential_factors": ["blockade"],
+                    "potential_drivers": ["blockade"],
                 }
             }
         )

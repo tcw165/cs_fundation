@@ -143,7 +143,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             "case": case_payload,
             "title": "Strait shut",
             "desc": "strait shut",
-            "potential_factors": ["blockade"],
+            "potential_drivers": ["blockade"],
         },
     )
     deal = _invoke(
@@ -182,7 +182,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         {"case": case_payload, "start": now.model_dump(mode="json")},
     )
     assert isinstance(now, StartSituation)
-    assert now.potential_factors == ["blockade"]
+    assert now.potential_drivers == ["blockade"]
     assert type(deal) is Situation
     assert isinstance(terminal, TerminalSituation)
     assert terminal.original_ask == "the strait opens"

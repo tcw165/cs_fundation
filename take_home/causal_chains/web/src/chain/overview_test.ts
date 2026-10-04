@@ -12,7 +12,7 @@ function chain(situation_id: string, case_id: string): CausalChain {
         version: 1,
         title: situation_id,
         desc: situation_id,
-        potential_factors: ["now"],
+        potential_drivers: ["now"],
       },
       {
         situation_id: `${situation_id}-next`,

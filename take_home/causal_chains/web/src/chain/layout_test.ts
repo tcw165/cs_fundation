@@ -10,7 +10,7 @@ const chain: CausalChain = {
       version: 1,
       title: "Strait shut",
       desc: "strait shut",
-      potential_factors: ["blockade"],
+      potential_drivers: ["blockade"],
     },
     {
       situation_id: "step",
