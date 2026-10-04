@@ -39,6 +39,7 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert "# Examples" not in prompt
     assert "You are the chief of staff." in prompt
     assert "The latest user message is the question." in prompt
+    assert "If it is still not there, ask them to clarify." in prompt
     assert "Welcome only when that question is not a hypothetical." in prompt
     assert "Welcome them first." not in prompt
     assert "hand it off as written" in prompt
@@ -57,6 +58,7 @@ def test_chief_of_staff_hands_off_the_latest_future():
     for tool_name in (
         "causal_chain",
         "transfer_to_causal_chain",
+        "search_messages",
         "now_scout",
         "path_builder",
         "add_case",
