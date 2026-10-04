@@ -145,7 +145,7 @@ def test_merge_situation_writes_node_fields():
         "desc": "now",
         "case_id": str(CLEAR_ID),
         "kind": "start",
-        "potential_factors": ["blockade"],
+        "potential_drivers": ["blockade"],
         "original_ask": "",
     }
 
@@ -187,7 +187,7 @@ def test_list_situations_reads_versioned_rows():
                     "title": "Strait shut",
                     "desc": "now",
                     "kind": "start",
-                    "potential_factors": ["blockade"],
+                    "potential_drivers": ["blockade"],
                     "original_ask": "",
                     "case_id": str(CLEAR_ID),
                 }
@@ -251,7 +251,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
                     "start_version": 1,
                     "start_title": "Strait shut",
                     "start_desc": "now",
-                    "potential_factors": ["blockade"],
+                    "potential_drivers": ["blockade"],
                     "hops": [],
                     "links": [],
                 }
@@ -285,7 +285,7 @@ def test_lookup_chain_so_far_reads_one_hop():
                     "start_version": 1,
                     "start_title": "Strait shut",
                     "start_desc": "now",
-                    "potential_factors": ["blockade"],
+                    "potential_drivers": ["blockade"],
                     "hops": [
                         {
                             "situation_id": str(RESUMES_ID),

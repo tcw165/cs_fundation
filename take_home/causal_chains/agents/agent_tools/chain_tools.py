@@ -71,7 +71,7 @@ async def add_start_situation(
         str,
         "What is true in the present, including the context behind it.",
     ],
-    potential_factors: Annotated[list[str], "The drivers behind this present."],
+    potential_drivers: Annotated[list[str], "The drivers behind this present."],
 ) -> StartSituation:
     """Save the present on a case and return it, including the id assigned here."""
     situation = StartSituation(
@@ -79,7 +79,7 @@ async def add_start_situation(
         version=1,
         title=title,
         desc=desc,
-        potential_factors=potential_factors,
+        potential_drivers=potential_drivers,
     )
     await _require_store(ctx).add_situation(case, situation)
     return situation

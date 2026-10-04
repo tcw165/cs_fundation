@@ -9,7 +9,7 @@ export type ChainSituation = {
   version: number;
   title: string;
   desc: string;
-  potential_factors?: string[];
+  potential_drivers?: string[];
   original_ask?: string;
 };
 

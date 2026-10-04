@@ -29,7 +29,7 @@ class GraphDb(Protocol):
         desc: str,
         case_id: UUID,
         kind: str,
-        potential_factors: list[str],
+        potential_drivers: list[str],
         original_ask: str,
     ) -> None: ...
 

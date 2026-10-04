@@ -37,7 +37,7 @@ class _Both:
         desc: str,
         case_id: UUID,
         kind: str,
-        potential_factors: list[str],
+        potential_drivers: list[str],
         original_ask: str,
     ) -> None:
         return None

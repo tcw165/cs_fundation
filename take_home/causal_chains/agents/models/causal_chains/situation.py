@@ -18,9 +18,9 @@ class Situation(BaseModel):
 
 
 class StartSituation(Situation):
-    """The saved present. potential_factors are the drivers behind it."""
+    """The saved present. potential_drivers are the drivers behind it."""
 
-    potential_factors: list[str]
+    potential_drivers: list[str] = Field(..., description="The drivers behind this present.")
 
 
 class TerminalSituation(Situation):

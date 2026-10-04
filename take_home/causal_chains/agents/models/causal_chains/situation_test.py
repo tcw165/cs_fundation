@@ -54,27 +54,29 @@ def test_situation_rejects_the_ask_field():
         Situation.model_validate(payload)
 
 
-def test_situation_rejects_potential_factors():
+def test_situation_rejects_potential_drivers():
     payload = {
         "situation_id": str(NOW_ID),
         "version": 1,
         "desc": "now",
-        "potential_factors": ["blockade"],
+        "potential_drivers": ["blockade"],
     }
     with pytest.raises(ValidationError):
         Situation.model_validate(payload)
 
 
-def test_start_situation_carries_the_factors():
+def test_start_situation_carries_the_drivers():
     start = StartSituation(
         situation_id=NOW_ID,
         version=1,
         title="Strait shut.",
         desc="Strait shut.",
-        potential_factors=["blockade", "rejected deal"],
+        potential_drivers=["blockade", "rejected deal"],
     )
-    assert start.potential_factors == ["blockade", "rejected deal"]
+    assert start.potential_drivers == ["blockade", "rejected deal"]
     assert isinstance(start, Situation)
+    properties = StartSituation.model_json_schema()["properties"]
+    assert properties["potential_drivers"]["description"] == "The drivers behind this present."
 
 
 def test_terminal_situation_carries_the_ask():
@@ -137,14 +139,14 @@ def test_second_start_rejected():
             version=1,
             title="now",
             desc="now",
-            potential_factors=["blockade"],
+            potential_drivers=["blockade"],
         ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             title="deal",
             desc="deal",
-            potential_factors=["talks"],
+            potential_drivers=["talks"],
         ),
     ]
     with pytest.raises(ValueError, match="expected one start"):

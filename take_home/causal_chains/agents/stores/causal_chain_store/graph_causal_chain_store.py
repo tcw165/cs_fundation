@@ -37,9 +37,9 @@ def _kind(situation: Situation) -> str:
     return "situation"
 
 
-def _factors(situation: Situation) -> list[str]:
+def _drivers(situation: Situation) -> list[str]:
     if isinstance(situation, StartSituation):
-        return list(situation.potential_factors)
+        return list(situation.potential_drivers)
     return []
 
 
@@ -55,7 +55,7 @@ def _situation_from_graph(
     title: str,
     desc: str,
     kind: str,
-    potential_factors: list[str],
+    potential_drivers: list[str],
     original_ask: str,
 ) -> Situation:
     if kind == "start":
@@ -64,7 +64,7 @@ def _situation_from_graph(
             version=version,
             title=title,
             desc=desc,
-            potential_factors=potential_factors,
+            potential_drivers=potential_drivers,
         )
     if kind == "terminal":
         return TerminalSituation(
@@ -181,7 +181,7 @@ class GraphCausalChainStore(CausalChainStore):
             situation.desc,
             case.case_id,
             _kind(situation),
-            _factors(situation),
+            _drivers(situation),
             _ask(situation),
         )
 
@@ -292,7 +292,7 @@ class GraphCausalChainStore(CausalChainStore):
                 version=start_version,
                 title=start_title,
                 desc=start_desc,
-                potential_factors=factors,
+                potential_drivers=factors,
             ),
             hops=hops,
         )
@@ -308,7 +308,7 @@ class GraphCausalChainStore(CausalChainStore):
             title,
             desc,
             kind,
-            potential_factors,
+            potential_drivers,
             original_ask,
             case_id,
         ) in self._graph_db.list_situations():
@@ -319,7 +319,7 @@ class GraphCausalChainStore(CausalChainStore):
                     title,
                     desc,
                     kind,
-                    potential_factors,
+                    potential_drivers,
                     original_ask,
                 )
             )
