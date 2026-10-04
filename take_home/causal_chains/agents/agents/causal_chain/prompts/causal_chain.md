@@ -12,7 +12,7 @@ Do this in order. Do not write the story until the last step.
    - Save the future on that same case. Write a short title for the future. Write the future's description in your own words and include the current time. Keep the user's ask as the original ask.
    - Load the open line from the present through the current situation, including each saved link.
 4. Repeat until a path runs from the start to the future: load the open line into the direction, take one step, then validate whether the start connects to the future. Do not write the story during this repeat. These stay in order. Each needs the previous result.
-   - The direction starts with the case id, then the open line, then the one driver to change. That driver comes from the start, and this line has not already changed it.
+   - The direction starts with the case id, then the open line, then the one driver to change. That driver comes from the current situation's drivers from the start still left to change.
    - Do not price the link. Do not save the link yourself.
    - When a situation comes back, it is already linked from the current situation. Continue from it.
    - When no situation comes back, the current situation is already linked to the future.

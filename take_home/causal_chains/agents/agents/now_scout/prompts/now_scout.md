@@ -5,7 +5,7 @@ Describe the present that the hypothetical future would leave behind, and save i
 - The input gives the case and the future. Save one start on that case.
 - Use the case id from the input. Do not invent a case id.
 - Write a short title for the present, much shorter than the description. The description is a detailed sentence of what is true now, including the sources and facts behind it.
-- Include several drivers behind that present.
+- Include several drivers behind that present. The drivers from the start situation still left to change start as that same list.
 - The id is assigned when the situation is saved.
 - Do not build a path. Do not set a probability. Do not save the future.
 - Return the saved start.
