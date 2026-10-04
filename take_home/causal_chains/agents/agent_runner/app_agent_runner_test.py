@@ -7,15 +7,10 @@ from uuid import UUID
 
 import anyio
 from agents.exceptions import InputGuardrailTripwireTriggered
-from agents.run_config import CallModelData, ModelInputData
 
 import take_home.causal_chains.agents.agent_runner.app_agent_runner as app_agent_runner_module
 from take_home.causal_chains.agents.agent_runner.app_agent_runner import (
     AppAgentRunner,
-    _decorate_tail_messages,
-)
-from take_home.causal_chains.agents.agents.causal_chain.causal_chain import (
-    causal_chain,
 )
 from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
     blocked_input_message,
@@ -741,36 +736,6 @@ def test_app_agent_runner_traces_the_model_run(monkeypatch):
     assert active["value"] is False
     assert opened == [("app_agent_runner", "1", {"turn_id": "t_1"})]
     assert events == []
-
-
-def test_decorate_tail_messages_refreshes_the_clock_before_the_user():
-    context = RunContext(
-        conversation_id="1",
-        clock=_FixedClock(),
-        turn_id="t_1",
-        clients=RunClients(causal_chain_store=object()),
-    )
-    data = CallModelData(
-        model_data=ModelInputData(
-            input=[
-                {
-                    "role": "assistant",
-                    "content": "Current time: 2020-01-01T00:00:00+00:00 UTC",
-                },
-                {"role": "user", "content": "Future situation:\nopen"},
-            ],
-            instructions="stay",
-        ),
-        agent=causal_chain,
-        context=context,
-    )
-    updated = _decorate_tail_messages(data)
-    assert updated.instructions == "stay"
-    assert updated.input[0] == {
-        "role": "assistant",
-        "content": "Current time: 2026-09-29T05:16:00+00:00 UTC",
-    }
-    assert updated.input[1]["role"] == "user"
 
 
 def test_app_agent_runner_refuses_a_blocked_input(monkeypatch):

@@ -1,0 +1,27 @@
+load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/pytest:defs.bzl", "pytest_test")
+
+py_library(
+    name = "agent_run_config",
+    srcs = ["agent_run_config.py"],
+    data = ["//take_home/causal_chains/agents/agent_run_config/templates:current_time.md"],
+    imports = ["../../../.."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//take_home/causal_chains/agents/models",
+        requirement("openai-agents"),
+    ],
+)
+
+pytest_test(
+    name = "agent_run_config_test",
+    srcs = ["agent_run_config_test.py"],
+    data = ["//take_home/causal_chains/agents/agent_run_config/templates:current_time.md"],
+    imports = ["../../../.."],
+    deps = [
+        ":agent_run_config",
+        "//take_home/causal_chains/agents/models",
+        requirement("openai-agents"),
+    ],
+)

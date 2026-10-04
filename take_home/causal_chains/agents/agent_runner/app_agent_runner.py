@@ -10,14 +10,15 @@ from anyio.streams.memory import MemoryObjectSendStream
 
 from agents import (
     InputGuardrailTripwireTriggered,
-    RunConfig,
     RunResultStreaming,
     Runner,
     trace,
 )
-from agents.run_config import CallModelData, ModelInputData
 from openai.types.responses import ResponseTextDeltaEvent
 
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agent_runner.protocol.agent_runner import AgentRunner
 from take_home.causal_chains.agents.agent_runner.protocol.agent_stream import AgentStream
 from take_home.causal_chains.agents.agents.chief_of_staff.chief_of_staff import (  # pragma: allowlist secret
@@ -46,33 +47,6 @@ _WIDGET_TOOLS = (
     "show_deeplink_widget",
     "deeplinks_finder",
 )
-
-
-def _make_current_time_reminder_message(moment: datetime) -> dict[str, str]:
-    return {
-        "role": "assistant",
-        "content": f"Current time: {moment.isoformat()} {moment.tzname()}",
-    }
-
-
-def _decorate_tail_messages(data: CallModelData[RunContext]) -> ModelInputData:
-    note = _make_current_time_reminder_message(data.context.clock.now())
-    items = list(data.model_data.input)
-    user_at = next(
-        index
-        for index in range(len(items) - 1, -1, -1)
-        if items[index].get("role") == "user"
-    )
-    previous = user_at - 1
-    if (
-        previous >= 0
-        and items[previous].get("role") == "assistant"
-        and str(items[previous].get("content", "")).startswith("Current time:")
-    ):
-        items[previous] = note
-    else:
-        items.insert(user_at, note)
-    return ModelInputData(input=items, instructions=data.model_data.instructions)
 
 
 def _raw_field(
@@ -230,9 +204,7 @@ class AppAgentRunner(AgentRunner):
             input=model_input,
             context=context,
             max_turns=context.run_config.causal_chain_max_steps,
-            run_config=RunConfig(
-                call_model_input_filter=_decorate_tail_messages,
-            ),
+            run_config=decorate_tail_messages(),
         )
 
     @override
