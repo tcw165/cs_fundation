@@ -27,6 +27,13 @@ export type ChatItem =
       title?: string;
     }
   | {
+      kind: "system";
+      message_id: string;
+      role: "system";
+      text: string;
+      created_timestamp: string;
+    }
+  | {
       kind: "heartbeat";
       message_id: string;
       role: "meta";
@@ -50,6 +57,14 @@ export function chat_item_from_message(message: Message): ChatItem {
         link: message.link,
         created_timestamp: message.created_timestamp,
         ...(message.title === undefined ? {} : { title: message.title }),
+      };
+    case "system":
+      return {
+        kind: "system",
+        message_id: message.message_id,
+        role: "system",
+        text: message.text,
+        created_timestamp: message.created_timestamp,
       };
     case "heartbeat":
       return {

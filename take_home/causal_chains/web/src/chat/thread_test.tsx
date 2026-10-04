@@ -555,4 +555,38 @@ describe("thread composer", () => {
     });
     host.remove();
   });
+
+  it("draws a system note as a divider", async () => {
+    const notice: Message = {
+      kind: "system",
+      message_id: "timeout_t_1",
+      role: "system",
+      text: "This turn timed out. Send your message again.",
+      created_timestamp: "2026-10-01T07:06:00.000Z",
+    };
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+      post_message: async () => {
+        throw new Error("unused");
+      },
+      list_messages: async () => ({ messages: [notice], next_cursor: null }),
+      subscribe_turn: async function* () {},
+    };
+    const { host, root } = render(<Harness chat_port={chat_port} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const note = host.querySelector(".system-note");
+    expect(note?.getAttribute("role")).toBe("separator");
+    expect(note?.textContent).toBe("This turn timed out. Send your message again.");
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
 });

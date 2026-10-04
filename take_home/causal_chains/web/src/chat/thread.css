@@ -115,6 +115,24 @@
   flex: none;
 }
 
+.system-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: var(--faint);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.system-note::before,
+.system-note::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #3a3a40;
+}
+
 .composer {
   position: absolute;
   left: 0;

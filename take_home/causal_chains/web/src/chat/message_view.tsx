@@ -29,9 +29,32 @@ export function MessageView({
       );
     case "deeplink":
       return <DeeplinkMessage item={item} on_open_link={on_open_link} />;
+    case "system":
+      return <SystemNote item={item} active={active} on_done={on_done} />;
     case "heartbeat":
       return <HeartbeatMessage />;
   }
+}
+
+function SystemNote({
+  item,
+  active,
+  on_done,
+}: {
+  item: Extract<ChatItem, { kind: "system" }>;
+  active: boolean;
+  on_done: () => void;
+}) {
+  useEffect(() => {
+    if (active) {
+      on_done();
+    }
+  }, [active, on_done]);
+  return (
+    <p className="system-note" role="separator">
+      {item.text}
+    </p>
+  );
 }
 
 function MarkdownReveal({
