@@ -267,7 +267,7 @@ function SituationCard({
     <>
       <span className={`kind-pill is-${kind}`}>{kind}</span>
       <span className="node-version">v{situation.version}</span>
-      <strong className="node-title">{short_title(situation.desc)}</strong>
+      <strong className="node-title">{situation.title}</strong>
     </>
   );
   if (!node.expanded) {
@@ -383,14 +383,6 @@ function situation_kind(situation: ChainSituation): "start" | "step" | "terminal
     return "terminal";
   }
   return "step";
-}
-
-function short_title(desc: string): string {
-  const sentence = desc.split(/[.;]/)[0] ?? desc;
-  if (sentence.length <= 180) {
-    return sentence;
-  }
-  return `${sentence.slice(0, 177)}…`;
 }
 
 function incoming_probability(chain: CausalChain, node: LaidNode): string | null {

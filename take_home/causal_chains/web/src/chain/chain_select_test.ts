@@ -12,6 +12,7 @@ function chain(root_id: string, desc: string): CausalChain {
       {
         situation_id: root_id,
         version: 1,
+        title: desc,
         desc,
         potential_factors: ["blockade"],
       },

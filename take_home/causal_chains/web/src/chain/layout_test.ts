@@ -8,17 +8,20 @@ const chain: CausalChain = {
     {
       situation_id: "start",
       version: 1,
+      title: "Strait shut",
       desc: "strait shut",
       potential_factors: ["blockade"],
     },
     {
       situation_id: "step",
       version: 1,
+      title: "Talks",
       desc: "talks",
     },
     {
       situation_id: "end",
       version: 1,
+      title: "Open",
       desc: "open",
       original_ask: "open next week",
     },
