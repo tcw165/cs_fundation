@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
+from uuid import UUID
 
 import anyio
 import pytest
@@ -20,7 +21,11 @@ from take_home.causal_chains.agents.http_models.post_message_body import PostMes
 from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
     ConversationMessagesResponse,
 )
+from take_home.causal_chains.agents.endpoints.models.peripheral_interaction import (
+    CausalChainCase,
+)
 from take_home.causal_chains.agents.endpoints.models.text_input_state import TextInputState
+from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
     Message,
@@ -37,6 +42,22 @@ from take_home.causal_chains.agents.stores.turn_store.in_mem_turn_store import I
 
 class _ChainStore:
     pass
+
+
+class _LatestCases:
+    def __init__(self, cases: list[Case] | None = None) -> None:
+        self.cases = [] if cases is None else list(cases)
+
+    async def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[Case]:
+        return [
+            case
+            for case in self.cases
+            if case.conversation_id == conversation_id
+        ][:limit]
 
 
 class _FixedClock:
@@ -157,10 +178,12 @@ class _Container:
         service: ChatService,
         store: MessagingStoreImpl,
         turn_store: InMemoryTurnStore,
+        cases: _LatestCases | None = None,
     ) -> None:
         self._service = service
         self._store = store
         self._turn_store = turn_store
+        self._cases = _LatestCases() if cases is None else cases
 
     def chat_service(self) -> ChatService:
         return self._service
@@ -171,13 +194,23 @@ class _Container:
     def turn_store(self) -> InMemoryTurnStore:
         return self._turn_store
 
+    def causal_chain_store(self) -> _LatestCases:
+        return self._cases
 
-def _services() -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurnStore]:
+
+def _services(
+    cases: list[Case] | None = None,
+) -> tuple[_Container, _Scripted, MessagingStoreImpl, InMemoryTurnStore]:
     store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
     turn_store = InMemoryTurnStore()
     runner = _Scripted()
     service = ChatService(runner, store, turn_store, _ChainStore(), _FixedClock())
-    return _Container(service, store, turn_store), runner, store, turn_store
+    return (
+        _Container(service, store, turn_store, _LatestCases(cases)),
+        runner,
+        store,
+        turn_store,
+    )
 
 
 async def _drain_sse(response: StreamingResponse) -> str:
@@ -616,6 +649,73 @@ def test_turn_sse_rejects_an_ended_turn():
         asyncio.run(exercise())
     assert raised.value.status_code == 404
     assert raised.value.detail == "turn already ended"
+
+
+def test_turn_sse_snapshot_includes_the_newest_case():
+    newest_id = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+    second_id = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+    third_id = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+    dropped_id = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+    created = datetime(2026, 10, 4, tzinfo=timezone.utc)
+
+    def stored(case_id: UUID, message_id: str) -> Case:
+        return Case(
+            case_id=case_id,
+            conversation_id="1",
+            from_message_id=message_id,
+            created_timestamp=created,
+            updated_timestamp=created,
+        )
+
+    async def exercise():
+        container, _runner, _store, turn_store = _services(
+            [
+                stored(newest_id, "m_newest"),
+                stored(second_id, "m_second"),
+                stored(third_id, "m_third"),
+                stored(dropped_id, "m_dropped"),
+            ]
+        )
+        posted = await post_message(
+            "1",
+            PostMessageBody(text="hello"),
+            container,
+            BackgroundTasks(),
+        )
+        response = await turn_sse(
+            "1",
+            posted.turn.turn_id,
+            container,
+            after_message=posted.turn.from_message,
+            after_message_timestamp=posted.received_message.created_timestamp,
+        )
+        chunks = ""
+        async for chunk in response.body_iterator:
+            chunks += chunk if isinstance(chunk, str) else chunk.decode()
+            if str(newest_id) in chunks:
+                break
+        await turn_store.put_turn(
+            posted.turn.model_copy(update={"status": TurnStatus.completed}),
+        )
+        async for rest in response.body_iterator:
+            chunks += rest if isinstance(rest, str) else rest.decode()
+        return chunks
+
+    snapshots = _snapshots(asyncio.run(exercise()))
+    filled = [
+        snapshot
+        for snapshot in snapshots
+        if snapshot.peripheral_interactions
+    ]
+    assert filled
+    assert filled[-1].peripheral_interactions == [
+        CausalChainCase(case_id=str(newest_id), from_message_id="m_newest"),
+        CausalChainCase(case_id=str(second_id), from_message_id="m_second"),
+        CausalChainCase(case_id=str(third_id), from_message_id="m_third"),
+    ]
+    assert str(dropped_id) not in "".join(
+        item.case_id for item in filled[-1].peripheral_interactions
+    )
 
 
 def test_turn_sse_emits_thinking_before_the_first_message():

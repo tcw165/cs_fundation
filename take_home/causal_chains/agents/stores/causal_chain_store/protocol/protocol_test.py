@@ -44,6 +44,17 @@ class _Both:
             updated_timestamp=CREATED,
         )
 
+    async def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[Case]:
+        return [
+            case
+            for case in self.cases
+            if case.conversation_id == conversation_id
+        ][:limit]
+
     async def add_situation(
         self,
         case: Case,

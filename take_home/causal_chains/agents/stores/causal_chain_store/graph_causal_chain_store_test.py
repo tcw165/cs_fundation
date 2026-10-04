@@ -98,6 +98,19 @@ class _FakeGraphDb:
             updated_timestamp,
         )
 
+    def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[tuple[UUID, str, str, str, str]]:
+        rows = [
+            (case_id, *stored)
+            for case_id, stored in self._cases.items()
+            if stored[0] == conversation_id
+        ]
+        rows.sort(key=lambda row: row[3], reverse=True)
+        return rows[:limit]
+
     def list_leaf_situations(
         self,
         case_id: UUID,
@@ -504,3 +517,26 @@ def test_get_chains_returns_empty_when_the_graph_is_empty():
         return await GraphCausalChainStore(_FakeGraphDb()).get_chains()
 
     assert asyncio.run(exercise()) == []
+
+
+def test_list_latest_cases_returns_the_newest_for_the_conversation():
+    async def exercise():
+        store = GraphCausalChainStore(_FakeGraphDb())
+        older = _case(CASE_ID)
+        newer = _case(OTHER_CASE_ID).model_copy(
+            update={
+                "created_timestamp": datetime(2026, 10, 2, tzinfo=timezone.utc),
+                "from_message_id": "m_new",
+            }
+        )
+        elsewhere = newer.model_copy(
+            update={"case_id": OTHER_ROOT_ID, "conversation_id": "2"}
+        )
+        await store.add_case(older)
+        await store.add_case(newer)
+        await store.add_case(elsewhere)
+        return await store.list_latest_cases("1", limit=1)
+
+    listed = asyncio.run(exercise())
+    assert [case.case_id for case in listed] == [OTHER_CASE_ID]
+    assert listed[0].from_message_id == "m_new"

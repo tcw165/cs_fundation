@@ -39,6 +39,17 @@ SET c.conversation_id = $conversation_id,
     c.updated_timestamp = $updated_timestamp
 """
 
+LIST_LATEST_CASES = """
+MATCH (c:Case {conversation_id: $conversation_id})
+RETURN c.case_id AS case_id,
+    c.conversation_id AS conversation_id,
+    c.from_message_id AS from_message_id,
+    c.created_timestamp AS created_timestamp,
+    c.updated_timestamp AS updated_timestamp
+ORDER BY c.created_timestamp DESC
+LIMIT $limit
+"""
+
 GET_CASE = """
 MATCH (c:Case {case_id: $case_id})
 RETURN c.case_id AS case_id,
@@ -336,6 +347,45 @@ class Neo4jClient(GraphDb):
             str(created_timestamp),
             str(updated_timestamp),
         )
+
+    @override
+    def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[tuple[UUID, str, str, str, str]]:
+        with self._driver.session() as session:
+            records = list(
+                session.run(
+                    LIST_LATEST_CASES,
+                    conversation_id=conversation_id,
+                    limit=limit,
+                )
+            )
+        rows: list[tuple[UUID, str, str, str, str]] = []
+        for record in records:
+            found_id = record["case_id"]
+            stored_conversation_id = record["conversation_id"]
+            created_timestamp = record["created_timestamp"]
+            updated_timestamp = record["updated_timestamp"]
+            if (
+                found_id is None
+                or stored_conversation_id is None
+                or created_timestamp is None
+                or updated_timestamp is None
+            ):
+                continue
+            from_message_id = record.get("from_message_id")
+            rows.append(
+                (
+                    UUID(str(found_id)),
+                    str(stored_conversation_id),
+                    "" if from_message_id is None else str(from_message_id),
+                    str(created_timestamp),
+                    str(updated_timestamp),
+                )
+            )
+        return rows
 
     @override
     def merge_situation(

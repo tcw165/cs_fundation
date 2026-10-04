@@ -12,6 +12,10 @@ from take_home.causal_chains.agents.di.deps import AppContainerDep
 from take_home.causal_chains.agents.endpoints.models.conversation_messages_response import (
     ConversationMessagesResponse,
 )
+from take_home.causal_chains.agents.endpoints.models.peripheral_interaction import (
+    CausalChainCase,
+    PeripheralInteraction,
+)
 from take_home.causal_chains.agents.endpoints.models.post_message_response import (
     PostMessageResponse,
 )
@@ -34,6 +38,9 @@ from anyio.streams.memory import MemoryObjectSendStream
 
 from take_home.causal_chains.agents.stores.messaging_store.protocol.message_page import (
     MessagePage,
+)
+from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
+    CausalChainStore,
 )
 from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_store import (
     MessagingStore,
@@ -184,7 +191,8 @@ async def turn_sse(
 
     async def event_stream() -> AsyncIterator[str]:
         with bind_session_logger(conversation_id, turn_id):
-            send, receive = anyio.create_memory_object_stream[Message]()
+            holder = _PeripheralHolder()
+            send, receive = anyio.create_memory_object_stream[Message | None]()
             stop = anyio.Event()
 
             async with anyio.create_task_group() as group:
@@ -207,11 +215,22 @@ async def turn_sse(
                         stop=stop,
                     ),
                 )
+                group.start_soon(
+                    partial(
+                        _poll_cases,
+                        store=container.causal_chain_store(),
+                        conversation_id=conversation_id,
+                        holder=holder,
+                        send=send,
+                        stop=stop,
+                    ),
+                )
 
                 yield format_conversation_sse(
                     conversation_id=conversation_id,
                     turn=opened_turn,
                     message=None,
+                    peripheral_interactions=holder.latest,
                 )
                 async with receive:
                     async for message in receive:
@@ -220,12 +239,14 @@ async def turn_sse(
                             conversation_id=conversation_id,
                             turn=current_turn,
                             message=message,
+                            peripheral_interactions=holder.latest,
                         )
                 end_turn = await turn_store.get_turn(turn_id)
                 yield format_conversation_sse(
                     conversation_id=conversation_id,
                     turn=end_turn,
                     message=None,
+                    peripheral_interactions=holder.latest,
                 )
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
@@ -235,9 +256,48 @@ def format_conversation_sse(
     conversation_id: str,
     turn: Turn | None,
     message: Message | None,
+    peripheral_interactions: list[PeripheralInteraction] | None = None,
 ) -> str:
-    snapshot = _snapshot(conversation_id, turn, message)
+    snapshot = _snapshot(
+        conversation_id,
+        turn,
+        message,
+        peripheral_interactions,
+    )
     return f"event: conversation_messages\ndata: {snapshot.model_dump_json()}\n\n"
+
+
+class _PeripheralHolder:
+    def __init__(self) -> None:
+        self.latest: list[PeripheralInteraction] = []
+
+
+async def _poll_cases(
+    store: CausalChainStore,
+    conversation_id: str,
+    holder: _PeripheralHolder,
+    send: MemoryObjectSendStream[Message | None],
+    stop: anyio.Event,
+) -> None:
+    seen: tuple[str, ...] = ()
+    try:
+        while not stop.is_set():
+            cases = await store.list_latest_cases(conversation_id, limit=3)
+            latest = [
+                CausalChainCase(
+                    case_id=str(case.case_id),
+                    from_message_id=case.from_message_id,
+                )
+                for case in cases
+            ]
+            case_ids = tuple(item.case_id for item in latest)
+            holder.latest = latest
+            if case_ids != seen:
+                seen = case_ids
+                await send.send(None)
+            await anyio.sleep(_TAIL_MESSAGES_POLL_INTERVAL_S)
+    except (anyio.ClosedResourceError, anyio.BrokenResourceError):
+        return
 
 
 async def _watch_turn(
@@ -260,7 +320,7 @@ async def _poll_messages(
     conversation_id: str,
     after_message: str | None,
     after_message_timestamp: datetime | None,
-    send: MemoryObjectSendStream[Message],
+    send: MemoryObjectSendStream[Message | None],
     stop: anyio.Event,
 ) -> None:
     try:
@@ -319,6 +379,7 @@ def _snapshot(
     conversation_id: str,
     turn: Turn | None,
     message: Message | None,
+    peripheral_interactions: list[PeripheralInteraction] | None = None,
 ) -> ConversationMessagesResponse:
     in_flight = turn is not None and not turn.status.is_ended()
     return ConversationMessagesResponse(
@@ -328,6 +389,9 @@ def _snapshot(
         turn=TurnDescriptor(
             processing=[turn] if in_flight else [],
             queued=[],
+        ),
+        peripheral_interactions=(
+            [] if peripheral_interactions is None else peripheral_interactions
         ),
     )
 

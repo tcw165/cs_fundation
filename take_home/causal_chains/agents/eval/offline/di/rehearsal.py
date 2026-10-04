@@ -331,6 +331,26 @@ def rehearse_persistence(
         ),
         ignore_extra_args=True,
     ).then_do(load_chain_so_far)
+    def load_latest_cases(
+        conversation_id: str,
+        limit: int,
+    ) -> list[Case]:
+        matched = [
+            case
+            for case in cases.values()
+            if case.conversation_id == conversation_id
+        ]
+        matched.sort(key=lambda case: case.created_timestamp, reverse=True)
+        return matched[:limit]
+
     decoy.when(
         _drive(causal_chain_store.get_chains()),
     ).then_do(load_chains)
+    decoy.when(
+        _drive(
+            causal_chain_store.list_latest_cases(
+                matchers.Anything(),
+                matchers.Anything(),
+            )
+        ),
+    ).then_do(load_latest_cases)
