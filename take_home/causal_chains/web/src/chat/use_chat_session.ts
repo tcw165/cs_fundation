@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import { chat_item_from_message } from "./chat_item";
-import type { ChatPort, Message, TurnDescriptor, UserInteractionState } from "./chat_port";
+import type {
+  ChatPort,
+  Message,
+  PeripheralInteraction,
+  TurnDescriptor,
+  UserInteractionState,
+} from "./chat_port";
 import { create_message_store } from "./message_store";
 import { initial_reveal_state, reveal_reducer } from "./reveal_state";
 import type { RevealTiming } from "./reveal_timing";
@@ -27,6 +33,9 @@ export function use_chat_session(
   const [user_interaction_state, set_user_interaction_state] =
     useState<UserInteractionState>(idle_interaction);
   const [turn, set_turn] = useState<TurnDescriptor | null>(null);
+  const [peripheral_interactions, set_peripheral_interactions] = useState<
+    PeripheralInteraction[]
+  >([]);
   const running_ref = useRef(false);
   const abort_ref = useRef<AbortController | null>(null);
   const turn_id_ref = useRef<string | null>(null);
@@ -145,6 +154,7 @@ export function use_chat_session(
           after_message_timestamp: posted.received_message.created_timestamp,
           abort_signal: controller.signal,
         })) {
+          set_peripheral_interactions(snapshot.peripheral_interactions ?? []);
           if (!ignore_snapshots.current) {
             set_user_interaction_state(snapshot.user_interaction_state);
             set_turn(snapshot.turn);
@@ -189,5 +199,16 @@ export function use_chat_session(
     abort_ref.current?.abort();
   }, [chat_port, conversation_id]);
 
-  return { state, draft, set_draft, send, finish, timing, user_interaction_state, turn, stop };
+  return {
+    state,
+    draft,
+    set_draft,
+    send,
+    finish,
+    timing,
+    user_interaction_state,
+    turn,
+    stop,
+    peripheral_interactions,
+  };
 }

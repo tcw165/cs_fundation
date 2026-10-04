@@ -53,6 +53,10 @@ export function App({
   const opened_links = useRef(new Set<string>());
   const session = use_chat_session(chat_port, conversation_id, timing);
 
+  const newest = session.peripheral_interactions.find(
+    (item) => item.kind === "causal_chain_case",
+  );
+
   useEffect(() => {
     for (const item of session.state.shown) {
       if (item.kind !== "deeplink" || opened_links.current.has(item.message_id)) {
@@ -65,6 +69,21 @@ export function App({
       }
     }
   }, [session.state.shown]);
+
+  useEffect(() => {
+    if (
+      newest === undefined ||
+      (panel.focus?.kind === "case" && panel.focus.case_id === newest.case_id)
+    ) {
+      return;
+    }
+    set_panel({
+      open: true,
+      focus: { kind: "case", case_id: newest.case_id, title: "" },
+    });
+    // The case id is the focus identity. The same id leaves an open card in place.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newest?.case_id]);
 
   return (
     <main className="app">

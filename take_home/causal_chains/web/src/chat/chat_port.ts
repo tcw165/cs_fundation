@@ -76,11 +76,25 @@ export type TurnDescriptor = {
   queued: Turn[];
 };
 
+export type CausalChainCase = {
+  kind: "causal_chain_case";
+  case_id: string;
+  from_message_id: string;
+};
+
+export type LinkedConversation = {
+  kind: "linked_conversation";
+  conversation_id: string;
+};
+
+export type PeripheralInteraction = CausalChainCase | LinkedConversation;
+
 export type ConversationMessagesResponse = {
   conversation_id: string;
   messages: Message[];
   user_interaction_state: UserInteractionState;
   turn: TurnDescriptor | null;
+  peripheral_interactions?: PeripheralInteraction[];
 };
 
 export type PostMessageResponse = {
