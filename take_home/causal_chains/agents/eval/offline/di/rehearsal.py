@@ -86,6 +86,11 @@ def rehearse_persistence(
         next_cursor = page[-1].message_id if len(page) == limit else None
         return MessagePage(messages=page, next_cursor=next_cursor)
 
+    def load_conversation(
+        _conversation_id: str,
+    ) -> None:
+        return None
+
     def search_messages(
         conversation_id: str,
         since: datetime,
@@ -247,6 +252,9 @@ def rehearse_persistence(
         _drive(messaging_store.list_messages(matchers.Anything())),
         ignore_extra_args=True,
     ).then_do(list_messages)
+    decoy.when(
+        _drive(messaging_store.get_conversation(matchers.Anything())),
+    ).then_do(load_conversation)
     decoy.when(
         _drive(
             messaging_store.search_messages(

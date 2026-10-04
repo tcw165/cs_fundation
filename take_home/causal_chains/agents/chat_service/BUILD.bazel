@@ -5,6 +5,7 @@ load("//tools/pytest:defs.bzl", "pytest_test")
 py_library(
     name = "chat_service",
     srcs = ["chat_service.py"],
+    data = ["//take_home/causal_chains/agents/chat_service/prewarm_context:conversation_created_at.md"],
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
@@ -25,6 +26,7 @@ py_library(
 pytest_test(
     name = "chat_service_test",
     srcs = ["chat_service_test.py"],
+    data = ["//take_home/causal_chains/agents/chat_service/prewarm_context:conversation_created_at.md"],
     imports = ["../../../.."],
     deps = [
         ":chat_service",

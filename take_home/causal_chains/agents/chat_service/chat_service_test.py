@@ -55,15 +55,45 @@ class _CancellableStream:
             await aclose()
 
 
-def test_compute_prewarm_messages_is_empty():
-    service = ChatService(
-        StubTurnRunner(),
-        MessagingStoreImpl(_FakeDynamoDb(), "user-1"),
-        InMemoryTurnStore(),
-        _ChainStore(),
-        _FixedClock(),
+def test_compute_prewarm_messages_notes_the_created_time():
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        service = ChatService(
+            StubTurnRunner(),
+            store,
+            InMemoryTurnStore(),
+            _ChainStore(),
+            _FixedClock(),
+        )
+        missing = await service._compute_prewarm_messages("1")
+        created = datetime(2026, 9, 30, tzinfo=timezone.utc)
+        await store.append(
+            "1",
+            MarkdownMessage(
+                message_id="m_1",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.user,
+                text="hello",
+                created_timestamp=created,
+            ),
+        )
+        noted = await service._compute_prewarm_messages("1")
+        return missing, noted
+
+    missing, noted = asyncio.run(exercise())
+    assert missing == []
+    assert len(noted) == 1
+    note = noted[0]
+    assert isinstance(note, MarkdownMessage)
+    assert note.kind == "markdown"
+    assert note.message_id == "prewarm_conversation_created_at"
+    assert note.role is Role.meta
+    assert note.text == (
+        "(This message is invisible to user)\n"
+        "This conversation was created at 2026-09-30T00:00:00+00:00"
     )
-    assert service._compute_prewarm_messages() == []
+    assert note.created_timestamp == datetime.fromtimestamp(0, tz=timezone.utc)
 
 
 def test_stores_user_and_agent_messages_only():
@@ -354,12 +384,18 @@ def test_run_turn_sends_the_window_and_the_latest_user_message_oldest_first():
 
     seen, contexts = asyncio.run(exercise())
     assert [[message.message_id for message in batch] for batch in seen] == [
-        ["m_recent", "m_latest"],
+        ["prewarm_conversation_created_at", "m_recent", "m_latest"],
     ]
-    assert [message.message_id for message in contexts[0].conversation_history] == [
+    history = contexts[0].conversation_history
+    assert [message.message_id for message in history] == [
+        "prewarm_conversation_created_at",
         "m_recent",
         "m_latest",
     ]
+    assert history[0].text == (
+        "(This message is invisible to user)\n"
+        "This conversation was created at 2026-09-28T00:00:00+00:00"
+    )
 
 
 def test_run_turn_yields_runner_messages_and_completes():
@@ -385,9 +421,14 @@ def test_run_turn_yields_runner_messages_and_completes():
     assert len(events) == 1
     assert isinstance(events[0], MarkdownMessage)
     assert events[0].role is Role.agent
-    assert events[0].text == "echo: hello"
+    echo = (
+        "echo: (This message is invisible to user)\n"
+        "This conversation was created at 2026-09-30T00:00:00+00:00\n"
+        "hello"
+    )
+    assert events[0].text == echo
     assert [message.role for message in stored] == [Role.user, Role.agent]
-    assert [message.text for message in stored] == ["hello", "echo: hello"]
+    assert [message.text for message in stored] == ["hello", echo]
     assert saved is not None
     assert saved.from_message == "m_user"
     assert saved.status is TurnStatus.completed
@@ -771,7 +812,7 @@ def test_run_turn_stays_cancelled_when_stopped_while_running():
         )
         stream = _YieldThenWait(mock_agent_msg)
         decoy.when(
-            await runner.stream([message], matchers.Anything()),
+            await runner.stream(matchers.Anything(), matchers.Anything()),
         ).then_return(stream)
 
         store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")

@@ -1,8 +1,10 @@
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
-from functools import partial
+from functools import cache, partial
+from pathlib import Path
 
 import anyio
 from anyio.streams.memory import MemoryObjectSendStream
@@ -137,13 +139,32 @@ class ChatService:
                 await driver
             flush_traces()
 
-    def _compute_prewarm_messages(self) -> list[Message]:
-        """Messages placed ahead of the conversation when a turn starts.
+    async def _compute_prewarm_messages(
+        self,
+        conversation_id: str,
+    ) -> list[Message]:
+        """A markdown note of when the conversation was created.
 
-        created_timestamp starts at 0, then 1, then 2, then 3, and so on.
-        A sort from oldest to newest keeps that order ahead of real messages.
+        created_timestamp is 0 so a sort from oldest to newest keeps the note first.
+        An unstored conversation has no note.
         """
-        return []
+        conversation = await self._messaging_store.get_conversation(conversation_id)
+        if conversation is None:
+            return []
+        created = conversation.created_at
+        return [
+            MarkdownMessage(
+                message_id="prewarm_conversation_created_at",
+                conversation_id=conversation.id,
+                user_uuid=conversation.user_uuid,
+                role=Role.meta,
+                text=_read_prewarm("conversation_created_at.md").replace(
+                    "{created_iso_format}",
+                    created.isoformat(),
+                ),
+                created_timestamp=datetime.fromtimestamp(0, tz=timezone.utc),
+            ),
+        ]
 
     async def _build_model_messages(
         self,
@@ -154,7 +175,7 @@ class ChatService:
 
         Oldest first. A latest user message already in the window is not repeated.
         """
-        prewarm = self._compute_prewarm_messages()
+        prewarm = await self._compute_prewarm_messages(conversation_id)
         until = max(message.created_timestamp for message in inputs)
         window = await self._messaging_store.search_messages(
             conversation_id=conversation_id,
@@ -229,6 +250,12 @@ class ChatService:
                             )
                         await send.send(message)
                     group.cancel_scope.cancel()
+
+
+@cache
+def _read_prewarm(name: str) -> str:
+    path = Path(__file__).parent / "prewarm_context" / name
+    return path.read_text().rstrip("\n")
 
 
 async def _send_heartbeat(send: MemoryObjectSendStream[Message]) -> None:
