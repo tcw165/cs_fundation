@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from agents import RunContextWrapper, function_tool
 
 from take_home.causal_chains.agents.models.messaging.deeplink_card import DeeplinkCard
@@ -7,8 +9,14 @@ from take_home.causal_chains.agents.models.run_context import RunContext
 @function_tool
 async def show_deeplink_widget(
     ctx: RunContextWrapper[RunContext],
-    card: DeeplinkCard,
-    render_at_end: bool = True,
+    card: Annotated[
+        DeeplinkCard,
+        "The card to show. Use the title, subtitle, scheme, route, and params that came back.",
+    ],
+    render_at_end: Annotated[
+        bool,
+        "When true, the reader sees the card after the rest of this turn. When false, the reader sees it now.",
+    ] = True,
 ) -> DeeplinkCard:
     """Show a deeplink card.
 

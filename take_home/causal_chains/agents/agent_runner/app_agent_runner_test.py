@@ -117,7 +117,7 @@ def test_app_agent_runner_streams_one_run(monkeypatch):
     events = asyncio.run(collect())
     assert contexts == [context]
     assert [agent.name for agent in seen] == ["chief_of_staff"]
-    assert [tool.name for tool in seen[0].tools] == ["search_messages"]
+    assert [tool.name for tool in seen[0].tools] == ["search_conversation_messages"]
     assert prompts == [[_user_ask().to_openai_message()]]
     assert seen_max_turns == [2]
     assert [type(event) for event in events] == [MarkdownMessage]
@@ -794,7 +794,7 @@ def test_app_agent_runner_refuses_a_blocked_input(monkeypatch):
             run_config=None,
         ):
             assert agent.name == "chief_of_staff"
-            assert [tool.name for tool in agent.tools] == ["search_messages"]
+            assert [tool.name for tool in agent.tools] == ["search_conversation_messages"]
             return FakeResult()
 
     monkeypatch.setattr(app_agent_runner_module, "Runner", FakeRunner)

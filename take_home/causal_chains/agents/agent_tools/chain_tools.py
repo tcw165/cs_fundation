@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Annotated
 from uuid import UUID, uuid4
 
 from agents import RunContextWrapper, function_tool
@@ -59,7 +60,7 @@ async def add_case(
 @function_tool
 async def get_case(
     ctx: RunContextWrapper[RunContext],
-    case_id: UUID,
+    case_id: Annotated[UUID, "The id of the case to load."],
 ) -> Case:
     """Load one case by the id assigned when it was created.
 
@@ -73,9 +74,12 @@ async def get_case(
 @function_tool
 async def add_start_situation(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    desc: str,
-    potential_factors: list[str],
+    case: Annotated[Case, "The case this start belongs to."],
+    desc: Annotated[
+        str,
+        "What is true in the present, including the context behind it.",
+    ],
+    potential_factors: Annotated[list[str], "The drivers behind this present."],
 ) -> StartSituation:
     """Save the present on a case and return it, including the id assigned here.
 
@@ -98,8 +102,8 @@ async def add_start_situation(
 @function_tool
 async def add_situation(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    desc: str,
+    case: Annotated[Case, "The case this situation belongs to."],
+    desc: Annotated[str, "What is true in this situation."],
 ) -> Situation:
     """Save one mid-chain situation on a case and return it, including the id assigned here.
 
@@ -120,9 +124,12 @@ async def add_situation(
 @function_tool
 async def add_terminal_situation(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    desc: str,
-    original_ask: str,
+    case: Annotated[Case, "The case this terminal belongs to."],
+    desc: Annotated[
+        str,
+        "What is true in the future, in your own words, including the current time.",
+    ],
+    original_ask: Annotated[str, "The user's ask, kept with the terminal."],
 ) -> TerminalSituation:
     """Save the future on a case and return it, including the id assigned here.
 
@@ -145,10 +152,13 @@ async def add_terminal_situation(
 @function_tool
 async def link_situations(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    from_situation: Situation,
-    to_situation: Situation,
-    inputs: list[LinkInput],
+    case: Annotated[Case, "The case both situations belong to."],
+    from_situation: Annotated[Situation, "The situation this link leaves."],
+    to_situation: Annotated[Situation, "The situation this link reaches."],
+    inputs: Annotated[
+        list[LinkInput],
+        "Named values between 0 and 1 that a person could move later.",
+    ],
 ) -> LeadsTo:
     """Save both situations and the leads-to link between them.
 
@@ -188,8 +198,8 @@ async def link_situations(
 @function_tool
 async def lookup_leaf_situations(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    start: StartSituation,
+    case: Annotated[Case, "The case to search."],
+    start: Annotated[StartSituation, "The saved start to walk from."],
 ) -> list[Situation]:
     """Return mid-chain situations reached from the start that have no outgoing link.
 
@@ -206,9 +216,9 @@ async def lookup_leaf_situations(
 @function_tool
 async def reaches_terminal(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    start: StartSituation,
-    terminal: TerminalSituation,
+    case: Annotated[Case, "The case both situations belong to."],
+    start: Annotated[StartSituation, "The saved start."],
+    terminal: Annotated[TerminalSituation, "The saved terminal."],
 ) -> bool:
     """Validate whether the start situation connects to the terminal situation.
 
@@ -224,8 +234,8 @@ async def reaches_terminal(
 @function_tool
 async def lookup_chain_so_far(
     ctx: RunContextWrapper[RunContext],
-    case: Case,
-    start: StartSituation,
+    case: Annotated[Case, "The case to read."],
+    start: Annotated[StartSituation, "The saved start to walk from."],
 ) -> ChainSoFar:
     """Load the open line from the present through the current situation, including each saved link.
 
