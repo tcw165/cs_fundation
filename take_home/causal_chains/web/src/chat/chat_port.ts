@@ -1,4 +1,4 @@
-export type Role = "user" | "agent" | "other" | "meta";
+export type Role = "user" | "agent" | "other" | "meta" | "system";
 
 export type Turn = {
   turn_id: string;
@@ -24,13 +24,21 @@ export type DeeplinkCardMessage = {
   title?: string;
 };
 
+export type SystemMessage = {
+  kind: "system";
+  message_id: string;
+  role: "system";
+  text: string;
+  created_timestamp: string;
+};
+
 export type HeartbeatMessage = {
   kind: "heartbeat";
   role: "meta";
   message_id?: string;
 };
 
-export type Message = MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage;
+export type Message = MarkdownMessage | DeeplinkCardMessage | SystemMessage | HeartbeatMessage;
 
 export type PostMessageReq = {
   conversation_id: string;

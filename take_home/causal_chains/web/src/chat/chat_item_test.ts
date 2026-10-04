@@ -20,6 +20,13 @@ describe("chat_item_from_message", () => {
         link: "causal_chains://chain?root_situation_id=a&root_version=1",
         created_timestamp: "2026-09-30T00:00:00+00:00",
       },
+      {
+        kind: "system",
+        message_id: "m_timeout",
+        role: "system",
+        text: "This turn timed out. Send your message again.",
+        created_timestamp: "2026-09-30T00:00:00+00:00",
+      },
       { kind: "heartbeat", message_id: "m3", role: "meta" },
     ];
     expect(messages.map(chat_item_from_message)).toEqual([
@@ -36,6 +43,13 @@ describe("chat_item_from_message", () => {
         message_id: "m2",
         role: "other",
         link: "causal_chains://chain?root_situation_id=a&root_version=1",
+      },
+      {
+        kind: "system",
+        message_id: "m_timeout",
+        role: "system",
+        text: "This turn timed out. Send your message again.",
+        created_timestamp: "2026-09-30T00:00:00+00:00",
       },
       { kind: "heartbeat", message_id: "m3", role: "meta" },
     ]);
