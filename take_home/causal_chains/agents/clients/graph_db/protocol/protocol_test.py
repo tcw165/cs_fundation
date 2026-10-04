@@ -30,6 +30,13 @@ class _Both:
     def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str, str] | None:
         return None
 
+    def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[tuple[UUID, str, str, str, str]]:
+        return []
+
     def merge_situation(
         self,
         situation_id: UUID,

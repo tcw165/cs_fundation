@@ -220,7 +220,15 @@ def test_post_message_and_sse_with_stub_runner(monkeypatch):
     container = AppContainer()
     container.config.agent_runner.from_value("stub")
     container.config.user_uuid.from_value("user-1")
-    container.causal_chain_store.override(providers.Object(object()))
+    class _NoCases:
+        async def list_latest_cases(
+            self,
+            conversation_id: str,
+            limit: int,
+        ) -> list[object]:
+            return []
+
+    container.causal_chain_store.override(providers.Object(_NoCases()))
     _override_dynamo_db(container)
     client = httpx.Client(
         transport=_OpenStreamTransport(create_app(container)),

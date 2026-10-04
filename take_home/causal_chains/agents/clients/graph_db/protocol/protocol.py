@@ -22,6 +22,12 @@ class GraphDb(Protocol):
 
     def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str, str] | None: ...
 
+    def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[tuple[UUID, str, str, str, str]]: ...
+
     def merge_situation(
         self,
         situation_id: UUID,

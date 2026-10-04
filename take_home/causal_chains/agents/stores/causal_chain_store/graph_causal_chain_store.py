@@ -146,6 +146,29 @@ class GraphCausalChainStore(CausalChainStore):
         )
 
     @override
+    async def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[Case]:
+        return [
+            Case(
+                case_id=case_id,
+                conversation_id=stored_conversation_id,
+                from_message_id=from_message_id,
+                created_timestamp=datetime.fromisoformat(created_timestamp),
+                updated_timestamp=datetime.fromisoformat(updated_timestamp),
+            )
+            for (
+                case_id,
+                stored_conversation_id,
+                from_message_id,
+                created_timestamp,
+                updated_timestamp,
+            ) in self._graph_db.list_latest_cases(conversation_id, limit)
+        ]
+
+    @override
     async def add_situation(
         self,
         case: Case,

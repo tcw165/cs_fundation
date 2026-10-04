@@ -22,6 +22,12 @@ class CausalChainStore(Protocol):
         case_id: UUID,
     ) -> Case: ...
 
+    async def list_latest_cases(
+        self,
+        conversation_id: str,
+        limit: int,
+    ) -> list[Case]: ...
+
     async def add_situation(
         self,
         case: Case,
