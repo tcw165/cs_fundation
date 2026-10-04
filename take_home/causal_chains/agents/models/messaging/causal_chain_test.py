@@ -22,8 +22,9 @@ def test_causal_chain_keeps_one_start():
         title="now",
         desc="now",
         potential_drivers=["blockade"],
+        remained_drivers=[],
     )
-    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
+    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal", remained_drivers=[])
     chain = CausalChain(situations=[start, deal], links=[])
     assert chain.situations == [start, deal]
     assert type(chain.situations[0]) is StartSituation
@@ -37,6 +38,7 @@ def test_causal_chain_keeps_a_terminal():
         title="now",
         desc="now",
         potential_drivers=["blockade"],
+        remained_drivers=[],
     )
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
@@ -44,6 +46,7 @@ def test_causal_chain_keeps_a_terminal():
         title="the end",
         desc="the end",
         original_ask="the ask",
+        remained_drivers=[],
     )
     chain = CausalChain(situations=[start, terminal], links=[])
     assert type(chain.situations[1]) is TerminalSituation
@@ -59,6 +62,7 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "version": 1,
                     "title": "now",
                     "desc": "now",
+                    "remained_drivers": ["blockade"],
                     "potential_drivers": ["blockade"],
                 },
                 {
@@ -66,6 +70,7 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "version": 1,
                     "title": "the end",
                     "desc": "the end",
+                    "remained_drivers": [],
                     "original_ask": "the ask",
                 },
             ],
@@ -84,14 +89,16 @@ def test_causal_chain_rejects_two_starts():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
-        ),
+                    remained_drivers=[],
+),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             title="deal",
             desc="deal",
             potential_drivers=["talks"],
-        ),
+                    remained_drivers=[],
+),
     ]
     with pytest.raises(ValidationError, match="expected one start"):
         CausalChain(situations=situations, links=[])

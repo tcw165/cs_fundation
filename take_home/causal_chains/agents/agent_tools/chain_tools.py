@@ -72,6 +72,10 @@ async def add_start_situation(
         "What is true in the present, including the context behind it.",
     ],
     potential_drivers: Annotated[list[str], "The drivers behind this present."],
+    remained_drivers: Annotated[
+        list[str],
+        "Drivers from the start situation still left to change.",
+    ],
 ) -> StartSituation:
     """Save the present on a case and return it, including the id assigned here."""
     situation = StartSituation(
@@ -79,6 +83,7 @@ async def add_start_situation(
         version=1,
         title=title,
         desc=desc,
+        remained_drivers=remained_drivers,
         potential_drivers=potential_drivers,
     )
     await _require_store(ctx).add_situation(case, situation)
@@ -91,6 +96,10 @@ async def add_situation(
     case: Annotated[Case, "The case this situation belongs to."],
     title: Annotated[str, "A short and readable description within 100 words."],
     desc: Annotated[str, "Detailed statements in this situation (much longer than title)."],
+    remained_drivers: Annotated[
+        list[str],
+        "Drivers from the start situation still left to change.",
+    ],
 ) -> Situation:
     """Save one mid-chain situation on a case and return it, including the id assigned here."""
     situation = Situation(
@@ -98,6 +107,7 @@ async def add_situation(
         version=1,
         title=title,
         desc=desc,
+        remained_drivers=remained_drivers,
     )
     await _require_store(ctx).add_situation(case, situation)
     return situation
@@ -113,6 +123,10 @@ async def add_terminal_situation(
         "What is true in the future, in your own words, including the current time.",
     ],
     original_ask: Annotated[str, "The user's ask, kept with the terminal."],
+    remained_drivers: Annotated[
+        list[str],
+        "Drivers from the start situation still left to change.",
+    ],
 ) -> TerminalSituation:
     """Save the future on a case and return it, including the id assigned here."""
     situation = TerminalSituation(
@@ -120,6 +134,7 @@ async def add_terminal_situation(
         version=1,
         title=title,
         desc=desc,
+        remained_drivers=remained_drivers,
         original_ask=original_ask,
     )
     await _require_store(ctx).add_situation(case, situation)

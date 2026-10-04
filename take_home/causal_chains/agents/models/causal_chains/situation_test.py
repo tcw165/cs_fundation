@@ -21,6 +21,7 @@ def test_situation_fields():
         version=1,
         title="Strait shut.",
         desc="Strait shut.",
+        remained_drivers=[],
     )
     assert situation.version == 1
     assert situation.title == "Strait shut."
@@ -30,6 +31,10 @@ def test_situation_fields():
     assert (
         properties["desc"]["description"]
         == "Detailed statements in this situation (much longer than title)."
+    )
+    assert (
+        properties["remained_drivers"]["description"]
+        == "Drivers from the start situation still left to change."
     )
 
 
@@ -72,6 +77,7 @@ def test_start_situation_carries_the_drivers():
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade", "rejected deal"],
+        remained_drivers=[],
     )
     assert start.potential_drivers == ["blockade", "rejected deal"]
     assert isinstance(start, Situation)
@@ -86,6 +92,7 @@ def test_terminal_situation_carries_the_ask():
         title="Republicans win the House while Democrats take the Senate.",
         desc="Republicans win the House while Democrats take the Senate.",
         original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
+        remained_drivers=[],
     )
     assert "Senate" in terminal.desc
     assert terminal.original_ask.endswith("Midterm.")
@@ -101,6 +108,7 @@ def test_path_return_is_a_list_or_one_terminal():
                 "version": 1,
                 "title": "now",
                 "desc": "now",
+                "remained_drivers": [],
             }
         ]
     )
@@ -113,6 +121,7 @@ def test_path_return_is_a_list_or_one_terminal():
             "version": 1,
             "title": "the end",
             "desc": "the end",
+            "remained_drivers": [],
             "original_ask": "the ask",
         }
     )
@@ -140,14 +149,16 @@ def test_second_start_rejected():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
-        ),
+                    remained_drivers=[],
+),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             title="deal",
             desc="deal",
             potential_drivers=["talks"],
-        ),
+                    remained_drivers=[],
+),
     ]
     with pytest.raises(ValueError, match="expected one start"):
         require_single_start(situations)

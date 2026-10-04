@@ -10,6 +10,7 @@ const chain: CausalChain = {
       version: 1,
       title: "Strait shut",
       desc: "strait shut",
+      remained_drivers: [],
       potential_drivers: ["blockade"],
     },
     {
@@ -17,12 +18,14 @@ const chain: CausalChain = {
       version: 1,
       title: "Talks",
       desc: "talks",
+      remained_drivers: [],
     },
     {
       situation_id: "end",
       version: 1,
       title: "Open",
       desc: "open",
+      remained_drivers: [],
       original_ask: "open next week",
     },
   ],

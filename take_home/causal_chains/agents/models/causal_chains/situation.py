@@ -15,6 +15,10 @@ class Situation(BaseModel):
         ...,
         description="Detailed statements in this situation (much longer than title).",
     )
+    remained_drivers: list[str] = Field(
+        ...,
+        description="Drivers from the start situation still left to change.",
+    )
 
 
 class StartSituation(Situation):

@@ -108,6 +108,7 @@ describe("app chat", () => {
               version: 1,
               title: "Strait shut",
               desc: "strait shut",
+              remained_drivers: [],
               potential_drivers: ["blockade"],
             },
           ],

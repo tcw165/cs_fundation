@@ -27,6 +27,7 @@ def _start() -> StartSituation:
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade"],
+        remained_drivers=[],
     )
 
 
@@ -36,6 +37,7 @@ def _mid() -> Situation:
         version=1,
         title="Talks open.",
         desc="Talks open.",
+        remained_drivers=[],
     )
 
 
@@ -46,6 +48,7 @@ def _terminal() -> TerminalSituation:
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
+        remained_drivers=[],
     )
 
 
@@ -82,7 +85,8 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
                 version=1,
                 title="same id",
                 desc="same id",
-            ),
+                            remained_drivers=[],
+),
             terminal_situation=terminal,
             prompt="close",
         )

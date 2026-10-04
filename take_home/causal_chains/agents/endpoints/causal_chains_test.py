@@ -32,6 +32,7 @@ def test_get_causal_chains_returns_every_root_chain():
         title="now",
         desc="now",
         potential_drivers=[],
+        remained_drivers=[],
     )
     chain = CausalChain(situations=[root], links=[])
     container = AppContainer()
