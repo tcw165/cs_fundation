@@ -150,7 +150,7 @@ class ChatService:
         conversation_id: str,
         inputs: list[Message],
     ) -> list[Message]:
-        """Prewarm messages, the last 24 hours, and the latest user messages.
+        """Prewarm messages, the last hour, and the latest user messages.
 
         Oldest first. A latest user message already in the window is not repeated.
         """

@@ -1,3 +1,3 @@
 from datetime import timedelta
 
-INPUT_WINDOW = timedelta(hours=24)
+INPUT_WINDOW = timedelta(hours=1)
