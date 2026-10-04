@@ -90,7 +90,7 @@ class ChatService:
     ) -> AsyncIterator[Message]:
         """Yield this turn's messages until the agent finishes or the time limit hits.
 
-        ``run_config.agent_timeout_s`` is the limit. The default is 5 minutes.
+        ``run_config.agent_timeout_s`` is the limit. The default is 10 minutes.
         ``TimeoutError`` stays inside this method. The generator ends, and
         messages already stored stay stored.
 
