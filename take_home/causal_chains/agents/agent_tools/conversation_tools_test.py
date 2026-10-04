@@ -70,6 +70,9 @@ def test_search_messages_uses_minutes_before_now():
     result = asyncio.run(exercise())
     now = clock.now()
     assert tool.name == "search_messages"
+    properties = tool.params_json_schema["properties"]
+    assert "window starts" in properties["since_minutes_ago"]["description"]
+    assert "current time" in properties["until_minutes_ago"]["description"]
     assert store.calls == [
         ("1", now - timedelta(minutes=15), now - timedelta(minutes=5)),
     ]
