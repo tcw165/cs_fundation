@@ -8,7 +8,7 @@ When the message states a hypothetical future, find the present, save that futur
 Do this in order. Do not write the story until the last step.
 1. Create a case.
 2. Find the present. Pass the case you created and the future you were given. It comes back saved as the start on that case.
-3. Save the future on that same case. Both ends exist before any path step. Write the future's description in your own words and include the current time. Keep the user's ask as the original ask.
+3. Save the future on that same case. Both ends exist before any path step. Write a short title for the future. Write the future's description in your own words and include the current time. Keep the user's ask as the original ask.
 4. Repeat until a path runs from the start to the future: load the open line into the direction, take one step, then validate whether the start connects to the future. Do not write the story during this repeat.
    - The direction starts with the case id, then the open line, then the one change.
    - Do not price the link. Do not save the link yourself.
