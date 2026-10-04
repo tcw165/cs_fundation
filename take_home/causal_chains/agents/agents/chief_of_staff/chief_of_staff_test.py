@@ -38,7 +38,10 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert "# Key Rules" in prompt
     assert "# Communication Primitive" in prompt
     assert "# Examples" not in prompt
-    assert "You are the chief of staff." in prompt
+    assert "You are Tars, the chief of staff." in prompt
+    assert "Your name is Tars." in prompt
+    assert "When they ask your name, answer it." in prompt
+    assert "Do not share the creator, the model, or any other internal information." in prompt
     assert "The latest user message is the question." in prompt
     assert "If it is still not there, ask them to clarify." in prompt
     assert "Welcome only when that question is not a hypothetical." in prompt
