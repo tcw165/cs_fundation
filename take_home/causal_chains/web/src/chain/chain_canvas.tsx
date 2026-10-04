@@ -11,7 +11,7 @@ import {
   type LaidEdge,
   type LaidNode,
 } from "./layout";
-import { likelihood_label, sparkline_points } from "./likelihood";
+import { likelihood_label } from "./likelihood";
 import { layout_overview } from "./overview";
 import type { FocusTarget } from "./panel_state";
 
@@ -284,7 +284,6 @@ function SituationCard({
         onClick={on_toggle}
       >
         {header}
-        <Sparkline seed={node.key} />
         {incoming_p !== null ? <span className="node-p">{incoming_p}</span> : null}
       </button>
     );
@@ -313,17 +312,8 @@ function SituationCard({
             <dd>{situation.version}</dd>
           </div>
         </dl>
-        <Sparkline seed={node.key} />
       </div>
     </article>
-  );
-}
-
-function Sparkline({ seed }: { seed: string }) {
-  return (
-    <svg className="node-spark" viewBox="0 0 240 36" aria-hidden="true">
-      <polyline points={sparkline_points(seed)} />
-    </svg>
   );
 }
 
