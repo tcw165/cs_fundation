@@ -21,3 +21,7 @@ def test_link_inputs_hold_values_and_not_a_probability():
     )
     assert "p" not in LinkInputs.model_fields
     assert quoted.inputs[0].value == Decimal("0.08")
+    assert (
+        LinkInputs.model_json_schema()["properties"]["inputs"]["description"]
+        == "Named values between 0 and 1 for a driver that could change the situation."
+    )
