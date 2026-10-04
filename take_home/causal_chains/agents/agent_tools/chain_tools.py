@@ -41,11 +41,7 @@ def _require_store(
 async def add_case(
     ctx: RunContextWrapper[RunContext],
 ) -> Case:
-    """Create a case and return it, including the id assigned here.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-    """
+    """Create a case and return it, including the id assigned here."""
     created = ctx.context.clock.now()
     case = Case(
         case_id=uuid4(),
@@ -62,12 +58,7 @@ async def get_case(
     ctx: RunContextWrapper[RunContext],
     case_id: Annotated[UUID, "The id of the case to load."],
 ) -> Case:
-    """Load one case by the id assigned when it was created.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case_id: The id of the case to load.
-    """
+    """Load one case by the id assigned when it was created."""
     return await _require_store(ctx).get_case(case_id)
 
 
@@ -81,14 +72,7 @@ async def add_start_situation(
     ],
     potential_factors: Annotated[list[str], "The drivers behind this present."],
 ) -> StartSituation:
-    """Save the present on a case and return it, including the id assigned here.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case this start belongs to.
-        desc: What is true in the present, including the context behind it.
-        potential_factors: The drivers behind this present.
-    """
+    """Save the present on a case and return it, including the id assigned here."""
     situation = StartSituation(
         situation_id=uuid4(),
         version=1,
@@ -105,13 +89,7 @@ async def add_situation(
     case: Annotated[Case, "The case this situation belongs to."],
     desc: Annotated[str, "What is true in this situation."],
 ) -> Situation:
-    """Save one mid-chain situation on a case and return it, including the id assigned here.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case this situation belongs to.
-        desc: What is true in this situation.
-    """
+    """Save one mid-chain situation on a case and return it, including the id assigned here."""
     situation = Situation(
         situation_id=uuid4(),
         version=1,
@@ -131,14 +109,7 @@ async def add_terminal_situation(
     ],
     original_ask: Annotated[str, "The user's ask, kept with the terminal."],
 ) -> TerminalSituation:
-    """Save the future on a case and return it, including the id assigned here.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case this terminal belongs to.
-        desc: What is true in the future, in your own words, including the current time.
-        original_ask: The user's ask, kept with the terminal.
-    """
+    """Save the future on a case and return it, including the id assigned here."""
     situation = TerminalSituation(
         situation_id=uuid4(),
         version=1,
@@ -163,13 +134,6 @@ async def link_situations(
     """Save both situations and the leads-to link between them.
 
     The stored probability is the mean of the input values. Do not pass a probability.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case both situations belong to.
-        from_situation: The situation this link leaves.
-        to_situation: The situation this link reaches.
-        inputs: Named values between 0 and 1 that a person could move later.
     """
     parsed = [
         InputVariable(
@@ -204,11 +168,6 @@ async def lookup_leaf_situations(
     """Return mid-chain situations reached from the start that have no outgoing link.
 
     The start and any terminal are left out. An empty list means the frontier is still the start.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case to search.
-        start: The saved start to walk from.
     """
     return await _require_store(ctx).lookup_leaf_situations(case, start)
 
@@ -220,14 +179,7 @@ async def reaches_terminal(
     start: Annotated[StartSituation, "The saved start."],
     terminal: Annotated[TerminalSituation, "The saved terminal."],
 ) -> bool:
-    """Validate whether the start situation connects to the terminal situation.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case both situations belong to.
-        start: The saved start.
-        terminal: The saved terminal.
-    """
+    """Validate whether the start situation connects to the terminal situation."""
     return await _require_store(ctx).reaches_terminal(case, start, terminal)
 
 
@@ -240,10 +192,5 @@ async def lookup_chain_so_far(
     """Load the open line from the present through the current situation, including each saved link.
 
     The terminal is not included. An empty hop list means nothing is linked yet.
-
-    Args:
-        ctx: Run context. The causal chain store is on its clients.
-        case: The case to read.
-        start: The saved start to walk from.
     """
     return await _require_store(ctx).lookup_chain_so_far(case, start)

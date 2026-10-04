@@ -26,12 +26,7 @@ def build_conversation_tools(
             "Minutes before now where the window ends. 0 is the current time. A message at that time is included.",
         ] = 0,
     ) -> list[Message]:
-        """Messages in a window before now, oldest first.
-
-        Args:
-            since_minutes_ago: Minutes before now where the window starts. A message at that time is included.
-            until_minutes_ago: Minutes before now where the window ends. 0 is the current time. A message at that time is included.
-        """
+        """Messages in a window before now, oldest first."""
         now = clock.now()
         return await messaging_store.search_messages(
             conversation_id=conversation_id,

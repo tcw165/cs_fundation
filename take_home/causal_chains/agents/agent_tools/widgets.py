@@ -18,12 +18,6 @@ async def show_deeplink_widget(
         "When true, the reader sees the card after the rest of this turn. When false, the reader sees it now.",
     ] = True,
 ) -> DeeplinkCard:
-    """Show a deeplink card.
-
-    Args:
-        ctx: Run context.
-        card: The card to show. Use the title, subtitle, scheme, route, and params that came back.
-        render_at_end: When true, the reader sees the card after the rest of this turn. When false, the reader sees it now.
-    """
+    """Show a deeplink card."""
     del ctx, render_at_end
     return card
