@@ -697,9 +697,10 @@ def test_snapshot_follows_the_turn_status():
     assert failed.thinking_state is not None
     assert failed.thinking_state.text == "Failed"
 
-    timed_out, _timed_out_turn = interaction(TurnStatus.timeout)
-    assert timed_out.thinking_state is not None
-    assert timed_out.thinking_state.text == "Timed out"
+    timed_out, timed_out_turn = interaction(TurnStatus.timeout)
+    assert timed_out.text_input_state is TextInputState.ENABLED
+    assert timed_out.thinking_state is None
+    assert timed_out_turn is not None and timed_out_turn.processing == []
 
     missing, missing_turn = interaction(None)
     assert missing.text_input_state is TextInputState.ENABLED

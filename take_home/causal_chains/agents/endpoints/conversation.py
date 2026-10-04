@@ -340,10 +340,13 @@ def _user_interaction_state(turn: Turn | None) -> UserInteractionState:
 
 
 def _thinking_for_ended_turn(turn: Turn | None) -> ThinkingState | None:
-    if turn is None or turn.status is TurnStatus.completed or turn.status is TurnStatus.cancelled:
+    if (
+        turn is None
+        or turn.status is TurnStatus.completed
+        or turn.status is TurnStatus.cancelled
+        or turn.status is TurnStatus.timeout
+    ):
         return None
     if turn.status is TurnStatus.failed:
         return ThinkingState(text="Failed")
-    if turn.status is TurnStatus.timeout:
-        return ThinkingState(text="Timed out")
     return None
