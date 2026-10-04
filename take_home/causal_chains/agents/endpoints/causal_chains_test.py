@@ -33,9 +33,9 @@ def test_get_causal_chains_returns_every_root_chain():
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="now",
         desc="now",
-        potential_drivers=[],
         remained_drivers=[],
     )
     chain = CausalChain(situations=[root], links=[])

@@ -58,15 +58,16 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         situation_id=uuid4(),
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="now",
         desc="now",
-        potential_drivers=[],
         remained_drivers=[],
     )
     later = Situation(
         situation_id=uuid4(),
         version=1,
         created_timestamp=CREATED,
+        kind="situation",
         title="later",
         desc="later",
         remained_drivers=[],

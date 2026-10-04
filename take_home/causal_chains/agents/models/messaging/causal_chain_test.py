@@ -22,12 +22,12 @@ def test_causal_chain_keeps_one_start():
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="now",
         desc="now",
-        potential_drivers=["blockade"],
         remained_drivers=[],
     )
-    deal = Situation(situation_id=DEAL_ID, version=1, created_timestamp=CREATED, title="deal", desc="deal", remained_drivers=[])
+    deal = Situation(situation_id=DEAL_ID, version=1, created_timestamp=CREATED, kind="situation", title="deal", desc="deal", remained_drivers=[])
     chain = CausalChain(situations=[start, deal], links=[])
     assert chain.situations == [start, deal]
     assert type(chain.situations[0]) is StartSituation
@@ -39,15 +39,16 @@ def test_causal_chain_keeps_a_terminal():
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="now",
         desc="now",
-        potential_drivers=["blockade"],
         remained_drivers=[],
     )
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="terminal",
         title="the end",
         desc="the end",
         original_ask="the ask",
@@ -68,8 +69,8 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "created_timestamp": "2026-10-01T00:00:00+00:00",
                     "title": "now",
                     "desc": "now",
+                    "kind": "start",
                     "remained_drivers": ["blockade"],
-                    "potential_drivers": ["blockade"],
                 },
                 {
                     "situation_id": str(DEAL_ID),
@@ -77,6 +78,7 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                     "created_timestamp": "2026-10-01T00:00:00+00:00",
                     "title": "the end",
                     "desc": "the end",
+                    "kind": "terminal",
                     "remained_drivers": [],
                     "original_ask": "the ask",
                 },
@@ -94,18 +96,18 @@ def test_causal_chain_rejects_two_starts():
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
+            kind="start",
             title="now",
             desc="now",
-            potential_drivers=["blockade"],
                     remained_drivers=[],
 ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             created_timestamp=CREATED,
+            kind="start",
             title="deal",
             desc="deal",
-            potential_drivers=["talks"],
                     remained_drivers=[],
 ),
     ]

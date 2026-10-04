@@ -303,16 +303,6 @@ function SituationCard({
       </button>
       <div className="node-detail">
         <p>{situation.desc}</p>
-        {situation.potential_drivers !== undefined ? (
-          <>
-            <h3>Potential drivers</h3>
-            <ul>
-              {situation.potential_drivers.map((factor) => (
-                <li key={factor}>{factor}</li>
-              ))}
-            </ul>
-          </>
-        ) : null}
         {situation.original_ask !== undefined ? (
           <>
             <h3>Original ask</h3>
@@ -377,10 +367,10 @@ function selection_from_focus(focus: FocusTarget): GraphSelection | null {
 }
 
 function situation_kind(situation: ChainSituation): "start" | "step" | "terminal" {
-  if (situation.potential_drivers !== undefined) {
+  if (situation.kind === "start") {
     return "start";
   }
-  if (situation.original_ask !== undefined) {
+  if (situation.kind === "terminal") {
     return "terminal";
   }
   return "step";

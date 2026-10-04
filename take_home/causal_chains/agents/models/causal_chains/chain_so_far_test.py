@@ -29,9 +29,9 @@ def _start() -> StartSituation:
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="Strait shut.",
         desc="Strait shut.",
-        potential_drivers=["blockade"],
         remained_drivers=[],
     )
 
@@ -41,6 +41,7 @@ def _mid(situation_id: UUID = DEAL_ID, desc: str = "Talks open.") -> Situation:
         situation_id=situation_id,
         version=1,
         created_timestamp=CREATED,
+        kind="situation",
         title=desc,
         desc=desc,
         remained_drivers=[],
@@ -98,6 +99,7 @@ def test_chain_so_far_rejects_a_start_or_a_terminal_hop():
         situation_id=END_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="terminal",
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",

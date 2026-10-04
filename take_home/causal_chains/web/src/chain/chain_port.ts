@@ -7,11 +7,11 @@ export type DeeplinkCard = {
 export type ChainSituation = {
   situation_id: string;
   version: number;
+  kind: "start" | "situation" | "terminal";
   created_timestamp: string;
   title: string;
   desc: string;
   remained_drivers: string[];
-  potential_drivers?: string[];
   original_ask?: string;
 };
 

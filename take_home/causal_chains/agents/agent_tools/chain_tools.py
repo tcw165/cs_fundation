@@ -79,7 +79,6 @@ async def add_start_situation(
         str,
         "What is true in the present, including the context behind it.",
     ],
-    potential_drivers: Annotated[list[str], "The drivers behind this present."],
     remained_drivers: Annotated[
         list[str],
         "Drivers from the start situation still left to change.",
@@ -89,11 +88,11 @@ async def add_start_situation(
     situation = StartSituation(
         situation_id=uuid4(),
         version=1,
+        kind="start",
         created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
-        potential_drivers=potential_drivers,
     )
     await _require_store(ctx).add_situation(case, situation)
     return situation
@@ -114,6 +113,7 @@ async def add_situation(
     situation = Situation(
         situation_id=uuid4(),
         version=1,
+        kind="situation",
         created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
@@ -142,6 +142,7 @@ async def add_terminal_situation(
     situation = TerminalSituation(
         situation_id=uuid4(),
         version=1,
+        kind="terminal",
         created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
@@ -156,8 +157,14 @@ async def add_terminal_situation(
 async def link_situations(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case both situations belong to."],
-    from_situation: Annotated[Situation, "The situation this link leaves."],
-    to_situation: Annotated[Situation, "The situation this link reaches."],
+    from_situation: Annotated[
+        StartSituation | Situation | TerminalSituation,
+        "The situation this link leaves.",
+    ],
+    to_situation: Annotated[
+        StartSituation | Situation | TerminalSituation,
+        "The situation this link reaches.",
+    ],
     inputs: Annotated[
         list[LinkInput],
         "Named values between 0 and 1 for a driver that could change the situation.",

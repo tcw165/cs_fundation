@@ -140,7 +140,6 @@ def test_merge_situation_writes_node_fields():
         [],
         CLEAR_ID,
         "start",
-        ["blockade"],
         "",
     )
     query, params = driver.calls[0]
@@ -160,7 +159,6 @@ def test_merge_situation_writes_node_fields():
         "remained_drivers": [],
         "case_id": str(CLEAR_ID),
         "kind": "start",
-        "potential_drivers": ["blockade"],
         "original_ask": "",
     }
 
@@ -212,7 +210,6 @@ def test_list_situations_reads_versioned_rows():
                     "desc": "now",
                     "remained_drivers": [],
                     "kind": "start",
-                    "potential_drivers": ["blockade"],
                     "original_ask": "",
                     "case_id": str(CLEAR_ID),
                 }
@@ -228,7 +225,6 @@ def test_list_situations_reads_versioned_rows():
             "now",
             [],
             "start",
-            ["blockade"],
             "",
             CLEAR_ID,
         ),
@@ -291,7 +287,6 @@ def test_lookup_chain_so_far_reads_the_open_line():
                     "start_title": "Strait shut",
                     "start_desc": "now",
                     "start_remained_drivers": [],
-                    "potential_drivers": ["blockade"],
                     "hops": [],
                     "links": [],
                 }
@@ -299,7 +294,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
         )
     )
     assert client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1) == (
-        (NOW_ID, 1, "2026-10-01T00:00:00+00:00", "Strait shut", "now", [], ["blockade"]),
+        (NOW_ID, 1, "2026-10-01T00:00:00+00:00", "Strait shut", "now", []),
         [],
         [],
     )
@@ -327,7 +322,6 @@ def test_lookup_chain_so_far_reads_one_hop():
                     "start_title": "Strait shut",
                     "start_desc": "now",
                     "start_remained_drivers": [],
-                    "potential_drivers": ["blockade"],
                     "hops": [
                         {
                             "situation_id": str(RESUMES_ID),
