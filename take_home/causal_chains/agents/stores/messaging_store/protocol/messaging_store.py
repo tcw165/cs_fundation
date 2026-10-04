@@ -63,3 +63,10 @@ class MessagingStore(Protocol):
         self,
         user_uuid: str,
     ) -> list[Conversation]: ...
+
+    async def get_conversation(
+        self,
+        conversation_id: str,
+    ) -> Conversation | None:
+        """The stored conversation, or none when it has not been created."""
+        ...

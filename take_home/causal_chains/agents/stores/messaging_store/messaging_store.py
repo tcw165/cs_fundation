@@ -165,6 +165,19 @@ class MessagingStoreImpl(MessagingStore):
         )
         return [Conversation.from_dynamodb(row) for row in rows]
 
+    @override
+    async def get_conversation(
+        self,
+        conversation_id: str,
+    ) -> Conversation | None:
+        item = self._dynamo_db.get_item(
+            "conversation",
+            {"PK": f"CONV#{conversation_id}", "SK": "METADATA"},
+        )
+        if item is None:
+            return None
+        return Conversation.from_dynamodb(item)
+
     def _put_metadata_if_absent(
         self,
         conversation_id: str,

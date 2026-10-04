@@ -186,6 +186,32 @@ def test_same_id_and_timestamp_replaces_one_message_and_keeps_metadata():
     assert metadata["SK"] == "METADATA"
 
 
+def test_get_conversation_returns_the_stored_created_time():
+    async def exercise():
+        store = MessagingStoreImpl(_FakeDynamoDb(), "user-1")
+        missing = await store.get_conversation("1")
+        created = datetime(2026, 9, 30, tzinfo=timezone.utc)
+        await store.append(
+            "1",
+            MarkdownMessage(
+                message_id="m_1",
+                conversation_id="1",
+                user_uuid="user-1",
+                role=Role.user,
+                text="hello",
+                created_timestamp=created,
+            ),
+        )
+        found = await store.get_conversation("1")
+        return missing, found
+
+    missing, found = asyncio.run(exercise())
+    assert missing is None
+    assert found is not None
+    assert found.id == "1"
+    assert found.created_at == datetime(2026, 9, 30, tzinfo=timezone.utc)
+
+
 def test_save_message_with_ttl_sets_time_to_live_and_list_conversations_uses_the_owner():
     async def exercise():
         database = _FakeDynamoDb()
