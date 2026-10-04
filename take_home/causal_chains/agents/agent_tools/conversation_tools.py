@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Annotated
 
 from agents import FunctionTool, function_tool
 
@@ -16,8 +17,14 @@ def build_conversation_tools(
 ) -> tuple[FunctionTool, ...]:
     @function_tool
     async def search_messages(
-        since_minutes_ago: int,
-        until_minutes_ago: int = 0,
+        since_minutes_ago: Annotated[
+            int,
+            "Minutes before now where the window starts. A message at that time is included.",
+        ],
+        until_minutes_ago: Annotated[
+            int,
+            "Minutes before now where the window ends. 0 is the current time. A message at that time is included.",
+        ] = 0,
     ) -> list[Message]:
         """Messages in a window before now, oldest first.
 
