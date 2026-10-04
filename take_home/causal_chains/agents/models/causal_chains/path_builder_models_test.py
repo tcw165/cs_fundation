@@ -24,6 +24,7 @@ def _start() -> StartSituation:
     return StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="Strait shut.",
         desc="Strait shut.",
         potential_factors=["blockade"],
     )
@@ -33,6 +34,7 @@ def _mid() -> Situation:
     return Situation(
         situation_id=DEAL_ID,
         version=1,
+        title="Talks open.",
         desc="Talks open.",
     )
 
@@ -41,6 +43,7 @@ def _terminal() -> TerminalSituation:
     return TerminalSituation(
         situation_id=END_ID,
         version=1,
+        title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
     )
@@ -77,6 +80,7 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
             from_situation=Situation(
                 situation_id=terminal.situation_id,
                 version=1,
+                title="same id",
                 desc="same id",
             ),
             terminal_situation=terminal,

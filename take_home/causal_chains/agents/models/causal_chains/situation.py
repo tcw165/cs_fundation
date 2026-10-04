@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Situation(BaseModel):
@@ -10,7 +10,11 @@ class Situation(BaseModel):
 
     situation_id: UUID
     version: int
-    desc: str
+    title: str = Field(..., description="A short and readable description within 100 words.")
+    desc: str = Field(
+        ...,
+        description="Detailed statements in this situation (much longer than title).",
+    )
 
 
 class StartSituation(Situation):

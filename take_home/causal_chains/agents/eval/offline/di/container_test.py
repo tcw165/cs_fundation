@@ -55,12 +55,14 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
     root = StartSituation(
         situation_id=uuid4(),
         version=1,
+        title="now",
         desc="now",
         potential_factors=[],
     )
     later = Situation(
         situation_id=uuid4(),
         version=1,
+        title="later",
         desc="later",
     )
     link = LeadsTo(

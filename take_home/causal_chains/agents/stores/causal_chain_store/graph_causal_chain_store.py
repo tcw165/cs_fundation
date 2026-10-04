@@ -52,6 +52,7 @@ def _ask(situation: Situation) -> str:
 def _situation_from_graph(
     situation_id: UUID,
     version: int,
+    title: str,
     desc: str,
     kind: str,
     potential_factors: list[str],
@@ -61,6 +62,7 @@ def _situation_from_graph(
         return StartSituation(
             situation_id=situation_id,
             version=version,
+            title=title,
             desc=desc,
             potential_factors=potential_factors,
         )
@@ -68,12 +70,14 @@ def _situation_from_graph(
         return TerminalSituation(
             situation_id=situation_id,
             version=version,
+            title=title,
             desc=desc,
             original_ask=original_ask,
         )
     return Situation(
         situation_id=situation_id,
         version=version,
+        title=title,
         desc=desc,
     )
 
@@ -173,6 +177,7 @@ class GraphCausalChainStore(CausalChainStore):
         self._graph_db.merge_situation(
             situation.situation_id,
             situation.version,
+            situation.title,
             situation.desc,
             case.case_id,
             _kind(situation),
@@ -209,9 +214,10 @@ class GraphCausalChainStore(CausalChainStore):
             Situation(
                 situation_id=situation_id,
                 version=version,
+                title=title,
                 desc=desc,
             )
-            for situation_id, version, desc in self._graph_db.list_leaf_situations(
+            for situation_id, version, title, desc in self._graph_db.list_leaf_situations(
                 case.case_id,
                 start.situation_id,
                 start.version,
@@ -247,10 +253,10 @@ class GraphCausalChainStore(CausalChainStore):
         if row is None:
             raise ValueError("start is missing")
         start_row, hop_rows, link_rows = row
-        start_id, start_version, start_desc, factors = start_row
+        start_id, start_version, start_title, start_desc, factors = start_row
         hops: list[LinkedHop] = []
         for hop_row, link_row in zip(hop_rows, link_rows, strict=True):
-            situation_id, version, desc = hop_row
+            situation_id, version, title, desc = hop_row
             (
                 from_situation_id,
                 from_version,
@@ -264,6 +270,7 @@ class GraphCausalChainStore(CausalChainStore):
                     situation=Situation(
                         situation_id=situation_id,
                         version=version,
+                        title=title,
                         desc=desc,
                     ),
                     link=LeadsTo(
@@ -283,6 +290,7 @@ class GraphCausalChainStore(CausalChainStore):
             start=StartSituation(
                 situation_id=start_id,
                 version=start_version,
+                title=start_title,
                 desc=start_desc,
                 potential_factors=factors,
             ),
@@ -297,6 +305,7 @@ class GraphCausalChainStore(CausalChainStore):
         for (
             situation_id,
             version,
+            title,
             desc,
             kind,
             potential_factors,
@@ -307,6 +316,7 @@ class GraphCausalChainStore(CausalChainStore):
                 _situation_from_graph(
                     situation_id,
                     version,
+                    title,
                     desc,
                     kind,
                     potential_factors,

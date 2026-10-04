@@ -66,6 +66,7 @@ async def get_case(
 async def add_start_situation(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case this start belongs to."],
+    title: Annotated[str, "A short and readable description within 100 words."],
     desc: Annotated[
         str,
         "What is true in the present, including the context behind it.",
@@ -76,6 +77,7 @@ async def add_start_situation(
     situation = StartSituation(
         situation_id=uuid4(),
         version=1,
+        title=title,
         desc=desc,
         potential_factors=potential_factors,
     )
@@ -87,12 +89,14 @@ async def add_start_situation(
 async def add_situation(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case this situation belongs to."],
-    desc: Annotated[str, "What is true in this situation."],
+    title: Annotated[str, "A short and readable description within 100 words."],
+    desc: Annotated[str, "Detailed statements in this situation (much longer than title)."],
 ) -> Situation:
     """Save one mid-chain situation on a case and return it, including the id assigned here."""
     situation = Situation(
         situation_id=uuid4(),
         version=1,
+        title=title,
         desc=desc,
     )
     await _require_store(ctx).add_situation(case, situation)
@@ -103,6 +107,7 @@ async def add_situation(
 async def add_terminal_situation(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case this terminal belongs to."],
+    title: Annotated[str, "A short and readable description within 100 words."],
     desc: Annotated[
         str,
         "What is true in the future, in your own words, including the current time.",
@@ -113,6 +118,7 @@ async def add_terminal_situation(
     situation = TerminalSituation(
         situation_id=uuid4(),
         version=1,
+        title=title,
         desc=desc,
         original_ask=original_ask,
     )

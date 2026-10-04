@@ -19,10 +19,11 @@ def test_causal_chain_keeps_one_start():
     start = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="now",
         desc="now",
         potential_factors=["blockade"],
     )
-    deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
     chain = CausalChain(situations=[start, deal], links=[])
     assert chain.situations == [start, deal]
     assert type(chain.situations[0]) is StartSituation
@@ -33,12 +34,14 @@ def test_causal_chain_keeps_a_terminal():
     start = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="now",
         desc="now",
         potential_factors=["blockade"],
     )
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
         version=1,
+        title="the end",
         desc="the end",
         original_ask="the ask",
     )
@@ -54,12 +57,14 @@ def test_causal_chain_parses_the_start_before_a_plain_situation():
                 {
                     "situation_id": str(NOW_ID),
                     "version": 1,
+                    "title": "now",
                     "desc": "now",
                     "potential_factors": ["blockade"],
                 },
                 {
                     "situation_id": str(DEAL_ID),
                     "version": 1,
+                    "title": "the end",
                     "desc": "the end",
                     "original_ask": "the ask",
                 },
@@ -76,12 +81,14 @@ def test_causal_chain_rejects_two_starts():
         StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
+            title="deal",
             desc="deal",
             potential_factors=["talks"],
         ),

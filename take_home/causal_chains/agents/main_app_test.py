@@ -247,6 +247,7 @@ def test_get_causal_chains_returns_the_stored_chains():
     root = StartSituation(
         situation_id=UUID("11111111-1111-4111-8111-111111111111"),
         version=1,
+        title="now",
         desc="now",
         potential_factors=[],
     )
