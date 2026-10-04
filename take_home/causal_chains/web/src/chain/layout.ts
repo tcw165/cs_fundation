@@ -188,7 +188,7 @@ export function layout_chain(chain: CausalChain, selection: GraphSelection | nul
 
 export function ordered_situations(chain: CausalChain): ChainSituation[] {
   const start =
-    chain.situations.find((situation) => situation.potential_drivers !== undefined) ??
+    chain.situations.find((situation) => situation.kind === "start") ??
     chain.situations[0];
   if (start === undefined) {
     return [];

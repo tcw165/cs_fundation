@@ -39,7 +39,6 @@ class _Both:
         remained_drivers: list[str],
         case_id: UUID,
         kind: str,
-        potential_drivers: list[str],
         original_ask: str,
     ) -> None:
         return None
@@ -57,7 +56,7 @@ class _Both:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, str, UUID]]:
         return []
 
     def list_leaf_situations(
@@ -84,7 +83,7 @@ class _Both:
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, str, str, list[str], list[str]],
+        tuple[UUID, int, str, str, str, list[str]],
         list[tuple[UUID, int, str, str, str, list[str]]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
     ] | None:

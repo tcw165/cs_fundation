@@ -7,7 +7,7 @@ export function chain_for_card(
 ): CausalChain | null {
   for (const chain of chains) {
     const start = chain.situations.find(
-      (situation) => situation.potential_drivers !== undefined,
+      (situation) => situation.kind === "start",
     );
     if (
       start !== undefined &&

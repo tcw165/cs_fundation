@@ -28,9 +28,9 @@ def _start() -> StartSituation:
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="Strait shut.",
         desc="Strait shut.",
-        potential_drivers=["blockade"],
         remained_drivers=[],
     )
 
@@ -40,6 +40,7 @@ def _mid() -> Situation:
         situation_id=DEAL_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="situation",
         title="Talks open.",
         desc="Talks open.",
         remained_drivers=[],
@@ -51,6 +52,7 @@ def _terminal() -> TerminalSituation:
         situation_id=END_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="terminal",
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
@@ -65,7 +67,7 @@ def test_request_keeps_a_start_and_a_mid_situation():
         prompt="one variable: the blockade lifts",
     )
     assert isinstance(from_start.from_situation, StartSituation)
-    assert from_start.from_situation.potential_drivers == ["blockade"]
+    assert from_start.from_situation.kind == "start"
 
     from_mid = PathBuilderRequest(
         from_situation=_mid(),
@@ -90,6 +92,7 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
                 situation_id=terminal.situation_id,
                 version=1,
                 created_timestamp=CREATED,
+                kind="situation",
                 title="same id",
                 desc="same id",
                             remained_drivers=[],

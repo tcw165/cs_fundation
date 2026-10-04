@@ -12,7 +12,6 @@ SET now.version = 1,
     now.title = "Strait shut",
     now.desc = "Strait shut 208 days, transit about 0 against 85 mb/d, blockade still in force, latest deal rejected, about 400 ships waiting.",
     now.kind = "start",
-    now.potential_drivers = ["blockade", "rejected deal"],
     now.remained_drivers = ["blockade", "rejected deal"],
     now.original_ask = ""
 
@@ -22,7 +21,6 @@ SET deal.version = 1,
     deal.title = "Deal this week",
     deal.desc = "US accepts a deal this week.",
     deal.kind = "situation",
-    deal.potential_drivers = [],
     deal.remained_drivers = [],
     deal.original_ask = ""
 
@@ -32,7 +30,6 @@ SET no_deal.version = 1,
     no_deal.title = "No deal",
     no_deal.desc = "No deal this week.",
     no_deal.kind = "situation",
-    no_deal.potential_drivers = [],
     no_deal.remained_drivers = [],
     no_deal.original_ask = ""
 
@@ -42,7 +39,6 @@ SET clear.version = 1,
     clear.title = "Ships clear",
     clear.desc = "Ships clear by October 3 and normal traffic resumes.",
     clear.kind = "situation",
-    clear.potential_drivers = [],
     clear.remained_drivers = [],
     clear.original_ask = ""
 
@@ -52,7 +48,6 @@ SET stuck.version = 1,
     stuck.title = "Ships stuck",
     stuck.desc = "Ships still stuck after a deal.",
     stuck.kind = "situation",
-    stuck.potential_drivers = [],
     stuck.remained_drivers = [],
     stuck.original_ask = ""
 
@@ -62,7 +57,6 @@ SET resumes.version = 1,
     resumes.title = "Traffic resumes",
     resumes.desc = "Traffic resumes by October 3 without a deal.",
     resumes.kind = "situation",
-    resumes.potential_drivers = [],
     resumes.remained_drivers = [],
     resumes.original_ask = ""
 
@@ -72,7 +66,6 @@ SET shut.version = 1,
     shut.title = "Stays shut",
     shut.desc = "Stays shut.",
     shut.kind = "situation",
-    shut.potential_drivers = [],
     shut.remained_drivers = [],
     shut.original_ask = ""
 

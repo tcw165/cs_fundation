@@ -29,20 +29,6 @@ def _key(
     return (situation_id, version)
 
 
-def _kind(situation: Situation) -> str:
-    if isinstance(situation, StartSituation):
-        return "start"
-    if isinstance(situation, TerminalSituation):
-        return "terminal"
-    return "situation"
-
-
-def _drivers(situation: Situation) -> list[str]:
-    if isinstance(situation, StartSituation):
-        return list(situation.potential_drivers)
-    return []
-
-
 def _ask(situation: Situation) -> str:
     if isinstance(situation, TerminalSituation):
         return situation.original_ask
@@ -57,7 +43,6 @@ def _situation_from_graph(
     desc: str,
     remained_drivers: list[str],
     kind: str,
-    potential_drivers: list[str],
     original_ask: str,
 ) -> Situation:
     saved_at = datetime.fromisoformat(created_timestamp)
@@ -65,16 +50,17 @@ def _situation_from_graph(
         return StartSituation(
             situation_id=situation_id,
             version=version,
+            kind="start",
             created_timestamp=saved_at,
             title=title,
             desc=desc,
             remained_drivers=remained_drivers,
-            potential_drivers=potential_drivers,
         )
     if kind == "terminal":
         return TerminalSituation(
             situation_id=situation_id,
             version=version,
+            kind="terminal",
             created_timestamp=saved_at,
             title=title,
             desc=desc,
@@ -84,6 +70,7 @@ def _situation_from_graph(
     return Situation(
         situation_id=situation_id,
         version=version,
+        kind="situation",
         created_timestamp=saved_at,
         title=title,
         desc=desc,
@@ -191,8 +178,7 @@ class GraphCausalChainStore(CausalChainStore):
             situation.desc,
             list(situation.remained_drivers),
             case.case_id,
-            _kind(situation),
-            _drivers(situation),
+            situation.kind,
             _ask(situation),
         )
 
@@ -225,6 +211,7 @@ class GraphCausalChainStore(CausalChainStore):
             Situation(
                 situation_id=situation_id,
                 version=version,
+                kind="situation",
                 created_timestamp=datetime.fromisoformat(created_timestamp),
                 title=title,
                 desc=desc,
@@ -280,7 +267,6 @@ class GraphCausalChainStore(CausalChainStore):
             start_title,
             start_desc,
             start_remained_drivers,
-            factors,
         ) = start_row
         hops: list[LinkedHop] = []
         for hop_row, link_row in zip(hop_rows, link_rows, strict=True):
@@ -298,6 +284,7 @@ class GraphCausalChainStore(CausalChainStore):
                     situation=Situation(
                         situation_id=situation_id,
                         version=version,
+                        kind="situation",
                         created_timestamp=datetime.fromisoformat(created_timestamp),
                         title=title,
                         desc=desc,
@@ -324,11 +311,11 @@ class GraphCausalChainStore(CausalChainStore):
             start=StartSituation(
                 situation_id=start_id,
                 version=start_version,
+                kind="start",
                 created_timestamp=datetime.fromisoformat(start_created_timestamp),
                 title=start_title,
                 desc=start_desc,
                 remained_drivers=start_remained_drivers,
-                potential_drivers=factors,
             ),
             hops=hops,
         )
@@ -346,7 +333,6 @@ class GraphCausalChainStore(CausalChainStore):
             desc,
             remained_drivers,
             kind,
-            potential_drivers,
             original_ask,
             case_id,
         ) in self._graph_db.list_situations():
@@ -359,7 +345,6 @@ class GraphCausalChainStore(CausalChainStore):
                     desc,
                     remained_drivers,
                     kind,
-                    potential_drivers,
                     original_ask,
                 )
             )

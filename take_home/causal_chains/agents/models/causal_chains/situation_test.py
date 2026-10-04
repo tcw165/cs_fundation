@@ -22,6 +22,7 @@ def test_situation_fields():
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="situation",
         title="Strait shut.",
         desc="Strait shut.",
         remained_drivers=[],
@@ -43,6 +44,7 @@ def test_situation_fields():
         properties["created_timestamp"]["description"]
         == "When this situation was saved."
     )
+    assert properties["kind"]["description"] == "A mid-chain situation."
 
 
 def test_situation_json_is_not_a_terminal_situation():
@@ -82,15 +84,16 @@ def test_start_situation_carries_the_drivers():
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="start",
         title="Strait shut.",
         desc="Strait shut.",
-        potential_drivers=["blockade", "rejected deal"],
-        remained_drivers=[],
+        remained_drivers=["blockade", "rejected deal"],
     )
-    assert start.potential_drivers == ["blockade", "rejected deal"]
+    assert start.remained_drivers == ["blockade", "rejected deal"]
+    assert start.kind == "start"
     assert isinstance(start, Situation)
     properties = StartSituation.model_json_schema()["properties"]
-    assert properties["potential_drivers"]["description"] == "The drivers behind this present."
+    assert properties["kind"]["description"] == "The saved present."
 
 
 def test_terminal_situation_carries_the_ask():
@@ -98,6 +101,7 @@ def test_terminal_situation_carries_the_ask():
         situation_id=DEAL_ID,
         version=1,
         created_timestamp=CREATED,
+        kind="terminal",
         title="Republicans win the House while Democrats take the Senate.",
         desc="Republicans win the House while Democrats take the Senate.",
         original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
@@ -116,6 +120,7 @@ def test_path_return_is_a_list_or_one_terminal():
                 "situation_id": str(NOW_ID),
                 "version": 1,
                 "created_timestamp": "2026-10-01T00:00:00+00:00",
+                "kind": "situation",
                 "title": "now",
                 "desc": "now",
                 "remained_drivers": [],
@@ -130,6 +135,7 @@ def test_path_return_is_a_list_or_one_terminal():
             "situation_id": str(DEAL_ID),
             "version": 1,
             "created_timestamp": "2026-10-01T00:00:00+00:00",
+            "kind": "terminal",
             "title": "the end",
             "desc": "the end",
             "remained_drivers": [],
@@ -158,18 +164,18 @@ def test_second_start_rejected():
             situation_id=NOW_ID,
             version=1,
             created_timestamp=CREATED,
+            kind="start",
             title="now",
             desc="now",
-            potential_drivers=["blockade"],
                     remained_drivers=[],
 ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
             created_timestamp=CREATED,
+            kind="start",
             title="deal",
             desc="deal",
-            potential_drivers=["talks"],
                     remained_drivers=[],
 ),
     ]

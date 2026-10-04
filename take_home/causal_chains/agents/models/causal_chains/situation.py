@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,6 +12,7 @@ class Situation(BaseModel):
 
     situation_id: UUID
     version: int
+    kind: Literal["situation"] = Field(..., description="A mid-chain situation.")
     created_timestamp: datetime = Field(
         ...,
         description="When this situation was saved.",
@@ -27,14 +29,15 @@ class Situation(BaseModel):
 
 
 class StartSituation(Situation):
-    """The saved present. potential_drivers are the drivers behind it."""
+    """The saved present."""
 
-    potential_drivers: list[str] = Field(..., description="The drivers behind this present.")
+    kind: Literal["start"] = Field(..., description="The saved present.")
 
 
 class TerminalSituation(Situation):
     """The saved end, returned with the user's ask. Not the start."""
 
+    kind: Literal["terminal"] = Field(..., description="The saved future.")
     original_ask: str
 
 

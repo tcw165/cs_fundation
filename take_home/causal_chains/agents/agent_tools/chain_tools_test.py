@@ -145,7 +145,6 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             "case": case_payload,
             "title": "Strait shut",
             "desc": "strait shut",
-            "potential_drivers": ["blockade"],
             "remained_drivers": ["blockade"],
         },
     )
@@ -180,6 +179,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
                 include={
                     "situation_id",
                     "version",
+                    "kind",
                     "created_timestamp",
                     "title",
                     "desc",
@@ -196,7 +196,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             ],
         },
     )
-    leaf = Situation(situation_id=UUID(int=1), version=1, created_timestamp=CREATED, title="leaf", desc="leaf", remained_drivers=[])
+    leaf = Situation(situation_id=UUID(int=1), version=1, created_timestamp=CREATED, kind="situation", title="leaf", desc="leaf", remained_drivers=[])
     store.leaves = [leaf]
     leaves = _invoke(
         lookup_leaf_situations,
@@ -204,7 +204,8 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         {"case": case_payload, "start": now.model_dump(mode="json")},
     )
     assert isinstance(now, StartSituation)
-    assert now.potential_drivers == ["blockade"]
+    assert now.kind == "start"
+    assert now.remained_drivers == ["blockade"]
     assert type(deal) is Situation
     assert isinstance(terminal, TerminalSituation)
     assert terminal.original_ask == "the strait opens"
@@ -212,18 +213,10 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     assert "Save the present" in add_start_situation.description
     assert "Save one mid-chain situation" in add_situation.description
     assert "mean of the input values" in link_situations.description
-    linked_now = Situation(
-        situation_id=now.situation_id,
-        version=now.version,
-        created_timestamp=now.created_timestamp,
-        title=now.title,
-        desc=now.desc,
-        remained_drivers=["blockade"],
-    )
     assert store.cases == [case]
     assert store.situations == [(case, now), (case, deal), (case, terminal)]
     assert link.p == Decimal("0.0800")
-    assert store.links == [(case, linked_now, deal, link)]
+    assert store.links == [(case, now, deal, link)]
     assert leaves == [leaf]
     store.reaches = True
     connected = _invoke(
@@ -247,7 +240,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     )
     assert isinstance(empty_line, ChainSoFar)
     assert empty_line.hops == []
-    mid = Situation(situation_id=deal.situation_id, version=deal.version, created_timestamp=deal.created_timestamp, title=deal.title, desc=deal.desc, remained_drivers=[])
+    mid = Situation(situation_id=deal.situation_id, version=deal.version, created_timestamp=deal.created_timestamp, kind="situation", title=deal.title, desc=deal.desc, remained_drivers=[])
     store.line = ChainSoFar(
         start=now,
         hops=[LinkedHop(situation=mid, link=link)],
