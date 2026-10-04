@@ -19,6 +19,17 @@ class MarkdownMessage(BaseMessage):
         return self.text
 
 
+class SystemMessage(BaseMessage):
+    """A stored note from the system, such as a turn that timed out."""
+
+    kind: Literal["system"] = Field(default="system", description="A system note.")
+    role: Literal[Role.system] = Field(default=Role.system, description="Always system.")
+    text: str = Field(..., description="The note shown to the user.")
+
+    def openai_text(self) -> str:
+        return self.text
+
+
 class HeartbeatMessage(BaseModel):
     """A stream keepalive. It is not stored."""
 
@@ -30,10 +41,10 @@ class HeartbeatMessage(BaseModel):
 
 
 Message = Annotated[
-    Union[MarkdownMessage, DeeplinkCardMessage, HeartbeatMessage],
+    Union[MarkdownMessage, DeeplinkCardMessage, SystemMessage, HeartbeatMessage],
     Field(discriminator="kind"),
 ]
 
 message_adapter: TypeAdapter[
-    MarkdownMessage | DeeplinkCardMessage | HeartbeatMessage
+    MarkdownMessage | DeeplinkCardMessage | SystemMessage | HeartbeatMessage
 ] = TypeAdapter(Message)
