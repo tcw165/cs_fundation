@@ -9,6 +9,7 @@ describe("create_chain_http", () => {
         {
           situation_id: "11111111-1111-4111-8111-111111111111",
           version: 1,
+          created_timestamp: "2026-10-01T00:00:00+00:00",
           title: "Strait shut",
           desc: "now",
           remained_drivers: [],

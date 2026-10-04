@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
@@ -15,6 +16,8 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
     TerminalSituation,
 )
 
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 END_ID = UUID("33333333-3333-4333-8333-333333333333")
@@ -24,6 +27,7 @@ def _start() -> StartSituation:
     return StartSituation(
         situation_id=NOW_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade"],
@@ -35,6 +39,7 @@ def _mid() -> Situation:
     return Situation(
         situation_id=DEAL_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Talks open.",
         desc="Talks open.",
         remained_drivers=[],
@@ -45,6 +50,7 @@ def _terminal() -> TerminalSituation:
     return TerminalSituation(
         situation_id=END_ID,
         version=1,
+        created_timestamp=CREATED,
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
@@ -83,6 +89,7 @@ def test_request_rejects_an_empty_prompt_and_the_same_id():
             from_situation=Situation(
                 situation_id=terminal.situation_id,
                 version=1,
+                created_timestamp=CREATED,
                 title="same id",
                 desc="same id",
                             remained_drivers=[],

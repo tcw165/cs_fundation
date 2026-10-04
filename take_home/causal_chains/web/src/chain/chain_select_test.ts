@@ -12,6 +12,7 @@ function chain(root_id: string, desc: string): CausalChain {
       {
         situation_id: root_id,
         version: 1,
+        created_timestamp: "2026-10-01T00:00:00+00:00",
         title: desc,
         desc,
         remained_drivers: [],

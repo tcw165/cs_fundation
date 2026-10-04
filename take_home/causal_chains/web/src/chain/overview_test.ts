@@ -10,6 +10,7 @@ function chain(situation_id: string, case_id: string): CausalChain {
       {
         situation_id,
         version: 1,
+        created_timestamp: "2026-10-01T00:00:00+00:00",
         title: situation_id,
         desc: situation_id,
         remained_drivers: [],
@@ -18,6 +19,7 @@ function chain(situation_id: string, case_id: string): CausalChain {
       {
         situation_id: `${situation_id}-next`,
         version: 1,
+        created_timestamp: "2026-10-01T00:00:00+00:00",
         title: "next",
         desc: "next",
         remained_drivers: [],

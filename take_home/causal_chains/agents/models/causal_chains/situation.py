@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,6 +11,10 @@ class Situation(BaseModel):
 
     situation_id: UUID
     version: int
+    created_timestamp: datetime = Field(
+        ...,
+        description="When this situation was saved.",
+    )
     title: str = Field(..., description="A short and readable description within 100 words.")
     desc: str = Field(
         ...,

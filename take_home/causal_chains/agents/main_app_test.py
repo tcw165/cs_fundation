@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import asyncio
 import json
 import logging
@@ -18,6 +19,8 @@ from take_home.causal_chains.agents.observability.endpoint_logging.endpoint_logg
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
+
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
 
 class _FakeDynamoDb:
@@ -247,6 +250,7 @@ def test_get_causal_chains_returns_the_stored_chains():
     root = StartSituation(
         situation_id=UUID("11111111-1111-4111-8111-111111111111"),
         version=1,
+        created_timestamp=CREATED,
         title="now",
         desc="now",
         potential_drivers=[],

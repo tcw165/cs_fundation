@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import asyncio
 from uuid import UUID
 
@@ -7,6 +8,8 @@ from take_home.causal_chains.agents.di.container import AppContainer
 from take_home.causal_chains.agents.endpoints.causal_chains import get_causal_chains
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
+
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
@@ -29,6 +32,7 @@ def test_get_causal_chains_returns_every_root_chain():
     root = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        created_timestamp=CREATED,
         title="now",
         desc="now",
         potential_drivers=[],

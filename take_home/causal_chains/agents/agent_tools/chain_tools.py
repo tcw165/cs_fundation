@@ -89,6 +89,7 @@ async def add_start_situation(
     situation = StartSituation(
         situation_id=uuid4(),
         version=1,
+        created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
@@ -113,6 +114,7 @@ async def add_situation(
     situation = Situation(
         situation_id=uuid4(),
         version=1,
+        created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
@@ -140,6 +142,7 @@ async def add_terminal_situation(
     situation = TerminalSituation(
         situation_id=uuid4(),
         version=1,
+        created_timestamp=ctx.context.clock.now(),
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
