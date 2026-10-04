@@ -12,7 +12,7 @@ SET now.version = 1,
     now.title = "Strait shut",
     now.desc = "Strait shut 208 days, transit about 0 against 85 mb/d, blockade still in force, latest deal rejected, about 400 ships waiting.",
     now.kind = "start",
-    now.remained_drivers = ["blockade", "rejected deal"],
+    now.remained_drivers = ["blockade", "rejected deal"]
 
 MERGE (deal:Situation {situation_id: "22222222-2222-4222-8222-222222222222"})
 SET deal.version = 1,
@@ -20,7 +20,7 @@ SET deal.version = 1,
     deal.title = "Deal this week",
     deal.desc = "US accepts a deal this week.",
     deal.kind = "situation",
-    deal.remained_drivers = [],
+    deal.remained_drivers = []
 
 MERGE (no_deal:Situation {situation_id: "33333333-3333-4333-8333-333333333333"})
 SET no_deal.version = 1,
@@ -28,7 +28,7 @@ SET no_deal.version = 1,
     no_deal.title = "No deal",
     no_deal.desc = "No deal this week.",
     no_deal.kind = "situation",
-    no_deal.remained_drivers = [],
+    no_deal.remained_drivers = []
 
 MERGE (clear:Situation {situation_id: "44444444-4444-4444-8444-444444444444"})
 SET clear.version = 1,
@@ -36,7 +36,7 @@ SET clear.version = 1,
     clear.title = "Ships clear",
     clear.desc = "Ships clear by October 3 and normal traffic resumes.",
     clear.kind = "situation",
-    clear.remained_drivers = [],
+    clear.remained_drivers = []
 
 MERGE (stuck:Situation {situation_id: "55555555-5555-4555-8555-555555555555"})
 SET stuck.version = 1,
@@ -44,7 +44,7 @@ SET stuck.version = 1,
     stuck.title = "Ships stuck",
     stuck.desc = "Ships still stuck after a deal.",
     stuck.kind = "situation",
-    stuck.remained_drivers = [],
+    stuck.remained_drivers = []
 
 MERGE (resumes:Situation {situation_id: "66666666-6666-4666-8666-666666666666"})
 SET resumes.version = 1,
@@ -52,7 +52,7 @@ SET resumes.version = 1,
     resumes.title = "Traffic resumes",
     resumes.desc = "Traffic resumes by October 3 without a deal.",
     resumes.kind = "situation",
-    resumes.remained_drivers = [],
+    resumes.remained_drivers = []
 
 MERGE (shut:Situation {situation_id: "77777777-7777-4777-8777-777777777777"})
 SET shut.version = 1,
@@ -60,7 +60,7 @@ SET shut.version = 1,
     shut.title = "Stays shut",
     shut.desc = "Stays shut.",
     shut.kind = "situation",
-    shut.remained_drivers = [],
+    shut.remained_drivers = []
 
 MERGE (now)-[:BELONGS_TO]->(case)
 MERGE (deal)-[:BELONGS_TO]->(case)

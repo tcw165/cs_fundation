@@ -413,6 +413,73 @@ def test_list_leads_to_reads_versioned_rows():
     assert "properties(r)" in client._driver.calls[0][0]
 
 
+def test_list_leads_to_reads_an_input_saved_as_name_and_value():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "from_situation_id": str(NOW_ID),
+                    "from_version": 1,
+                    "to_situation_id": str(CLEAR_ID),
+                    "to_version": 1,
+                    "props": {
+                        "p": 0.72,
+                        "inputs": json.dumps(
+                            [
+                                {
+                                    "name": "military pressure",
+                                    "value": 0.72,
+                                }
+                            ]
+                        ),
+                    },
+                }
+            ]
+        )
+    )
+    assert client.list_leads_to() == [
+        (
+            NOW_ID,
+            1,
+            CLEAR_ID,
+            1,
+            Decimal("0.7200"),
+            [("military pressure", "military pressure", 0.72)],
+        ),
+    ]
+
+
+def test_list_situations_reads_a_row_saved_before_created_timestamp():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "situation_id": str(NOW_ID),
+                    "version": 1,
+                    "created_timestamp": None,
+                    "title": "Strait shut",
+                    "desc": "now",
+                    "remained_drivers": None,
+                    "kind": "start",
+                    "case_id": str(CLEAR_ID),
+                }
+            ]
+        )
+    )
+    assert client.list_situations() == [
+        (
+            NOW_ID,
+            1,
+            "1970-01-01T00:00:00+00:00",
+            "Strait shut",
+            "now",
+            [],
+            "start",
+            CLEAR_ID,
+        ),
+    ]
+
+
 def test_list_leads_to_reads_a_link_that_has_no_inputs():
     client = Neo4jClient(
         _Driver(
