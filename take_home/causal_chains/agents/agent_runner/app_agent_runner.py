@@ -160,14 +160,10 @@ async def _emit_paragraphs(
 ) -> str:
     ready, buffer = _ready_paragraphs(buffer)
     for paragraph in ready:
-        logger().info(
-            f"paragraph chars={len(paragraph)} prefix={paragraph[:80]}",
-        )
+        logger().info(f"paragraph chars={len(paragraph)}")
         await send.send(_markdown(paragraph, conversation_id))
     if rest and buffer.strip():
-        logger().info(
-            f"paragraph chars={len(buffer.strip())} prefix={buffer.strip()[:80]}",
-        )
+        logger().info(f"paragraph chars={len(buffer.strip())}")
         await send.send(_markdown(buffer, conversation_id))
         return ""
     return buffer
