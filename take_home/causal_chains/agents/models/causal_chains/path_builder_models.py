@@ -30,7 +30,7 @@ class PathBuilderRequest(BaseModel):
             "The direction for this one step. "
             "It starts with the case id, then the open line from the present "
             "through the current situation including each saved link, "
-            "then the one key-factor to change."
+            "then the one driver to change."
         ),
     )
 
@@ -52,7 +52,7 @@ class PathBuilderResult(BaseModel):
         default=None,
         description=(
             "The one saved mid-chain situation, already linked from the current situation, "
-            "with one key-factor changed. "
+            "with one driver changed. "
             "None means no new situation was saved, and the current situation "
             "is already linked to the terminal."
         ),
