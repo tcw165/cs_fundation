@@ -15,6 +15,7 @@ def _case(case_id: UUID = CASE_ID) -> Case:
     return Case(
         case_id=case_id,
         conversation_id="1",
+        from_message_id="m_1",
         created_timestamp=CREATED,
         updated_timestamp=CREATED,
     )
@@ -24,11 +25,13 @@ def test_case_is_an_id():
     case = _case()
     assert case.case_id == CASE_ID
     assert case.conversation_id == "1"
+    assert case.from_message_id == "m_1"
     assert case.created_timestamp == CREATED
     assert case.updated_timestamp == CREATED
     assert case.model_dump(mode="json") == {
         "case_id": str(CASE_ID),
         "conversation_id": "1",
+        "from_message_id": "m_1",
         "created_timestamp": "2026-10-01T00:00:00Z",
         "updated_timestamp": "2026-10-01T00:00:00Z",
     }

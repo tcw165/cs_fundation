@@ -39,6 +39,7 @@ class _Both:
         return Case(
             case_id=case_id,
             conversation_id="1",
+            from_message_id="",
             created_timestamp=CREATED,
             updated_timestamp=CREATED,
         )
@@ -107,6 +108,7 @@ def test_fake_records_a_situation_and_a_link():
         case = Case(
             case_id=CASE_ID,
             conversation_id="1",
+            from_message_id="",
             created_timestamp=CREATED,
             updated_timestamp=CREATED,
         )

@@ -12,6 +12,7 @@ class Case(BaseModel):
 
     case_id: UUID = Field(..., description="Id assigned when the case is created.")
     conversation_id: str = Field(..., description="Conversation this case belongs to.")
+    from_message_id: str = Field(..., description="The message that created this case.")
     created_timestamp: datetime = Field(..., description="When the case was created.")
     updated_timestamp: datetime = Field(..., description="When the case was last updated.")
 

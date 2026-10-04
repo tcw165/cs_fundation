@@ -30,6 +30,7 @@ def _case(case_id: UUID) -> Case:
     return Case(
         case_id=case_id,
         conversation_id="1",
+        from_message_id="m_1",
         created_timestamp=CREATED,
         updated_timestamp=CREATED,
     )
@@ -37,7 +38,7 @@ def _case(case_id: UUID) -> Case:
 
 class _FakeGraphDb:
     def __init__(self) -> None:
-        self.case_calls: list[tuple[UUID, str, str, str]] = []
+        self.case_calls: list[tuple[UUID, str, str, str, str]] = []
         self.situation_calls: list[
             tuple[UUID, int, str, str, str, list[str], UUID, str]
         ] = []
@@ -51,7 +52,7 @@ class _FakeGraphDb:
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]
         ] = []
-        self._cases: dict[UUID, tuple[str, str, str]] = {}
+        self._cases: dict[UUID, tuple[str, str, str, str]] = {}
         self.leaf_rows: list[tuple[UUID, int, str, str, str, list[str]]] = []
         self.reaches = False
         self.chain_row: tuple[
@@ -64,20 +65,38 @@ class _FakeGraphDb:
         self,
         case_id: UUID,
         conversation_id: str,
+        from_message_id: str,
         created_timestamp: str,
         updated_timestamp: str,
     ) -> None:
         self.case_calls.append(
-            (case_id, conversation_id, created_timestamp, updated_timestamp)
+            (
+                case_id,
+                conversation_id,
+                from_message_id,
+                created_timestamp,
+                updated_timestamp,
+            )
         )
-        self._cases[case_id] = (conversation_id, created_timestamp, updated_timestamp)
+        self._cases[case_id] = (
+            conversation_id,
+            from_message_id,
+            created_timestamp,
+            updated_timestamp,
+        )
 
-    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str] | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str, str] | None:
         stored = self._cases.get(case_id)
         if stored is None:
             return None
-        conversation_id, created_timestamp, updated_timestamp = stored
-        return case_id, conversation_id, created_timestamp, updated_timestamp
+        conversation_id, from_message_id, created_timestamp, updated_timestamp = stored
+        return (
+            case_id,
+            conversation_id,
+            from_message_id,
+            created_timestamp,
+            updated_timestamp,
+        )
 
     def list_leaf_situations(
         self,
@@ -218,7 +237,7 @@ def test_add_situation_and_link_situations_record_calls():
 
     graph_db = asyncio.run(exercise())
     assert graph_db.case_calls == [
-        (CASE_ID, "1", CREATED.isoformat(), CREATED.isoformat())
+        (CASE_ID, "1", "m_1", CREATED.isoformat(), CREATED.isoformat())
     ]
     assert graph_db.situation_calls == [
         (NOW_ID, 1, CREATED.isoformat(), "now", "now", [], CASE_ID, "start"),

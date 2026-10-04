@@ -50,6 +50,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
     case = Case(
         case_id=uuid4(),
         conversation_id="1",
+        from_message_id="m_1",
         created_timestamp=created,
         updated_timestamp=created,
     )
