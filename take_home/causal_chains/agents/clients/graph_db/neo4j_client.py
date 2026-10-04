@@ -197,10 +197,10 @@ def _hop_rows(
 
 def _link_rows(
     value: object,
-) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
+) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]]:
     if not isinstance(value, list):
         return []
-    rows: list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]] = []
+    rows: list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]] = []
     for item in value:
         if isinstance(item, Mapping):
             props = item["props"]
@@ -221,15 +221,21 @@ def _link_rows(
 
 def _input_rows(
     value: object,
-) -> list[tuple[str, Decimal]]:
+) -> list[tuple[str, str, float]]:
     if isinstance(value, str):
         value = json.loads(value)
     if not isinstance(value, list):
         return []
-    rows: list[tuple[str, Decimal]] = []
+    rows: list[tuple[str, str, float]] = []
     for item in value:
         if isinstance(item, dict):
-            rows.append((str(item["name"]), _decimal(item["value"])))
+            rows.append(
+                (
+                    str(item["name"]),
+                    str(item["desc"]),
+                    float(item["probability"]),
+                )
+            )
     return rows
 
 
@@ -345,7 +351,7 @@ class Neo4jClient(GraphDb):
         to_situation_id: UUID,
         to_version: int,
         p: Decimal,
-        inputs: list[tuple[str, Decimal]],
+        inputs: list[tuple[str, str, float]],
     ) -> None:
         with self._driver.session() as session:
             session.run(
@@ -357,8 +363,12 @@ class Neo4jClient(GraphDb):
                 p=float(p),
                 inputs=json.dumps(
                     [
-                        {"name": name, "value": float(value)}
-                        for name, value in inputs
+                        {
+                            "name": name,
+                            "desc": desc,
+                            "probability": probability,
+                        }
+                        for name, desc, probability in inputs
                     ]
                 ),
             )
@@ -447,7 +457,7 @@ class Neo4jClient(GraphDb):
     ) -> tuple[
         tuple[UUID, int, str, str, list[str], list[str]],
         list[tuple[UUID, int, str, str, list[str]]],
-        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
     ] | None:
         with self._driver.session() as session:
             record = session.run(
@@ -474,7 +484,7 @@ class Neo4jClient(GraphDb):
     @override
     def list_leads_to(
         self,
-    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
+    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_LEADS_TO))
         return _link_rows(records)

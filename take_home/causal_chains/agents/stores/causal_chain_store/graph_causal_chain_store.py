@@ -206,7 +206,7 @@ class GraphCausalChainStore(CausalChainStore):
             link.to_situation_id,
             link.to_version,
             link.p,
-            [(item.name, item.value) for item in link.inputs],
+            [(item.name, item.desc, item.probability) for item in link.inputs],
         )
 
     @override
@@ -294,8 +294,12 @@ class GraphCausalChainStore(CausalChainStore):
                         to_version=to_version,
                         p=p,
                         inputs=[
-                            InputVariable(name=name, value=value)
-                            for name, value in inputs
+                            InputVariable(
+                                name=name,
+                                desc=desc,
+                                probability=probability,
+                            )
+                            for name, desc, probability in inputs
                         ],
                     ),
                 )
@@ -350,9 +354,10 @@ class GraphCausalChainStore(CausalChainStore):
                 inputs=[
                     InputVariable(
                         name=name,
-                        value=value,
+                        desc=desc,
+                        probability=probability,
                     )
-                    for name, value in inputs
+                    for name, desc, probability in inputs
                 ],
             )
             for (

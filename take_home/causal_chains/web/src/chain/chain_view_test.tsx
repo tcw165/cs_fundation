@@ -66,7 +66,9 @@ describe("chain canvas", () => {
             to_situation_id: next_id,
             to_version: 1,
             p: "0.0800",
-            inputs: [{ name: "deal_odds", value: "0.08" }],
+            inputs: [
+              { name: "deal_odds", desc: "Odds of a deal.", probability: 0.08 },
+            ],
           },
         ],
       },

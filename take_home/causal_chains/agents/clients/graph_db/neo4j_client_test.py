@@ -163,7 +163,7 @@ def test_merge_leads_to_writes_float_p():
         CLEAR_ID,
         1,
         Decimal("0.5"),
-        [("deal_odds", Decimal("0.5"))],
+        [("deal_odds", "Odds of a deal.", 0.5)],
     )
     query, params = driver.calls[0]
     assert "MERGE (a)-[r:LEADS_TO]->(b)" in query
@@ -175,7 +175,15 @@ def test_merge_leads_to_writes_float_p():
         "to_situation_id": str(CLEAR_ID),
         "to_version": 1,
         "p": 0.5,
-        "inputs": json.dumps([{"name": "deal_odds", "value": 0.5}]),
+        "inputs": json.dumps(
+            [
+                {
+                    "name": "deal_odds",
+                    "desc": "Odds of a deal.",
+                    "probability": 0.5,
+                }
+            ]
+        ),
     }
     assert isinstance(params["p"], float)
     assert isinstance(params["inputs"], str)
@@ -312,7 +320,13 @@ def test_lookup_chain_so_far_reads_one_hop():
                             "props": {
                                 "p": 0.5,
                                 "inputs": json.dumps(
-                                    [{"name": "deal_odds", "value": 0.5}]
+                                    [
+                                        {
+                                            "name": "deal_odds",
+                                            "desc": "Odds of a deal.",
+                                            "probability": 0.5,
+                                        }
+                                    ]
                                 ),
                             },
                         }
@@ -327,7 +341,7 @@ def test_lookup_chain_so_far_reads_one_hop():
     assert links[0][0] == NOW_ID
     assert links[0][2] == RESUMES_ID
     assert links[0][4] == Decimal("0.5000")
-    assert links[0][5] == [("deal_odds", Decimal("0.5000"))]
+    assert links[0][5] == [("deal_odds", "Odds of a deal.", 0.5)]
 
 
 def test_lookup_chain_so_far_is_missing_when_the_row_is_missing():
@@ -351,7 +365,15 @@ def test_list_leads_to_reads_versioned_rows():
                     "to_version": 1,
                     "props": {
                         "p": 0.5,
-                        "inputs": json.dumps([{"name": "deal_odds", "value": 0.5}]),
+                        "inputs": json.dumps(
+                            [
+                                {
+                                    "name": "deal_odds",
+                                    "desc": "Odds of a deal.",
+                                    "probability": 0.5,
+                                }
+                            ]
+                        ),
                     },
                 }
             ]
@@ -364,7 +386,7 @@ def test_list_leads_to_reads_versioned_rows():
             CLEAR_ID,
             1,
             Decimal("0.5000"),
-            [("deal_odds", Decimal("0.5000"))],
+            [("deal_odds", "Odds of a deal.", 0.5)],
         ),
     ]
     assert "MATCH (a)-[r:LEADS_TO]->(b)" in client._driver.calls[0][0]

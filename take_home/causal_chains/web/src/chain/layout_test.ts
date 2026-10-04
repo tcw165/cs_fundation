@@ -36,7 +36,7 @@ const chain: CausalChain = {
       to_situation_id: "step",
       to_version: 1,
       p: "0.4000",
-      inputs: [{ name: "talks", value: "0.4" }],
+      inputs: [{ name: "talks", desc: "Talks this week.", probability: 0.4 }],
     },
     {
       from_situation_id: "step",
@@ -44,7 +44,7 @@ const chain: CausalChain = {
       to_situation_id: "end",
       to_version: 1,
       p: "0.8000",
-      inputs: [{ name: "transit", value: "0.8" }],
+      inputs: [{ name: "transit", desc: "Ships in transit.", probability: 0.8 }],
     },
   ],
 };

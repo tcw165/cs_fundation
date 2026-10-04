@@ -16,7 +16,8 @@ export type ChainSituation = {
 
 export type ChainInput = {
   name: string;
-  value: string;
+  desc: string;
+  probability: number;
 };
 
 export type ChainLink = {

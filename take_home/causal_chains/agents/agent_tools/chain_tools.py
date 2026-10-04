@@ -1,9 +1,8 @@
-from decimal import Decimal
 from typing import Annotated
 from uuid import UUID, uuid4
 
 from agents import RunContextWrapper, function_tool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.chain_so_far import ChainSoFar
@@ -24,8 +23,17 @@ from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol 
 
 
 class LinkInput(BaseModel):
-    name: str
-    value: str
+    name: str = Field(..., description="A short name for this input.")
+    desc: str = Field(
+        ...,
+        description="What this input is, and why this driver could change the situation.",
+    )
+    probability: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="A number between 0 and 1 for a driver that could change the situation.",
+    )
 
 
 def _require_store(
@@ -149,7 +157,7 @@ async def link_situations(
     to_situation: Annotated[Situation, "The situation this link reaches."],
     inputs: Annotated[
         list[LinkInput],
-        "Named values between 0 and 1 that a person could move later.",
+        "Named values between 0 and 1 for a driver that could change the situation.",
     ],
 ) -> LeadsTo:
     """Save both situations and the leads-to link between them.
@@ -159,7 +167,8 @@ async def link_situations(
     parsed = [
         InputVariable(
             name=item.name,
-            value=Decimal(item.value),
+            desc=item.desc,
+            probability=item.probability,
         )
         for item in inputs
     ]
