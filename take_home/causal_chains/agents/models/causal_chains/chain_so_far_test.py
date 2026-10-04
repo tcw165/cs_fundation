@@ -28,6 +28,7 @@ def _start() -> StartSituation:
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade"],
+        remained_drivers=[],
     )
 
 
@@ -37,6 +38,7 @@ def _mid(situation_id: UUID = DEAL_ID, desc: str = "Talks open.") -> Situation:
         version=1,
         title=desc,
         desc=desc,
+        remained_drivers=[],
     )
 
 
@@ -93,6 +95,7 @@ def test_chain_so_far_rejects_a_start_or_a_terminal_hop():
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
+        remained_drivers=[],
     )
     with pytest.raises(ValidationError, match="mid-chain"):
         ChainSoFar(

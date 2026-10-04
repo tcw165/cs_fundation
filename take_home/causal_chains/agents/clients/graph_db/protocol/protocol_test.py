@@ -35,6 +35,7 @@ class _Both:
         version: int,
         title: str,
         desc: str,
+        remained_drivers: list[str],
         case_id: UUID,
         kind: str,
         potential_drivers: list[str],
@@ -55,7 +56,7 @@ class _Both:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, list[str], str, list[str], str, UUID]]:
         return []
 
     def list_leaf_situations(
@@ -63,7 +64,7 @@ class _Both:
         case_id: UUID,
         start_situation_id: UUID,
         start_version: int,
-    ) -> list[tuple[UUID, int, str, str]]:
+    ) -> list[tuple[UUID, int, str, str, list[str]]]:
         return []
 
     def reaches_terminal(
@@ -82,8 +83,8 @@ class _Both:
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, str, list[str]],
-        list[tuple[UUID, int, str, str]],
+        tuple[UUID, int, str, str, list[str], list[str]],
+        list[tuple[UUID, int, str, str, list[str]]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
     ] | None:
         return None

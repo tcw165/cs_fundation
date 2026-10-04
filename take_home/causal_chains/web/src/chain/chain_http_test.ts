@@ -11,6 +11,7 @@ describe("create_chain_http", () => {
           version: 1,
           title: "Strait shut",
           desc: "now",
+          remained_drivers: [],
           potential_drivers: ["blockade"],
         },
       ],

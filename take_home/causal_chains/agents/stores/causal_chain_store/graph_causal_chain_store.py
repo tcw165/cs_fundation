@@ -54,6 +54,7 @@ def _situation_from_graph(
     version: int,
     title: str,
     desc: str,
+    remained_drivers: list[str],
     kind: str,
     potential_drivers: list[str],
     original_ask: str,
@@ -64,6 +65,7 @@ def _situation_from_graph(
             version=version,
             title=title,
             desc=desc,
+            remained_drivers=remained_drivers,
             potential_drivers=potential_drivers,
         )
     if kind == "terminal":
@@ -72,6 +74,7 @@ def _situation_from_graph(
             version=version,
             title=title,
             desc=desc,
+            remained_drivers=remained_drivers,
             original_ask=original_ask,
         )
     return Situation(
@@ -79,6 +82,7 @@ def _situation_from_graph(
         version=version,
         title=title,
         desc=desc,
+        remained_drivers=remained_drivers,
     )
 
 
@@ -179,6 +183,7 @@ class GraphCausalChainStore(CausalChainStore):
             situation.version,
             situation.title,
             situation.desc,
+            list(situation.remained_drivers),
             case.case_id,
             _kind(situation),
             _drivers(situation),
@@ -216,8 +221,9 @@ class GraphCausalChainStore(CausalChainStore):
                 version=version,
                 title=title,
                 desc=desc,
+                remained_drivers=remained_drivers,
             )
-            for situation_id, version, title, desc in self._graph_db.list_leaf_situations(
+            for situation_id, version, title, desc, remained_drivers in self._graph_db.list_leaf_situations(
                 case.case_id,
                 start.situation_id,
                 start.version,
@@ -253,10 +259,17 @@ class GraphCausalChainStore(CausalChainStore):
         if row is None:
             raise ValueError("start is missing")
         start_row, hop_rows, link_rows = row
-        start_id, start_version, start_title, start_desc, factors = start_row
+        (
+            start_id,
+            start_version,
+            start_title,
+            start_desc,
+            start_remained_drivers,
+            factors,
+        ) = start_row
         hops: list[LinkedHop] = []
         for hop_row, link_row in zip(hop_rows, link_rows, strict=True):
-            situation_id, version, title, desc = hop_row
+            situation_id, version, title, desc, remained_drivers = hop_row
             (
                 from_situation_id,
                 from_version,
@@ -272,6 +285,7 @@ class GraphCausalChainStore(CausalChainStore):
                         version=version,
                         title=title,
                         desc=desc,
+                        remained_drivers=remained_drivers,
                     ),
                     link=LeadsTo(
                         from_situation_id=from_situation_id,
@@ -292,6 +306,7 @@ class GraphCausalChainStore(CausalChainStore):
                 version=start_version,
                 title=start_title,
                 desc=start_desc,
+                remained_drivers=start_remained_drivers,
                 potential_drivers=factors,
             ),
             hops=hops,
@@ -307,6 +322,7 @@ class GraphCausalChainStore(CausalChainStore):
             version,
             title,
             desc,
+            remained_drivers,
             kind,
             potential_drivers,
             original_ask,
@@ -318,6 +334,7 @@ class GraphCausalChainStore(CausalChainStore):
                     version,
                     title,
                     desc,
+                    remained_drivers,
                     kind,
                     potential_drivers,
                     original_ask,

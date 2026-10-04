@@ -58,12 +58,14 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         title="now",
         desc="now",
         potential_drivers=[],
+        remained_drivers=[],
     )
     later = Situation(
         situation_id=uuid4(),
         version=1,
         title="later",
         desc="later",
+        remained_drivers=[],
     )
     link = LeadsTo(
         from_situation_id=root.situation_id,

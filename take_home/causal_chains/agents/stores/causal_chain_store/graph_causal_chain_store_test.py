@@ -41,24 +41,24 @@ class _FakeGraphDb:
     def __init__(self) -> None:
         self.case_calls: list[tuple[UUID, str, str, str]] = []
         self.situation_calls: list[
-            tuple[UUID, int, str, str, UUID, str, list[str], str]
+            tuple[UUID, int, str, str, list[str], UUID, str, list[str], str]
         ] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
         self._situations: dict[
             tuple[UUID, int],
-            tuple[UUID, int, str, str, str, list[str], str, UUID],
+            tuple[UUID, int, str, str, list[str], str, list[str], str, UUID],
         ] = {}
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
         self._cases: dict[UUID, tuple[str, str, str]] = {}
-        self.leaf_rows: list[tuple[UUID, int, str, str]] = []
+        self.leaf_rows: list[tuple[UUID, int, str, str, list[str]]] = []
         self.reaches = False
         self.chain_row: tuple[
-            tuple[UUID, int, str, str, list[str]],
-            list[tuple[UUID, int, str, str]],
+            tuple[UUID, int, str, str, list[str], list[str]],
+            list[tuple[UUID, int, str, str, list[str]]],
             list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
         ] | None = None
 
@@ -86,7 +86,7 @@ class _FakeGraphDb:
         case_id: UUID,
         start_situation_id: UUID,
         start_version: int,
-    ) -> list[tuple[UUID, int, str, str]]:
+    ) -> list[tuple[UUID, int, str, str, list[str]]]:
         return list(self.leaf_rows)
 
     def reaches_terminal(
@@ -105,8 +105,8 @@ class _FakeGraphDb:
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, str, list[str]],
-        list[tuple[UUID, int, str, str]],
+        tuple[UUID, int, str, str, list[str], list[str]],
+        list[tuple[UUID, int, str, str, list[str]]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
     ] | None:
         return self.chain_row
@@ -117,6 +117,7 @@ class _FakeGraphDb:
         version: int,
         title: str,
         desc: str,
+        remained_drivers: list[str],
         case_id: UUID,
         kind: str,
         potential_drivers: list[str],
@@ -128,6 +129,7 @@ class _FakeGraphDb:
                 version,
                 title,
                 desc,
+                remained_drivers,
                 case_id,
                 kind,
                 potential_drivers,
@@ -139,6 +141,7 @@ class _FakeGraphDb:
             version,
             title,
             desc,
+            remained_drivers,
             kind,
             potential_drivers,
             original_ask,
@@ -167,7 +170,7 @@ class _FakeGraphDb:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, list[str], str, list[str], str, UUID]]:
         return list(self._situations.values())
 
     def list_leads_to(
@@ -191,8 +194,9 @@ def test_add_situation_and_link_situations_record_calls():
             title="now",
             desc="now",
             potential_drivers=[],
+            remained_drivers=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal", remained_drivers=[])
         await store.add_case(case)
         await store.add_situation(case, now)
         await store.link_situations(
@@ -215,9 +219,9 @@ def test_add_situation_and_link_situations_record_calls():
         (CASE_ID, "1", CREATED.isoformat(), CREATED.isoformat())
     ]
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, "now", "now", CASE_ID, "start", [], ""),
-        (NOW_ID, 1, "now", "now", CASE_ID, "start", [], ""),
-        (DEAL_ID, 1, "deal", "deal", CASE_ID, "situation", [], ""),
+        (NOW_ID, 1, "now", "now", [], CASE_ID, "start", [], ""),
+        (NOW_ID, 1, "now", "now", [], CASE_ID, "start", [], ""),
+        (DEAL_ID, 1, "deal", "deal", [], CASE_ID, "situation", [], ""),
     ]
     assert graph_db.link_calls == [
         (
@@ -254,6 +258,7 @@ def test_get_chains_returns_one_chain_per_root():
             title="now",
             desc="now",
             potential_drivers=[],
+            remained_drivers=[],
         )
         other = StartSituation(
             situation_id=OTHER_ROOT_ID,
@@ -261,14 +266,16 @@ def test_get_chains_returns_one_chain_per_root():
             title="other",
             desc="other",
             potential_drivers=[],
+            remained_drivers=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
-        leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal", remained_drivers=[])
+        leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf", remained_drivers=[])
         orphan = Situation(
             situation_id=UUID("55555555-5555-4555-8555-555555555555"),
             version=1,
             title="orphan",
             desc="orphan",
+            remained_drivers=[],
         )
         case = _case(CASE_ID)
         await store.add_situation(case, now)
@@ -287,6 +294,7 @@ def test_get_chains_returns_one_chain_per_root():
         title="now",
         desc="now",
         potential_drivers=[],
+        remained_drivers=[],
     )
     other = StartSituation(
         situation_id=OTHER_ROOT_ID,
@@ -294,9 +302,10 @@ def test_get_chains_returns_one_chain_per_root():
         title="other",
         desc="other",
         potential_drivers=[],
+        remained_drivers=[],
     )
-    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
-    leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
+    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal", remained_drivers=[])
+    leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf", remained_drivers=[])
     assert chains == [
         CausalChain(
             situations=[now, deal, leaf],
@@ -323,6 +332,7 @@ def test_get_chains_keeps_each_case_separate():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
+            remained_drivers=[],
         )
         elsewhere = StartSituation(
             situation_id=OTHER_ROOT_ID,
@@ -330,8 +340,9 @@ def test_get_chains_keeps_each_case_separate():
             title="elsewhere",
             desc="elsewhere",
             potential_drivers=["talks"],
+            remained_drivers=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal", remained_drivers=[])
         await store.add_situation(case, now)
         await store.add_situation(other_case, elsewhere)
         await store.link_situations(case, now, deal, _link(now, deal))
@@ -357,9 +368,10 @@ def test_get_case_and_leaf_lookup():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
+            remained_drivers=[],
         )
         await store.add_case(case)
-        graph_db.leaf_rows = [(LEAF_ID, 1, "leaf", "leaf")]
+        graph_db.leaf_rows = [(LEAF_ID, 1, "leaf", "leaf", [])]
         found = await store.get_case(CASE_ID)
         leaves = await store.lookup_leaf_situations(case, start)
         missing = None
@@ -371,7 +383,7 @@ def test_get_case_and_leaf_lookup():
 
     found, leaves, missing = asyncio.run(exercise())
     assert found == _case(CASE_ID)
-    assert leaves == [Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")]
+    assert leaves == [Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf", remained_drivers=[])]
     assert missing == "case is missing"
 
 
@@ -386,6 +398,7 @@ def test_reaches_terminal_reads_the_graph():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
+            remained_drivers=[],
         )
         terminal = TerminalSituation(
             situation_id=DEAL_ID,
@@ -393,6 +406,7 @@ def test_reaches_terminal_reads_the_graph():
             title="the end",
             desc="the end",
             original_ask="the ask",
+            remained_drivers=[],
         )
         graph_db.reaches = True
         return await store.reaches_terminal(case, start, terminal)
@@ -411,16 +425,17 @@ def test_lookup_chain_so_far_reads_the_open_line():
             title="now",
             desc="now",
             potential_drivers=["blockade"],
+            remained_drivers=[],
         )
         graph_db.chain_row = (
-            (NOW_ID, 1, "now", "now", ["blockade"]),
+            (NOW_ID, 1, "now", "now", [], ["blockade"]),
             [],
             [],
         )
         empty = await store.lookup_chain_so_far(case, start)
         graph_db.chain_row = (
-            (NOW_ID, 1, "now", "now", ["blockade"]),
-            [(DEAL_ID, 1, "talks", "talks open")],
+            (NOW_ID, 1, "now", "now", [], ["blockade"]),
+            [(DEAL_ID, 1, "talks", "talks open", [])],
             [
                 (
                     NOW_ID,

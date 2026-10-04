@@ -14,6 +14,7 @@ function chain(root_id: string, desc: string): CausalChain {
         version: 1,
         title: desc,
         desc,
+        remained_drivers: [],
         potential_drivers: ["blockade"],
       },
     ],

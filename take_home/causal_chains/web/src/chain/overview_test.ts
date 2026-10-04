@@ -12,6 +12,7 @@ function chain(situation_id: string, case_id: string): CausalChain {
         version: 1,
         title: situation_id,
         desc: situation_id,
+        remained_drivers: [],
         potential_drivers: ["now"],
       },
       {
@@ -19,6 +20,7 @@ function chain(situation_id: string, case_id: string): CausalChain {
         version: 1,
         title: "next",
         desc: "next",
+        remained_drivers: [],
       },
     ],
     links: [
