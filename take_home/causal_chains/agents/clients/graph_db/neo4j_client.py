@@ -10,6 +10,7 @@ from take_home.causal_chains.agents.clients.graph_db.protocol.protocol import Gr
 from take_home.causal_chains.agents.constants.graph import LEADS_TO_HOP_LIMIT
 
 _P_SCALE = Decimal("0.0001")
+_MISSING_TIMESTAMP = "1970-01-01T00:00:00+00:00"
 
 P_QUERY = """
 MATCH (root:Situation {kind: 'start'})
@@ -175,6 +176,15 @@ def _strings(value: object) -> list[str]:
     return [str(item) for item in value]
 
 
+def _timestamp(value: object) -> str:
+    if value is None:
+        return _MISSING_TIMESTAMP
+    text = str(value).strip()
+    if text == "":
+        return _MISSING_TIMESTAMP
+    return text
+
+
 def _hop_rows(
     value: object,
 ) -> list[tuple[UUID, int, str, str, str, list[str]]]:
@@ -187,7 +197,7 @@ def _hop_rows(
                 (
                     UUID(str(item["situation_id"])),
                     int(item["version"]),
-                    str(item["created_timestamp"]),
+                    _timestamp(item.get("created_timestamp")),
                     str(item["title"]),
                     str(item["desc"]),
                     _strings(item.get("remained_drivers")),
@@ -229,14 +239,18 @@ def _input_rows(
         return []
     rows: list[tuple[str, str, float]] = []
     for item in value:
-        if isinstance(item, dict):
-            rows.append(
-                (
-                    str(item["name"]),
-                    str(item["desc"]),
-                    float(item["probability"]),
-                )
-            )
+        if not isinstance(item, dict) or "name" not in item:
+            continue
+        name = str(item["name"])
+        if "probability" in item:
+            probability = float(item["probability"])
+        elif "value" in item:
+            probability = float(item["value"])
+        else:
+            continue
+        desc = item.get("desc")
+        text = name if desc is None or str(desc).strip() == "" else str(desc)
+        rows.append((name, text, probability))
     return rows
 
 
@@ -384,7 +398,7 @@ class Neo4jClient(GraphDb):
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
-                    str(record["created_timestamp"]),
+                    _timestamp(record["created_timestamp"]),
                     str(record["title"]),
                     str(record["desc"]),
                     _strings(record["remained_drivers"]),
@@ -416,7 +430,7 @@ class Neo4jClient(GraphDb):
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
-                    str(record["created_timestamp"]),
+                    _timestamp(record["created_timestamp"]),
                     str(record["title"]),
                     str(record["desc"]),
                     _strings(record["remained_drivers"]),
@@ -470,7 +484,7 @@ class Neo4jClient(GraphDb):
             (
                 UUID(str(record["start_situation_id"])),
                 int(record["start_version"]),
-                str(record["start_created_timestamp"]),
+                _timestamp(record["start_created_timestamp"]),
                 str(record["start_title"]),
                 str(record["start_desc"]),
                 _strings(record["start_remained_drivers"]),
