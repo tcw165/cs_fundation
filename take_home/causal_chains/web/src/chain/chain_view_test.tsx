@@ -20,6 +20,7 @@ const focus: FocusTarget = {
   kind: "chain",
   root_situation_id: now_id,
   root_version: 1,
+  created_timestamp: "2026-10-01T00:00:00+00:00",
   title: "now",
 };
 
@@ -46,6 +47,7 @@ describe("chain canvas", () => {
           {
             situation_id: now_id,
             version: 1,
+            created_timestamp: "2026-10-01T00:00:00+00:00",
             title: "Strait shut",
             desc: "strait shut for a long stretch of text that should remain readable inside the scrolling card when the situation is expanded beyond the collapsed summary line",
             remained_drivers: [],
@@ -54,6 +56,7 @@ describe("chain canvas", () => {
           {
             situation_id: next_id,
             version: 1,
+            created_timestamp: "2026-10-01T00:00:00+00:00",
             title: "Talks start",
             desc: "talks start",
             remained_drivers: [],
@@ -121,6 +124,7 @@ describe("chain canvas", () => {
           {
             situation_id: older_id,
             version: 1,
+            created_timestamp: "2026-10-01T00:00:00+00:00",
             title: "Older start",
             desc: "older start",
             remained_drivers: [],
@@ -135,6 +139,7 @@ describe("chain canvas", () => {
           {
             situation_id: now_id,
             version: 1,
+            created_timestamp: "2026-10-01T00:00:00+00:00",
             title: "Strait shut",
             desc: "strait shut",
             remained_drivers: [],
@@ -171,6 +176,7 @@ describe("chain canvas", () => {
             {
               situation_id: now_id,
               version: 1,
+              created_timestamp: "2026-10-01T00:00:00+00:00",
               title: "Strait shut",
               desc: "strait shut",
               remained_drivers: [],

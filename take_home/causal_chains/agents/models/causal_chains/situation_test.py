@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
@@ -10,6 +11,7 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
     require_single_start,
 )
 
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
@@ -19,6 +21,7 @@ def test_situation_fields():
     situation = Situation(
         situation_id=NOW_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Strait shut.",
         desc="Strait shut.",
         remained_drivers=[],
@@ -35,6 +38,10 @@ def test_situation_fields():
     assert (
         properties["remained_drivers"]["description"]
         == "Drivers from the start situation still left to change."
+    )
+    assert (
+        properties["created_timestamp"]["description"]
+        == "When this situation was saved."
     )
 
 
@@ -74,6 +81,7 @@ def test_start_situation_carries_the_drivers():
     start = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade", "rejected deal"],
@@ -89,6 +97,7 @@ def test_terminal_situation_carries_the_ask():
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Republicans win the House while Democrats take the Senate.",
         desc="Republicans win the House while Democrats take the Senate.",
         original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
@@ -106,6 +115,7 @@ def test_path_return_is_a_list_or_one_terminal():
             {
                 "situation_id": str(NOW_ID),
                 "version": 1,
+                "created_timestamp": "2026-10-01T00:00:00+00:00",
                 "title": "now",
                 "desc": "now",
                 "remained_drivers": [],
@@ -119,6 +129,7 @@ def test_path_return_is_a_list_or_one_terminal():
         {
             "situation_id": str(DEAL_ID),
             "version": 1,
+            "created_timestamp": "2026-10-01T00:00:00+00:00",
             "title": "the end",
             "desc": "the end",
             "remained_drivers": [],
@@ -146,6 +157,7 @@ def test_second_start_rejected():
         StartSituation(
             situation_id=NOW_ID,
             version=1,
+            created_timestamp=CREATED,
             title="now",
             desc="now",
             potential_drivers=["blockade"],
@@ -154,6 +166,7 @@ def test_second_start_rejected():
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
+            created_timestamp=CREATED,
             title="deal",
             desc="deal",
             potential_drivers=["talks"],

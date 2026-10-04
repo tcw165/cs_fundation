@@ -24,6 +24,8 @@ from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol 
     CausalChainStore,
 )
 
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
 
 def test_eval_container_wires_the_real_runner_to_store_mocks() -> None:
     container = EvalContainer()
@@ -55,6 +57,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
     root = StartSituation(
         situation_id=uuid4(),
         version=1,
+        created_timestamp=CREATED,
         title="now",
         desc="now",
         potential_drivers=[],
@@ -63,6 +66,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
     later = Situation(
         situation_id=uuid4(),
         version=1,
+        created_timestamp=CREATED,
         title="later",
         desc="later",
         remained_drivers=[],

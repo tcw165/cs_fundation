@@ -106,6 +106,7 @@ describe("app chat", () => {
             {
               situation_id: now_id,
               version: 1,
+              created_timestamp: "2026-10-01T00:00:00+00:00",
               title: "Strait shut",
               desc: "strait shut",
               remained_drivers: [],

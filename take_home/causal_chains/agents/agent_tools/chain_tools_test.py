@@ -37,6 +37,8 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
 
 class _Store:
     def __init__(self) -> None:
@@ -175,7 +177,14 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             "case": case_payload,
             "from_situation": now.model_dump(
                 mode="json",
-                include={"situation_id", "version", "title", "desc", "remained_drivers"},
+                include={
+                    "situation_id",
+                    "version",
+                    "created_timestamp",
+                    "title",
+                    "desc",
+                    "remained_drivers",
+                },
             ),
             "to_situation": deal.model_dump(mode="json"),
             "inputs": [
@@ -187,7 +196,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             ],
         },
     )
-    leaf = Situation(situation_id=UUID(int=1), version=1, title="leaf", desc="leaf", remained_drivers=[])
+    leaf = Situation(situation_id=UUID(int=1), version=1, created_timestamp=CREATED, title="leaf", desc="leaf", remained_drivers=[])
     store.leaves = [leaf]
     leaves = _invoke(
         lookup_leaf_situations,
@@ -206,6 +215,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     linked_now = Situation(
         situation_id=now.situation_id,
         version=now.version,
+        created_timestamp=now.created_timestamp,
         title=now.title,
         desc=now.desc,
         remained_drivers=["blockade"],
@@ -237,7 +247,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     )
     assert isinstance(empty_line, ChainSoFar)
     assert empty_line.hops == []
-    mid = Situation(situation_id=deal.situation_id, version=deal.version, title=deal.title, desc=deal.desc, remained_drivers=[])
+    mid = Situation(situation_id=deal.situation_id, version=deal.version, created_timestamp=deal.created_timestamp, title=deal.title, desc=deal.desc, remained_drivers=[])
     store.line = ChainSoFar(
         start=now,
         hops=[LinkedHop(situation=mid, link=link)],

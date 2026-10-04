@@ -52,6 +52,7 @@ def _ask(situation: Situation) -> str:
 def _situation_from_graph(
     situation_id: UUID,
     version: int,
+    created_timestamp: str,
     title: str,
     desc: str,
     remained_drivers: list[str],
@@ -59,10 +60,12 @@ def _situation_from_graph(
     potential_drivers: list[str],
     original_ask: str,
 ) -> Situation:
+    saved_at = datetime.fromisoformat(created_timestamp)
     if kind == "start":
         return StartSituation(
             situation_id=situation_id,
             version=version,
+            created_timestamp=saved_at,
             title=title,
             desc=desc,
             remained_drivers=remained_drivers,
@@ -72,6 +75,7 @@ def _situation_from_graph(
         return TerminalSituation(
             situation_id=situation_id,
             version=version,
+            created_timestamp=saved_at,
             title=title,
             desc=desc,
             remained_drivers=remained_drivers,
@@ -80,6 +84,7 @@ def _situation_from_graph(
     return Situation(
         situation_id=situation_id,
         version=version,
+        created_timestamp=saved_at,
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
@@ -181,6 +186,7 @@ class GraphCausalChainStore(CausalChainStore):
         self._graph_db.merge_situation(
             situation.situation_id,
             situation.version,
+            situation.created_timestamp.isoformat(),
             situation.title,
             situation.desc,
             list(situation.remained_drivers),
@@ -219,11 +225,19 @@ class GraphCausalChainStore(CausalChainStore):
             Situation(
                 situation_id=situation_id,
                 version=version,
+                created_timestamp=datetime.fromisoformat(created_timestamp),
                 title=title,
                 desc=desc,
                 remained_drivers=remained_drivers,
             )
-            for situation_id, version, title, desc, remained_drivers in self._graph_db.list_leaf_situations(
+            for (
+                situation_id,
+                version,
+                created_timestamp,
+                title,
+                desc,
+                remained_drivers,
+            ) in self._graph_db.list_leaf_situations(
                 case.case_id,
                 start.situation_id,
                 start.version,
@@ -262,6 +276,7 @@ class GraphCausalChainStore(CausalChainStore):
         (
             start_id,
             start_version,
+            start_created_timestamp,
             start_title,
             start_desc,
             start_remained_drivers,
@@ -269,7 +284,7 @@ class GraphCausalChainStore(CausalChainStore):
         ) = start_row
         hops: list[LinkedHop] = []
         for hop_row, link_row in zip(hop_rows, link_rows, strict=True):
-            situation_id, version, title, desc, remained_drivers = hop_row
+            situation_id, version, created_timestamp, title, desc, remained_drivers = hop_row
             (
                 from_situation_id,
                 from_version,
@@ -283,6 +298,7 @@ class GraphCausalChainStore(CausalChainStore):
                     situation=Situation(
                         situation_id=situation_id,
                         version=version,
+                        created_timestamp=datetime.fromisoformat(created_timestamp),
                         title=title,
                         desc=desc,
                         remained_drivers=remained_drivers,
@@ -308,6 +324,7 @@ class GraphCausalChainStore(CausalChainStore):
             start=StartSituation(
                 situation_id=start_id,
                 version=start_version,
+                created_timestamp=datetime.fromisoformat(start_created_timestamp),
                 title=start_title,
                 desc=start_desc,
                 remained_drivers=start_remained_drivers,
@@ -324,6 +341,7 @@ class GraphCausalChainStore(CausalChainStore):
         for (
             situation_id,
             version,
+            created_timestamp,
             title,
             desc,
             remained_drivers,
@@ -336,6 +354,7 @@ class GraphCausalChainStore(CausalChainStore):
                 _situation_from_graph(
                     situation_id,
                     version,
+                    created_timestamp,
                     title,
                     desc,
                     remained_drivers,

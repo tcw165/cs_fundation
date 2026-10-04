@@ -51,7 +51,8 @@ MERGE (s:Situation {situation_id: $situation_id, version: $version})
 ON CREATE SET s.desc = $desc,
     s.kind = $kind,
     s.potential_drivers = $potential_drivers,
-    s.original_ask = $original_ask
+    s.original_ask = $original_ask,
+    s.created_timestamp = $created_timestamp
 SET s.title = $title,
     s.remained_drivers = $remained_drivers
 REMOVE s.is_root
@@ -79,6 +80,7 @@ WHERE current.kind <> 'terminal'
   AND EXISTS {{ MATCH (current)-[:BELONGS_TO]->(:Case {{case_id: $case_id}}) }}
 RETURN start.situation_id AS start_situation_id,
     start.version AS start_version,
+    start.created_timestamp AS start_created_timestamp,
     start.title AS start_title,
     start.desc AS start_desc,
     start.remained_drivers AS start_remained_drivers,
@@ -88,6 +90,7 @@ RETURN start.situation_id AS start_situation_id,
         ELSE [n IN nodes(path)[1..] | {{
             situation_id: n.situation_id,
             version: n.version,
+            created_timestamp: n.created_timestamp,
             title: n.title,
             desc: n.desc,
             remained_drivers: n.remained_drivers
@@ -114,6 +117,7 @@ WHERE leaf.kind = 'situation'
   AND EXISTS { MATCH (leaf)-[:BELONGS_TO]->(:Case {case_id: $case_id}) }
 RETURN leaf.situation_id AS situation_id,
     leaf.version AS version,
+    leaf.created_timestamp AS created_timestamp,
     leaf.title AS title,
     leaf.desc AS desc,
     leaf.remained_drivers AS remained_drivers
@@ -135,6 +139,7 @@ LIST_SITUATIONS = """
 MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)
 RETURN s.situation_id AS situation_id,
     s.version AS version,
+    s.created_timestamp AS created_timestamp,
     s.title AS title,
     s.desc AS desc,
     s.remained_drivers AS remained_drivers,
@@ -177,16 +182,17 @@ def _strings(value: object) -> list[str]:
 
 def _hop_rows(
     value: object,
-) -> list[tuple[UUID, int, str, str, list[str]]]:
+) -> list[tuple[UUID, int, str, str, str, list[str]]]:
     if not isinstance(value, list):
         return []
-    rows: list[tuple[UUID, int, str, str, list[str]]] = []
+    rows: list[tuple[UUID, int, str, str, str, list[str]]] = []
     for item in value:
         if isinstance(item, dict):
             rows.append(
                 (
                     UUID(str(item["situation_id"])),
                     int(item["version"]),
+                    str(item["created_timestamp"]),
                     str(item["title"]),
                     str(item["desc"]),
                     _strings(item.get("remained_drivers")),
@@ -321,6 +327,7 @@ class Neo4jClient(GraphDb):
         self,
         situation_id: UUID,
         version: int,
+        created_timestamp: str,
         title: str,
         desc: str,
         remained_drivers: list[str],
@@ -334,6 +341,7 @@ class Neo4jClient(GraphDb):
                 MERGE_SITUATION,
                 situation_id=str(situation_id),
                 version=version,
+                created_timestamp=created_timestamp,
                 title=title,
                 desc=desc,
                 remained_drivers=remained_drivers,
@@ -376,16 +384,17 @@ class Neo4jClient(GraphDb):
     @override
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, list[str], str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, list[str], str, UUID]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_SITUATIONS))
-        rows: list[tuple[UUID, int, str, str, list[str], str, list[str], str, UUID]] = []
+        rows: list[tuple[UUID, int, str, str, str, list[str], str, list[str], str, UUID]] = []
         for record in records:
             original_ask = record["original_ask"]
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
+                    str(record["created_timestamp"]),
                     str(record["title"]),
                     str(record["desc"]),
                     _strings(record["remained_drivers"]),
@@ -403,7 +412,7 @@ class Neo4jClient(GraphDb):
         case_id: UUID,
         start_situation_id: UUID,
         start_version: int,
-    ) -> list[tuple[UUID, int, str, str, list[str]]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str]]]:
         with self._driver.session() as session:
             records = list(
                 session.run(
@@ -413,12 +422,13 @@ class Neo4jClient(GraphDb):
                     start_version=start_version,
                 )
             )
-        rows: list[tuple[UUID, int, str, str, list[str]]] = []
+        rows: list[tuple[UUID, int, str, str, str, list[str]]] = []
         for record in records:
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
+                    str(record["created_timestamp"]),
                     str(record["title"]),
                     str(record["desc"]),
                     _strings(record["remained_drivers"]),
@@ -455,8 +465,8 @@ class Neo4jClient(GraphDb):
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, str, list[str], list[str]],
-        list[tuple[UUID, int, str, str, list[str]]],
+        tuple[UUID, int, str, str, str, list[str], list[str]],
+        list[tuple[UUID, int, str, str, str, list[str]]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
     ] | None:
         with self._driver.session() as session:
@@ -472,6 +482,7 @@ class Neo4jClient(GraphDb):
             (
                 UUID(str(record["start_situation_id"])),
                 int(record["start_version"]),
+                str(record["start_created_timestamp"]),
                 str(record["start_title"]),
                 str(record["start_desc"]),
                 _strings(record["start_remained_drivers"]),

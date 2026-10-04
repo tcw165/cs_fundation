@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -15,6 +16,8 @@ from take_home.causal_chains.agents.models.causal_chains.situation import (
     TerminalSituation,
 )
 
+CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
+
 NOW_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEAL_ID = UUID("22222222-2222-4222-8222-222222222222")
 NEXT_ID = UUID("44444444-4444-4444-8444-444444444444")
@@ -25,6 +28,7 @@ def _start() -> StartSituation:
     return StartSituation(
         situation_id=NOW_ID,
         version=1,
+        created_timestamp=CREATED,
         title="Strait shut.",
         desc="Strait shut.",
         potential_drivers=["blockade"],
@@ -36,6 +40,7 @@ def _mid(situation_id: UUID = DEAL_ID, desc: str = "Talks open.") -> Situation:
     return Situation(
         situation_id=situation_id,
         version=1,
+        created_timestamp=CREATED,
         title=desc,
         desc=desc,
         remained_drivers=[],
@@ -92,6 +97,7 @@ def test_chain_so_far_rejects_a_start_or_a_terminal_hop():
     terminal = TerminalSituation(
         situation_id=END_ID,
         version=1,
+        created_timestamp=CREATED,
         title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",

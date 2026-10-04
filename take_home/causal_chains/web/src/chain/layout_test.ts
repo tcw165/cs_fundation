@@ -8,6 +8,7 @@ const chain: CausalChain = {
     {
       situation_id: "start",
       version: 1,
+      created_timestamp: "2026-10-01T00:00:00+00:00",
       title: "Strait shut",
       desc: "strait shut",
       remained_drivers: [],
@@ -16,6 +17,7 @@ const chain: CausalChain = {
     {
       situation_id: "step",
       version: 1,
+      created_timestamp: "2026-10-01T00:00:00+00:00",
       title: "Talks",
       desc: "talks",
       remained_drivers: [],
@@ -23,6 +25,7 @@ const chain: CausalChain = {
     {
       situation_id: "end",
       version: 1,
+      created_timestamp: "2026-10-01T00:00:00+00:00",
       title: "Open",
       desc: "open",
       remained_drivers: [],
