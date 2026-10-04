@@ -19,9 +19,11 @@ def build_conversation_tools(
         since_minutes_ago: int,
         until_minutes_ago: int = 0,
     ) -> list[Message]:
-        """Messages from since_minutes_ago until until_minutes_ago before now.
+        """Messages in a window before now, oldest first.
 
-        until_minutes_ago is 0 for up to the current time. Oldest first.
+        Args:
+            since_minutes_ago: Minutes before now where the window starts. A message at that time is included.
+            until_minutes_ago: Minutes before now where the window ends. 0 is the current time. A message at that time is included.
         """
         now = clock.now()
         return await messaging_store.search_messages(
