@@ -18,6 +18,7 @@ from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
     Message,
     Role,
+    SystemMessage,
 )
 from take_home.causal_chains.agents.models.messaging.message_widgets import (
     DeeplinkCardMessage,
@@ -118,8 +119,16 @@ def test_stores_user_and_agent_messages_only():
         link="/chain/now",
         enabled=True,
     )
+    system = SystemMessage(
+        message_id="m_timeout",
+        conversation_id="1",
+        user_uuid="user-1",
+        text="This turn timed out. Send your message again.",
+        created_timestamp=created,
+    )
     assert can_store_message(user) is True
     assert can_store_message(agent) is True
+    assert can_store_message(system) is True
     assert can_store_message(other) is False
     assert can_store_message(HeartbeatMessage()) is False
 
@@ -766,16 +775,25 @@ def test_run_turn_stores_timeout_when_the_agent_times_out():
             _FixedClock(),
         )
         await turn_store.put_turn(turn)
-        async for _event in service.run_turn(
-            turn,
-            [message],
-            RunConfig(agent_timeout_s=0.05),
-        ):
-            pass
-        return await turn_store.get_turn(turn.turn_id)
+        events = [
+            event
+            async for event in service.run_turn(
+                turn,
+                [message],
+                RunConfig(agent_timeout_s=0.05),
+            )
+        ]
+        stored = await service._messaging_store.list_messages("1", limit=20)
+        return await turn_store.get_turn(turn.turn_id), events, stored.messages
 
-    saved = asyncio.run(exercise())
+    saved, events, stored = asyncio.run(exercise())
     assert saved is not None and saved.status is TurnStatus.timeout
+    notices = [event for event in events if isinstance(event, SystemMessage)]
+    assert len(notices) == 1
+    assert notices[0].role is Role.system
+    assert notices[0].text == "This turn timed out. Send your message again."
+    assert notices[0].message_id == "timeout_t_1"
+    assert stored == notices
 
 
 def test_run_turn_stays_cancelled_when_stopped_while_running():
