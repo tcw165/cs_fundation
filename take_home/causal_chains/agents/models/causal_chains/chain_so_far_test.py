@@ -12,8 +12,6 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 
 CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
@@ -24,8 +22,8 @@ NEXT_ID = UUID("44444444-4444-4444-8444-444444444444")
 END_ID = UUID("33333333-3333-4333-8333-333333333333")
 
 
-def _start() -> StartSituation:
-    return StartSituation(
+def _start() -> Situation:
+    return Situation(
         situation_id=NOW_ID,
         version=1,
         created_timestamp=CREATED,
@@ -95,14 +93,13 @@ def test_chain_so_far_rejects_a_hop_that_does_not_follow():
 
 def test_chain_so_far_rejects_a_start_or_a_terminal_hop():
     start = _start()
-    terminal = TerminalSituation(
+    terminal = Situation(
         situation_id=END_ID,
         version=1,
         created_timestamp=CREATED,
         kind="terminal",
         title="The strait opens.",
         desc="The strait opens.",
-        original_ask="the strait opens",
         remained_drivers=[],
     )
     with pytest.raises(ValidationError, match="mid-chain"):

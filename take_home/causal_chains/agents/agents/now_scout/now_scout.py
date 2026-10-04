@@ -4,7 +4,7 @@ from agents import Agent, ModelSettings, WebSearchTool
 from openai.types.shared.reasoning import Reasoning
 
 from take_home.causal_chains.agents.agent_tools.chain_tools import add_start_situation
-from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.models.run_context import RunContext
 
 
@@ -24,5 +24,5 @@ now_scout = Agent[RunContext](
         WebSearchTool(),
         add_start_situation,
     ],
-    output_type=StartSituation,
+    output_type=Situation,
 )

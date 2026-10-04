@@ -18,7 +18,7 @@ from take_home.causal_chains.agents.observability.endpoint_logging.endpoint_logg
     SkipPollingEndpointPaths,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
-from take_home.causal_chains.agents.models.causal_chains.situation import StartSituation
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 CREATED = datetime(2026, 10, 1, tzinfo=timezone.utc)
 
@@ -247,7 +247,7 @@ def test_post_message_and_sse_with_stub_runner(monkeypatch):
 
 
 def test_get_causal_chains_returns_the_stored_chains():
-    root = StartSituation(
+    root = Situation(
         situation_id=UUID("11111111-1111-4111-8111-111111111111"),
         version=1,
         created_timestamp=CREATED,

@@ -14,8 +14,6 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import (
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 from take_home.causal_chains.agents.models.messaging.causal_chain import CausalChain
 from take_home.causal_chains.agents.models.messaging.message import Message
@@ -150,13 +148,13 @@ def rehearse_persistence(
 
     def load_leaves(
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> list[Situation]:
         return []
 
     def load_reaches(
         case: Case,
-        start: StartSituation,
+        start: Situation,
         terminal: Situation,
     ) -> bool:
         outgoing: dict[tuple[UUID, int], list[tuple[UUID, int]]] = {}
@@ -182,7 +180,7 @@ def rehearse_persistence(
 
     def load_chain_so_far(
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> ChainSoFar:
         outgoing: dict[tuple[UUID, int], list[LeadsTo]] = {}
         for stored_case, link in links:
@@ -205,7 +203,7 @@ def rehearse_persistence(
                 stored_case, dest = stored
                 if stored_case.case_id != case.case_id:
                     continue
-                if isinstance(dest, TerminalSituation) or type(dest) is not Situation:
+                if dest.kind != "situation":
                     continue
                 candidates.append((dest, link))
             if len(candidates) != 1:
@@ -222,7 +220,7 @@ def rehearse_persistence(
         chains: list[CausalChain] = []
         for case_id, stored in grouped.items():
             start_count = sum(
-                1 for situation in stored if isinstance(situation, StartSituation)
+                1 for situation in stored if situation.kind == "start"
             )
             if start_count != 1:
                 continue

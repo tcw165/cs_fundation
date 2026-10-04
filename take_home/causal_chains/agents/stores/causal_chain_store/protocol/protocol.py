@@ -7,8 +7,6 @@ from take_home.causal_chains.agents.models.causal_chains.chain_so_far import Cha
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
-    TerminalSituation,
 )
 
 
@@ -41,20 +39,20 @@ class CausalChainStore(Protocol):
     async def lookup_leaf_situations(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> list[Situation]: ...
 
     async def reaches_terminal(
         self,
         case: Case,
-        start: StartSituation,
-        terminal: TerminalSituation,
+        start: Situation,
+        terminal: Situation,
     ) -> bool: ...
 
     async def lookup_chain_so_far(
         self,
         case: Case,
-        start: StartSituation,
+        start: Situation,
     ) -> ChainSoFar: ...
 
     async def get_chains(

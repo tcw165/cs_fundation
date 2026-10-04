@@ -12,7 +12,10 @@ class Situation(BaseModel):
 
     situation_id: UUID
     version: int
-    kind: Literal["situation"] = Field(..., description="A mid-chain situation.")
+    kind: Literal["start", "situation", "terminal"] = Field(
+        ...,
+        description="start, situation, or terminal.",
+    )
     created_timestamp: datetime = Field(
         ...,
         description="When this situation was saved.",
@@ -28,22 +31,7 @@ class Situation(BaseModel):
     )
 
 
-class StartSituation(Situation):
-    """The saved present."""
-
-    kind: Literal["start"] = Field(..., description="The saved present.")
-
-
-class TerminalSituation(Situation):
-    """The saved end, returned with the user's ask. Not the start."""
-
-    kind: Literal["terminal"] = Field(..., description="The saved future.")
-    original_ask: str
-
-
 def require_single_start(situations: list[Situation]) -> None:
-    start_count = sum(
-        1 for situation in situations if isinstance(situation, StartSituation)
-    )
+    start_count = sum(1 for situation in situations if situation.kind == "start")
     if start_count != 1:
         raise ValueError(f"expected one start, found {start_count}")

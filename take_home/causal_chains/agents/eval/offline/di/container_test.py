@@ -12,7 +12,6 @@ from take_home.causal_chains.agents.models.causal_chains.case import Case
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
-    StartSituation,
 )
 from take_home.causal_chains.agents.models.messaging.message import (
     MarkdownMessage,
@@ -54,7 +53,7 @@ def test_rehearsed_stores_return_what_they_saved() -> None:
         created_timestamp=created,
         updated_timestamp=created,
     )
-    root = StartSituation(
+    root = Situation(
         situation_id=uuid4(),
         version=1,
         created_timestamp=CREATED,

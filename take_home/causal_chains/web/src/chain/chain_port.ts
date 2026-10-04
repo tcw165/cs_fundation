@@ -12,7 +12,6 @@ export type ChainSituation = {
   title: string;
   desc: string;
   remained_drivers: string[];
-  original_ask?: string;
 };
 
 export type ChainInput = {

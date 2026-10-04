@@ -11,11 +11,7 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
     probability,
 )
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
-from take_home.causal_chains.agents.models.causal_chains.situation import (
-    Situation,
-    StartSituation,
-    TerminalSituation,
-)
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -83,9 +79,9 @@ async def add_start_situation(
         list[str],
         "Drivers from the start situation still left to change.",
     ],
-) -> StartSituation:
+) -> Situation:
     """Save the present on a case and return it, including the id assigned here."""
-    situation = StartSituation(
+    situation = Situation(
         situation_id=uuid4(),
         version=1,
         kind="start",
@@ -132,14 +128,13 @@ async def add_terminal_situation(
         str,
         "What is true in the future, in your own words, including the current time.",
     ],
-    original_ask: Annotated[str, "The user's ask, kept with the terminal."],
     remained_drivers: Annotated[
         list[str],
         "Drivers from the start situation still left to change.",
     ],
-) -> TerminalSituation:
+) -> Situation:
     """Save the future on a case and return it, including the id assigned here."""
-    situation = TerminalSituation(
+    situation = Situation(
         situation_id=uuid4(),
         version=1,
         kind="terminal",
@@ -147,7 +142,6 @@ async def add_terminal_situation(
         title=title,
         desc=desc,
         remained_drivers=remained_drivers,
-        original_ask=original_ask,
     )
     await _require_store(ctx).add_situation(case, situation)
     return situation
@@ -158,11 +152,11 @@ async def link_situations(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case both situations belong to."],
     from_situation: Annotated[
-        StartSituation | Situation | TerminalSituation,
+        Situation,
         "The situation this link leaves.",
     ],
     to_situation: Annotated[
-        StartSituation | Situation | TerminalSituation,
+        Situation,
         "The situation this link reaches.",
     ],
     inputs: Annotated[
@@ -203,7 +197,7 @@ async def link_situations(
 async def lookup_leaf_situations(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case to search."],
-    start: Annotated[StartSituation, "The saved start to walk from."],
+    start: Annotated[Situation, "The saved start to walk from."],
 ) -> list[Situation]:
     """Return mid-chain situations reached from the start that have no outgoing link.
 
@@ -216,8 +210,8 @@ async def lookup_leaf_situations(
 async def reaches_terminal(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case both situations belong to."],
-    start: Annotated[StartSituation, "The saved start."],
-    terminal: Annotated[TerminalSituation, "The saved terminal."],
+    start: Annotated[Situation, "The saved start."],
+    terminal: Annotated[Situation, "The saved terminal."],
 ) -> bool:
     """Validate whether the start situation connects to the terminal situation."""
     return await _require_store(ctx).reaches_terminal(case, start, terminal)
@@ -227,7 +221,7 @@ async def reaches_terminal(
 async def lookup_chain_so_far(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case to read."],
-    start: Annotated[StartSituation, "The saved start to walk from."],
+    start: Annotated[Situation, "The saved start to walk from."],
 ) -> ChainSoFar:
     """Load the open line from the present through the current situation, including each saved link.
 

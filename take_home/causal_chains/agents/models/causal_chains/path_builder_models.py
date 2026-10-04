@@ -2,11 +2,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from take_home.causal_chains.agents.models.causal_chains.situation import (
-    Situation,
-    StartSituation,
-    TerminalSituation,
-)
+from take_home.causal_chains.agents.models.causal_chains.situation import Situation
 
 
 class PathBuilderRequest(BaseModel):
@@ -14,13 +10,13 @@ class PathBuilderRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    from_situation: StartSituation | Situation = Field(
+    from_situation: Situation = Field(
         description=(
             "The current situation this step leaves. "
             "The start on the first hop, or the mid-chain situation just linked."
         ),
     )
-    terminal_situation: TerminalSituation = Field(
+    terminal_situation: Situation = Field(
         description=(
             "The saved future this chain is moving toward. Do not create it again."
         ),
@@ -40,6 +36,10 @@ class PathBuilderRequest(BaseModel):
             raise ValueError("prompt is empty")
         if self.from_situation.situation_id == self.terminal_situation.situation_id:
             raise ValueError("from and terminal are the same situation")
+        if self.terminal_situation.kind != "terminal":
+            raise ValueError("terminal is mid-chain")
+        if self.from_situation.kind == "terminal":
+            raise ValueError("from situation is the terminal")
         return self
 
 
@@ -60,6 +60,6 @@ class PathBuilderResult(BaseModel):
 
     @model_validator(mode="after")
     def plain_mid_situation(self) -> Self:
-        if self.situation is not None and type(self.situation) is not Situation:
+        if self.situation is not None and self.situation.kind != "situation":
             raise ValueError("next situation is mid-chain")
         return self

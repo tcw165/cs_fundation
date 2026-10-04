@@ -31,7 +31,6 @@ const chain: CausalChain = {
       title: "Open",
       desc: "open",
       remained_drivers: [],
-      original_ask: "open next week",
     },
   ],
   links: [
