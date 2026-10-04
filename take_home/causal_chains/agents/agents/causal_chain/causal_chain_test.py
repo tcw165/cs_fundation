@@ -34,6 +34,7 @@ def test_causal_chain_prompt_and_tools():
     assert "The direction starts with the case id, then the open line, then the one change." in prompt
     assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
+    assert "Write a short title for the future." in prompt
     assert (
         "Write the future's description in your own words and include the current time."
         in prompt
