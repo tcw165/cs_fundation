@@ -7,6 +7,7 @@ export type DeeplinkCard = {
 export type ChainSituation = {
   situation_id: string;
   version: number;
+  title: string;
   desc: string;
   potential_factors?: string[];
   original_ask?: string;

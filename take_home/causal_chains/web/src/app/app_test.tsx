@@ -106,6 +106,7 @@ describe("app chat", () => {
             {
               situation_id: now_id,
               version: 1,
+              title: "Strait shut",
               desc: "strait shut",
               potential_factors: ["blockade"],
             },
@@ -152,6 +153,7 @@ describe("app chat", () => {
     expect(host.querySelector(".heartbeat")).toBeNull();
     expect(host.textContent).toContain("causal_chains://chain");
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
+    expect(host.querySelector(".node-title")?.textContent).toBe("Strait shut");
     expect(host.textContent).toContain("strait shut");
     act(() => {
       root.unmount();

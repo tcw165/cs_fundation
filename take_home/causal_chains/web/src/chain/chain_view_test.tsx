@@ -46,12 +46,14 @@ describe("chain canvas", () => {
           {
             situation_id: now_id,
             version: 1,
+            title: "Strait shut",
             desc: "strait shut for a long stretch of text that should remain readable inside the scrolling card when the situation is expanded beyond the collapsed summary line",
             potential_factors: ["blockade", "insurance", "naval warning"],
           },
           {
             situation_id: next_id,
             version: 1,
+            title: "Talks start",
             desc: "talks start",
           },
         ],
@@ -77,6 +79,10 @@ describe("chain canvas", () => {
     expect(host.querySelectorAll(".overview-node.is-latest")).toHaveLength(2);
     expect(host.querySelector(`[data-situation-id="${now_id}"]`)?.getAttribute("data-open")).toBe(
       "true",
+    );
+    expect(host.querySelector(".node-title")?.textContent).toBe("Strait shut");
+    expect(host.textContent).toContain(
+      "strait shut for a long stretch of text that should remain readable",
     );
     const open_y = y_of(host, next_id);
     const toggle = host.querySelector(".node-toggle");
@@ -111,6 +117,7 @@ describe("chain canvas", () => {
           {
             situation_id: older_id,
             version: 1,
+            title: "Older start",
             desc: "older start",
             potential_factors: ["then"],
           },
@@ -123,6 +130,7 @@ describe("chain canvas", () => {
           {
             situation_id: now_id,
             version: 1,
+            title: "Strait shut",
             desc: "strait shut",
             potential_factors: ["blockade"],
           },
@@ -157,6 +165,7 @@ describe("chain canvas", () => {
             {
               situation_id: now_id,
               version: 1,
+              title: "Strait shut",
               desc: "strait shut",
               potential_factors: ["blockade"],
             },
