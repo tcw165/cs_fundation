@@ -11,8 +11,28 @@ from take_home.causal_chains.agents.models.causal_chains.path_builder_models imp
 def test_path_builder_prompt_model_and_search():
     prompt = (Path(__file__).parent / "prompts" / "path_builder.md").read_text()
     assert path_builder.instructions == prompt
-    assert "# Goal" in prompt and "# Key Rules" in prompt
-    assert "# Examples" not in prompt
+    assert "# Goal" in prompt
+    assert "# Key Rules" not in prompt
+    assert "# Examples" in prompt
+    assert "## Common shape" in prompt
+    assert (
+        "step 0:\n"
+        "- Read the current situation, its remained drivers, and the terminal situation.\n"
+        "- Search the web for more context on those remained drivers.\n\n"
+        "step 1:\n"
+        "- Pick one remained driver from the current situation, and say why that one. "
+        "Change only one driver from the current situation's remained drivers.\n"
+        "- Write a short title for that one mid-chain situation. Name that driver in the description.\n"
+        "- Save the next situation with that driver removed from the remained drivers. "
+        "Save once. The id is assigned when the situation is saved.\n"
+        "- Do not save a start or the terminal. Do not return two.\n\n"
+        "step 3:\n"
+        "- Ask what a person could move. Price the link from the current situation to the next situation. "
+        "The stored probability is the mean of those inputs. Do not set a probability.\n"
+        "- Save the link from the current situation to the next situation. Save that link once.\n\n"
+        "step N:\n"
+        "- Return the saved next situation when it is not the terminal.\n"
+    ) in prompt
     assert "add_situation" not in prompt
     assert "link_situations" not in prompt
     assert "pricer" not in prompt
@@ -20,7 +40,11 @@ def test_path_builder_prompt_model_and_search():
     assert "one driver" in prompt
     assert "key-factor" not in prompt
     assert "Write a short title for that one mid-chain situation." in prompt
-    assert "change only one driver from the start" in prompt
+    assert (
+        "Change only one driver from the current situation's remained drivers"
+        in prompt
+    )
+    assert "Save the next situation with that driver removed from the remained drivers." in prompt
     assert "Name that driver in the description." in prompt
     assert "Save that link once the step is sorted out." in prompt
     assert "including each saved link" in prompt

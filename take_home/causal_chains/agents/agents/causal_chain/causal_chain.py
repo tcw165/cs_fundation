@@ -64,7 +64,7 @@ causal_chain = Agent[RunContext](
                 "Use this after both ends exist, and again until a path runs from the start to the future. "
                 "Pass the current situation, the saved future, and a direction. "
                 "The direction starts with the case id, then the open line, then the one driver to change. "
-                "That driver comes from the start, and this line has not already changed it. "
+                "That driver comes from the current situation's drivers from the start still left to change. "
                 "Either link the current situation to the terminal, "
                 "or save one next situation and link the current situation to it."
             ),
