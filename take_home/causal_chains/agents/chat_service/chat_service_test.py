@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
@@ -740,7 +741,7 @@ def test_run_turn_cancels_the_stream_before_the_next_yield():
     assert saved is not None and saved.status is TurnStatus.cancelled
 
 
-def test_run_turn_stores_timeout_when_the_agent_times_out():
+def test_run_turn_stores_timeout_when_the_agent_times_out(caplog):
     class _Blocked:
         async def stream(self, inputs: list[Message], context: RunContext):
             del inputs, context
@@ -786,7 +787,9 @@ def test_run_turn_stores_timeout_when_the_agent_times_out():
         stored = await service._messaging_store.list_messages("1", limit=20)
         return await turn_store.get_turn(turn.turn_id), events, stored.messages
 
-    saved, events, stored = asyncio.run(exercise())
+    with caplog.at_level(logging.WARNING, logger="agents"):
+        saved, events, stored = asyncio.run(exercise())
+    assert "turn timed out after 0.05 seconds" in caplog.text
     assert saved is not None and saved.status is TurnStatus.timeout
     notices = [event for event in events if isinstance(event, SystemMessage)]
     assert len(notices) == 1
