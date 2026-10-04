@@ -13,6 +13,7 @@ class Role(StrEnum):
     agent = "agent"
     other = "other"
     meta = "meta"
+    system = "system"
 
 
 class BaseMessage(BaseModel):
@@ -76,9 +77,15 @@ class BaseMessage(BaseModel):
         return item
 
     def to_openai_message(self) -> EasyInputMessageParam:
+        if self.role is Role.user:
+            role = "user"
+        elif self.role is Role.system:
+            role = "system"
+        else:
+            role = "assistant"
         return {
             "type": "message",
-            "role": "user" if self.role is Role.user else "assistant",
+            "role": role,
             "content": self.openai_text(),
         }
 
