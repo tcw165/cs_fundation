@@ -41,7 +41,7 @@ class GraphDb(Protocol):
         to_situation_id: UUID,
         to_version: int,
         p: Decimal,
-        inputs: list[tuple[str, Decimal]],
+        inputs: list[tuple[str, str, float]],
     ) -> None: ...
 
     def list_situations(
@@ -72,11 +72,11 @@ class GraphDb(Protocol):
     ) -> tuple[
         tuple[UUID, int, str, str, list[str], list[str]],
         list[tuple[UUID, int, str, str, list[str]]],
-        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
     ] | None: ...
 
     def list_leads_to(
         self,
-    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]: ...
+    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]]: ...
 
     def clear(self) -> None: ...

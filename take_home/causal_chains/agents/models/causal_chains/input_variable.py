@@ -1,33 +1,31 @@
 from decimal import Decimal
-from typing import Annotated
 
-from pydantic import BaseModel, WithJsonSchema, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 _P_SCALE = Decimal("0.0001")
-# Pydantic's Decimal schema uses a regex lookahead. OpenAI structured outputs reject it.
-_VALUE_SCHEMA = WithJsonSchema(
-    {
-        "type": "number",
-        "minimum": 0,
-        "maximum": 1,
-    }
-)
 
 
 class InputVariable(BaseModel):
-    """A named value between 0 and 1 that a person could move later."""
+    """One named input on a link. probability is between 0 and 1."""
 
-    name: str
-    value: Annotated[Decimal, _VALUE_SCHEMA]
+    name: str = Field(..., description="A short name for this input.")
+    desc: str = Field(
+        ...,
+        description="What this input is, and why this driver could change the situation.",
+    )
+    probability: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="A number between 0 and 1 for a driver that could change the situation.",
+    )
 
     @model_validator(mode="after")
-    def name_and_value_are_usable(
-        self,
-    ) -> "InputVariable":
+    def name_and_desc_are_usable(self) -> "InputVariable":
         if not self.name.strip():
             raise ValueError("name is empty")
-        if self.value < 0 or self.value > 1:
-            raise ValueError("value is outside 0 to 1")
+        if not self.desc.strip():
+            raise ValueError("desc is empty")
         return self
 
 
@@ -36,5 +34,5 @@ def probability(
 ) -> Decimal:
     if not inputs:
         raise ValueError("inputs required")
-    total = sum((item.value for item in inputs), Decimal("0"))
+    total = sum((Decimal(str(item.probability)) for item in inputs), Decimal("0"))
     return (total / Decimal(len(inputs))).quantize(_P_SCALE)

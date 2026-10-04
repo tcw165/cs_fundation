@@ -58,8 +58,8 @@ def test_self_edge_rejected():
 
 def test_p_is_the_mean_of_the_inputs():
     inputs = [
-        InputVariable(name="deal_odds", value=Decimal("0.10")),
-        InputVariable(name="clearance", value=Decimal("0.06")),
+        InputVariable(name="deal_odds", desc="Odds of a deal.", probability=0.10),
+        InputVariable(name="clearance", desc="Chance the ships clear.", probability=0.06),
     ]
     assert probability(inputs) == Decimal("0.0800")
     edge = LeadsTo(
@@ -80,6 +80,8 @@ def test_p_that_disagrees_with_inputs_rejected():
             from_version=1,
             to_situation_id=DEAL_ID,
             to_version=1,
-            inputs=[InputVariable(name="deal_odds", value=Decimal("0.10"))],
+            inputs=[
+                InputVariable(name="deal_odds", desc="Odds of a deal.", probability=0.10)
+            ],
             p=Decimal("0.08"),
         )

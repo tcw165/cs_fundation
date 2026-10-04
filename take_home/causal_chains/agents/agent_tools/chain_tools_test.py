@@ -178,7 +178,13 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
                 include={"situation_id", "version", "title", "desc", "remained_drivers"},
             ),
             "to_situation": deal.model_dump(mode="json"),
-            "inputs": [{"name": "deal_odds", "value": "0.08"}],
+            "inputs": [
+                {
+                    "name": "deal_odds",
+                    "desc": "Odds of a deal.",
+                    "probability": 0.08,
+                }
+            ],
         },
     )
     leaf = Situation(situation_id=UUID(int=1), version=1, title="leaf", desc="leaf", remained_drivers=[])

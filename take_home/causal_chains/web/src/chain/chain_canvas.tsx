@@ -231,7 +231,8 @@ export function ChainCanvas({
                     {link.inputs.map((input) => (
                       <div key={input.name}>
                         <dt>{input.name}</dt>
-                        <dd>{input.value}</dd>
+                        <dd>{input.desc}</dd>
+                        <dd>{input.probability}</dd>
                       </div>
                     ))}
                   </dl>

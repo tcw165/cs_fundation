@@ -44,14 +44,14 @@ class _FakeGraphDb:
             tuple[UUID, int, str, str, list[str], UUID, str, list[str], str]
         ] = []
         self.link_calls: list[
-            tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
+            tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]
         ] = []
         self._situations: dict[
             tuple[UUID, int],
             tuple[UUID, int, str, str, list[str], str, list[str], str, UUID],
         ] = {}
         self._links: list[
-            tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
+            tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]
         ] = []
         self._cases: dict[UUID, tuple[str, str, str]] = {}
         self.leaf_rows: list[tuple[UUID, int, str, str, list[str]]] = []
@@ -59,7 +59,7 @@ class _FakeGraphDb:
         self.chain_row: tuple[
             tuple[UUID, int, str, str, list[str], list[str]],
             list[tuple[UUID, int, str, str, list[str]]],
-            list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+            list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
         ] | None = None
 
     def merge_case(
@@ -107,7 +107,7 @@ class _FakeGraphDb:
     ) -> tuple[
         tuple[UUID, int, str, str, list[str], list[str]],
         list[tuple[UUID, int, str, str, list[str]]],
-        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
+        list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
     ] | None:
         return self.chain_row
 
@@ -155,7 +155,7 @@ class _FakeGraphDb:
         to_situation_id: UUID,
         to_version: int,
         p: Decimal,
-        inputs: list[tuple[str, Decimal]],
+        inputs: list[tuple[str, str, float]],
     ) -> None:
         row = (
             from_situation_id,
@@ -175,7 +175,7 @@ class _FakeGraphDb:
 
     def list_leads_to(
         self,
-    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]]:
+    ) -> list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]]:
         return list(self._links)
 
 
@@ -208,7 +208,13 @@ def test_add_situation_and_link_situations_record_calls():
                 from_version=1,
                 to_situation_id=DEAL_ID,
                 to_version=1,
-                inputs=[InputVariable(name="deal_odds", value=Decimal("0.08"))],
+                inputs=[
+                    InputVariable(
+                        name="deal_odds",
+                        desc="Odds of a deal.",
+                        probability=0.08,
+                    )
+                ],
                 p=Decimal("0.0800"),
             ),
         )
@@ -230,7 +236,7 @@ def test_add_situation_and_link_situations_record_calls():
             DEAL_ID,
             1,
             Decimal("0.0800"),
-            [("deal_odds", Decimal("0.08"))],
+            [("deal_odds", "Odds of a deal.", 0.08)],
         ),
     ]
 
@@ -443,7 +449,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
                     DEAL_ID,
                     1,
                     Decimal("0.5000"),
-                    [("deal_odds", Decimal("0.5000"))],
+                    [("deal_odds", "Odds of a deal.", 0.5)],
                 )
             ],
         )
