@@ -33,8 +33,9 @@ RETURN s.situation_id AS situation_id, total
 
 MERGE_CASE = """
 MERGE (c:Case {case_id: $case_id})
+ON CREATE SET c.from_message_id = $from_message_id,
+    c.created_timestamp = $created_timestamp
 SET c.conversation_id = $conversation_id,
-    c.created_timestamp = $created_timestamp,
     c.updated_timestamp = $updated_timestamp
 """
 
@@ -42,6 +43,7 @@ GET_CASE = """
 MATCH (c:Case {case_id: $case_id})
 RETURN c.case_id AS case_id,
     c.conversation_id AS conversation_id,
+    c.from_message_id AS from_message_id,
     c.created_timestamp AS created_timestamp,
     c.updated_timestamp AS updated_timestamp
 """
@@ -295,6 +297,7 @@ class Neo4jClient(GraphDb):
         self,
         case_id: UUID,
         conversation_id: str,
+        from_message_id: str,
         created_timestamp: str,
         updated_timestamp: str,
     ) -> None:
@@ -303,12 +306,13 @@ class Neo4jClient(GraphDb):
                 MERGE_CASE,
                 case_id=str(case_id),
                 conversation_id=conversation_id,
+                from_message_id=from_message_id,
                 created_timestamp=created_timestamp,
                 updated_timestamp=updated_timestamp,
             )
 
     @override
-    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str] | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str, str] | None:
         with self._driver.session() as session:
             record = session.run(GET_CASE, case_id=str(case_id)).single()
         if record is None:
@@ -324,9 +328,11 @@ class Neo4jClient(GraphDb):
             or updated_timestamp is None
         ):
             return None
+        from_message_id = record.get("from_message_id")
         return (
             UUID(str(found_id)),
             str(conversation_id),
+            "" if from_message_id is None else str(from_message_id),
             str(created_timestamp),
             str(updated_timestamp),
         )

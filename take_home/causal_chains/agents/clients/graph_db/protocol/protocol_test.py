@@ -21,12 +21,13 @@ class _Both:
         self,
         case_id: UUID,
         conversation_id: str,
+        from_message_id: str,
         created_timestamp: str,
         updated_timestamp: str,
     ) -> None:
         return None
 
-    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str] | None:
+    def get_case(self, case_id: UUID) -> tuple[UUID, str, str, str, str] | None:
         return None
 
     def merge_situation(

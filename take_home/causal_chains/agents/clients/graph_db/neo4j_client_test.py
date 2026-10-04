@@ -89,6 +89,7 @@ def test_merge_case_and_get_case_use_the_case_id():
             {
                 "case_id": str(NOW_ID),
                 "conversation_id": "1",
+                "from_message_id": "m_1",
                 "created_timestamp": "2026-10-01T00:00:00+00:00",
                 "updated_timestamp": "2026-10-01T00:00:00+00:00",
             }
@@ -98,29 +99,55 @@ def test_merge_case_and_get_case_use_the_case_id():
     client.merge_case(
         NOW_ID,
         "1",
+        "m_1",
         "2026-10-01T00:00:00+00:00",
         "2026-10-01T00:00:00+00:00",
     )
     assert client.get_case(NOW_ID) == (
         NOW_ID,
         "1",
+        "m_1",
         "2026-10-01T00:00:00+00:00",
         "2026-10-01T00:00:00+00:00",
     )
     merge_query, merge_params = driver.calls[0]
     get_query, get_params = driver.calls[1]
     assert "MERGE (c:Case {case_id: $case_id})" in merge_query
+    assert "ON CREATE SET c.from_message_id = $from_message_id" in merge_query
     assert "SET c.conversation_id = $conversation_id" in merge_query
     assert "c.created_timestamp = $created_timestamp" in merge_query
     assert "c.updated_timestamp = $updated_timestamp" in merge_query
     assert merge_params == {
         "case_id": str(NOW_ID),
         "conversation_id": "1",
+        "from_message_id": "m_1",
         "created_timestamp": "2026-10-01T00:00:00+00:00",
         "updated_timestamp": "2026-10-01T00:00:00+00:00",
     }
     assert "MATCH (c:Case {case_id: $case_id})" in get_query
     assert get_params == {"case_id": str(NOW_ID)}
+
+
+def test_get_case_reads_a_missing_message_as_empty():
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "case_id": str(NOW_ID),
+                    "conversation_id": "1",
+                    "created_timestamp": "2026-10-01T00:00:00+00:00",
+                    "updated_timestamp": "2026-10-01T00:00:00+00:00",
+                }
+            ]
+        )
+    )
+    assert client.get_case(NOW_ID) == (
+        NOW_ID,
+        "1",
+        "",
+        "2026-10-01T00:00:00+00:00",
+        "2026-10-01T00:00:00+00:00",
+    )
 
 
 def test_get_case_returns_none_when_missing():

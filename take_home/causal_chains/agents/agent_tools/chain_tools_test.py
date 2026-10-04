@@ -32,6 +32,8 @@ from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import (
     Situation,
 )
+from take_home.causal_chains.agents.models.messaging.message import MarkdownMessage
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import Role
 from take_home.causal_chains.agents.models.run_clients import RunClients
 from take_home.causal_chains.agents.models.run_context import RunContext
 
@@ -121,6 +123,30 @@ def _invoke(
         )
 
     return asyncio.run(exercise())
+
+
+def test_add_case_remembers_the_latest_user_message():
+    store = _Store()
+    older = MarkdownMessage(
+        message_id="m_old",
+        conversation_id="1",
+        user_uuid="user-1",
+        role=Role.user,
+        text="earlier",
+        created_timestamp=CREATED,
+    )
+    latest = older.model_copy(update={"message_id": "m_latest", "role": Role.user})
+    reply = older.model_copy(update={"message_id": "m_reply", "role": Role.agent})
+    context = RunContext(
+        conversation_id="1",
+        clock=_FixedClock(),
+        turn_id="t_1",
+        clients=RunClients(causal_chain_store=store),
+        conversation_history=(older, latest, reply),
+    )
+    case = _invoke(add_case, context, {})
+    assert isinstance(case, Case)
+    assert case.from_message_id == "m_latest"
 
 
 def test_tools_write_a_case_a_start_a_terminal_and_a_link():

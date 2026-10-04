@@ -12,6 +12,10 @@ from take_home.causal_chains.agents.models.causal_chains.input_variable import (
 )
 from take_home.causal_chains.agents.models.causal_chains.leads_to import LeadsTo
 from take_home.causal_chains.agents.models.causal_chains.situation import Situation
+from take_home.causal_chains.agents.models.messaging.protocol.message_base import (
+    BaseMessage,
+    Role,
+)
 from take_home.causal_chains.agents.models.run_context import RunContext
 from take_home.causal_chains.agents.stores.causal_chain_store.protocol.protocol import (
     CausalChainStore,
@@ -32,6 +36,13 @@ class LinkInput(BaseModel):
     )
 
 
+def _creating_message_id(history: tuple[object, ...]) -> str:
+    for message in reversed(history):
+        if isinstance(message, BaseMessage) and message.role is Role.user:
+            return message.message_id
+    return ""
+
+
 def _require_store(
     ctx: RunContextWrapper[RunContext],
 ) -> CausalChainStore:
@@ -50,6 +61,7 @@ async def add_case(
     case = Case(
         case_id=uuid4(),
         conversation_id=ctx.context.conversation_id,
+        from_message_id=_creating_message_id(ctx.context.conversation_history),
         created_timestamp=created,
         updated_timestamp=created,
     )

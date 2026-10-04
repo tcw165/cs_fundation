@@ -53,6 +53,7 @@ def test_deeplink_request_reads_the_case():
         case=Case(
             case_id=CASE_ID,
             conversation_id="1",
+            from_message_id="m_1",
             created_timestamp=datetime(2026, 10, 1, tzinfo=timezone.utc),
             updated_timestamp=datetime(2026, 10, 1, tzinfo=timezone.utc),
         ),

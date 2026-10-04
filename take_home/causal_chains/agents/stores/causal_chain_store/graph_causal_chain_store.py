@@ -117,6 +117,7 @@ class GraphCausalChainStore(CausalChainStore):
         self._graph_db.merge_case(
             case.case_id,
             case.conversation_id,
+            case.from_message_id,
             case.created_timestamp.isoformat(),
             case.updated_timestamp.isoformat(),
         )
@@ -129,10 +130,17 @@ class GraphCausalChainStore(CausalChainStore):
         found = self._graph_db.get_case(case_id)
         if found is None:
             raise ValueError("case is missing")
-        found_id, conversation_id, created_timestamp, updated_timestamp = found
+        (
+            found_id,
+            conversation_id,
+            from_message_id,
+            created_timestamp,
+            updated_timestamp,
+        ) = found
         return Case(
             case_id=found_id,
             conversation_id=conversation_id,
+            from_message_id=from_message_id,
             created_timestamp=datetime.fromisoformat(created_timestamp),
             updated_timestamp=datetime.fromisoformat(updated_timestamp),
         )

@@ -17,6 +17,7 @@ def _case() -> Case:
     return Case(
         case_id=CASE_ID,
         conversation_id="1",
+        from_message_id="m_1",
         created_timestamp=CREATED,
         updated_timestamp=CREATED,
     )
@@ -31,6 +32,7 @@ def test_now_scout_request_keeps_the_case_and_future():
     assert request.model_dump(mode="json")["case"] == {
         "case_id": str(CASE_ID),
         "conversation_id": "1",
+        "from_message_id": "m_1",
         "created_timestamp": "2026-10-01T00:00:00Z",
         "updated_timestamp": "2026-10-01T00:00:00Z",
     }
@@ -47,6 +49,7 @@ def test_now_scout_request_rejects_the_nil_case():
             case={
                 "case_id": "00000000-0000-0000-0000-000000000000",
                 "conversation_id": "1",
+                "from_message_id": "m_1",
                 "created_timestamp": "2026-10-01T00:00:00Z",
                 "updated_timestamp": "2026-10-01T00:00:00Z",
             },
