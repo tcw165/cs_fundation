@@ -78,6 +78,15 @@ def test_causal_chain_prompt_and_tools():
     assert "now-scout" in examples
     assert "path-builder" in examples
     assert (
+        "step 1:\n"
+        "- Call the now-scout agent with that case and the future, so the start is saved on that case.\n\n"
+        "step 2:\n"
+        "- Emit one preamble: you are about to save the future and load the open line together. "
+        "This is not the answer.\n"
+        "- In this same turn, do both, and do not wait for one before the other.\n"
+    ) in examples
+    assert "The next turn starts only after both have come back." in examples
+    assert (
         "step 3:\n"
         "- Emit a preamble: you are about to take one step from the current situation toward the future. "
         "This is not the answer.\n\n"
