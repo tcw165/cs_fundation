@@ -50,6 +50,7 @@ def test_chief_of_staff_hands_off_the_latest_future():
     assert "Do not hand the turn off." in prompt
     assert [tool.name for tool in chief_of_staff.tools] == [
         "search_conversation_messages",
+        "get_oldest_conversation_message",
     ]
     assert len(chief_of_staff.handoffs) == 1
     causal_handoff = chief_of_staff.handoffs[0]

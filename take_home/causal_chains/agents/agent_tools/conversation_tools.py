@@ -37,4 +37,16 @@ def build_conversation_tools(
             until=now - timedelta(minutes=until_minutes_ago),
         )
 
-    return (search_conversation_messages,)
+    @function_tool
+    async def get_oldest_conversation_message() -> list[Message]:
+        """The oldest stored message, including when it was created.
+
+        An empty search can be older than this message. Use that to explain the gap.
+        """
+        page = await messaging_store.list_messages(
+            conversation_id,
+            limit=1,
+        )
+        return list(page.messages)
+
+    return (search_conversation_messages, get_oldest_conversation_message)
