@@ -23,7 +23,7 @@ def test_run_context_round_trip():
         "run_config": {
             "include_traces": False,
             "causal_chain_max_steps": 50,
-            "agent_timeout_s": 300,
+            "agent_timeout_s": 600,
         },
     }
     assert context.clock is clock
