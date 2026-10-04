@@ -1,5 +1,13 @@
+import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 
+from agents.run import Runner
+from agents.tool_context import ToolContext
+
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    _decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agents.causal_chain.causal_chain import causal_chain
 from take_home.causal_chains.agents.agents.deeplinks_finder.deeplinks_finder import (
     deeplinks_finder,
@@ -143,6 +151,37 @@ def test_causal_chain_prompt_and_tools():
     finder = next(tool for tool in causal_chain.tools if tool.name == "deeplinks_finder")
     assert finder.params_json_schema["properties"].keys() == {"case", "destination_desc"}
     assert finder.description == _finder_sentences(deeplinks_finder.instructions)
+
+
+def test_now_scout_run_carries_the_current_time_filter(monkeypatch):
+    seen: list[object] = []
+
+    async def run(*args, **kwargs):
+        del args
+        seen.append(kwargs.get("run_config"))
+        return SimpleNamespace(final_output="present", interruptions=None, new_items=[])
+
+    monkeypatch.setattr(Runner, "run", run)
+    tool = next(item for item in causal_chain.tools if item.name == "now_scout")
+    payload = (
+        '{"case":{'
+        '"case_id":"11111111-1111-4111-8111-111111111111",'
+        '"conversation_id":"1",'
+        '"created_timestamp":"2026-09-29T05:16:00+00:00",'
+        '"updated_timestamp":"2026-09-29T05:16:00+00:00"'
+        '},"future":"open"}'
+    )
+    context = ToolContext(
+        context=None,
+        tool_name="now_scout",
+        tool_call_id="call_1",
+        tool_arguments=payload,
+    )
+
+    result = asyncio.run(tool.on_invoke_tool(context, payload))
+
+    assert result == "present"
+    assert seen[0].call_model_input_filter is _decorate_tail_messages
 
 
 def _finder_sentences(prompt: str) -> str:

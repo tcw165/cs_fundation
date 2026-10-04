@@ -11,6 +11,7 @@ py_library(
     imports = ["../../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/agent_run_config",
         "//take_home/causal_chains/agents/models",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
@@ -26,6 +27,7 @@ pytest_test(
     imports = ["../../../../.."],
     deps = [
         ":input_guardrail",
+        "//take_home/causal_chains/agents/agent_run_config",
         "//take_home/causal_chains/agents/models/causal_chains",
         requirement("openai-agents"),
     ],

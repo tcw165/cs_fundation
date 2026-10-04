@@ -4,6 +4,9 @@ from pathlib import Path
 from agents import RunContextWrapper
 
 import take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent as input_guardrail_module
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    _decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agents.input_guardrail.input_guardrail_agent import (
     blocked_input_message,
     input_guardrail,
@@ -52,8 +55,8 @@ def _run_guardrail(monkeypatch, decision: InputGuardrailDecision):
 
     class FakeRunner:
         @staticmethod
-        async def run(agent, agent_input, context=None):
-            seen.append((agent, agent_input, context))
+        async def run(agent, agent_input, context=None, run_config=None):
+            seen.append((agent, agent_input, context, run_config))
             return FakeResult()
 
     monkeypatch.setattr(input_guardrail_module, "Runner", FakeRunner)
@@ -66,9 +69,11 @@ def _run_guardrail(monkeypatch, decision: InputGuardrailDecision):
         )
 
     result = asyncio.run(screen())
-    assert seen == [
-        (input_guardrail_agent, "The strait opens next week.", None),
-    ]
+    agent, agent_input, context, run_config = seen[0]
+    assert agent is input_guardrail_agent
+    assert agent_input == "The strait opens next week."
+    assert context is None
+    assert run_config.call_model_input_filter is _decorate_tail_messages
     return result
 
 

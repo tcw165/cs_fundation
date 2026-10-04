@@ -3,6 +3,9 @@ from pathlib import Path
 from agents import Agent, ModelSettings, WebSearchTool
 from openai.types.shared.reasoning import Reasoning
 
+from take_home.causal_chains.agents.agent_run_config.agent_run_config import (
+    decorate_tail_messages,
+)
 from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_situation,
     link_situations,
@@ -37,6 +40,7 @@ path_builder = Agent[RunContext](
                 "from the current situation to the next situation or to the terminal. "
                 "Name the input variables on that link."
             ),
+            run_config=decorate_tail_messages(),
         ),
         link_situations,
     ],
