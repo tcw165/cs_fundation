@@ -8,6 +8,7 @@ py_library(
     imports = ["../../../.."],
     visibility = ["//visibility:public"],
     deps = [
+        "//take_home/causal_chains/agents/agent_run_config",
         "//take_home/causal_chains/agents/agent_runner/protocol",
         "//take_home/causal_chains/agents/clients/memcache/protocol",
         "//take_home/causal_chains/agents/agents/chief_of_staff",  # pragma: allowlist secret
@@ -28,7 +29,6 @@ pytest_test(
     deps = [
         ":agent_runner",
         "//take_home/causal_chains/agents/clients/memcache",
-        "//take_home/causal_chains/agents/agents/causal_chain",
         "//take_home/causal_chains/agents/agents/chief_of_staff",  # pragma: allowlist secret
         "//take_home/causal_chains/agents/agents/input_guardrail",
         "//take_home/causal_chains/agents/models",
