@@ -36,6 +36,7 @@ from take_home.causal_chains.agents.stores.messaging_store.protocol.messaging_st
     MessagingStore,
 )
 from take_home.causal_chains.agents.stores.turn_store.protocol.protocol import TurnStore
+from take_home.causal_chains.agents.observability.logging import logger
 from take_home.causal_chains.time.protocol.protocol import Clock
 
 _TURN_POLL_INTERVAL_S = 0.3
@@ -132,6 +133,9 @@ class ChatService:
                     anyio.ClosedResourceError,
                 ):
                     await send.send(notice)
+                logger().warning(
+                    f"turn timed out after {run_config.agent_timeout_s} seconds",
+                )
                 await _put_turn_status_timeout(self._turn_store, turn)
             finally:
                 await send.aclose()
