@@ -17,18 +17,55 @@ class ResizeObserverStub {
 globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
 
 import type { ChainPort } from "../chain/chain_port";
-import type { ChatPort, ConversationMessagesResponse, Message } from "../chat/chat_port";
+import type {
+  ChatPort,
+  ConversationMessagesResponse,
+  Message,
+  PeripheralInteraction,
+} from "../chat/chat_port";
 
-function page(messages: Message[]): ConversationMessagesResponse {
+function page(
+  messages: Message[],
+  peripheral_interactions: PeripheralInteraction[] = [],
+): ConversationMessagesResponse {
   return {
     conversation_id: "1",
     messages,
+    peripheral_interactions,
     user_interaction_state: {
       text_input_state: "ENABLED",
       text_input_placeholder: "Ask about a chain",
       thinking_state: null,
     },
     turn: null,
+  };
+}
+
+function snapshot_gate() {
+  let waiting: ((snapshot: ConversationMessagesResponse) => void) | null = null;
+  const queued: ConversationMessagesResponse[] = [];
+  return {
+    push(snapshot: ConversationMessagesResponse) {
+      if (waiting !== null) {
+        const resolve = waiting;
+        waiting = null;
+        resolve(snapshot);
+        return;
+      }
+      queued.push(snapshot);
+    },
+    async *snapshots(): AsyncGenerator<ConversationMessagesResponse> {
+      while (true) {
+        const ready = queued.shift();
+        if (ready !== undefined) {
+          yield ready;
+          continue;
+        }
+        yield await new Promise<ConversationMessagesResponse>((resolve) => {
+          waiting = resolve;
+        });
+      }
+    },
   };
 }
 import type { RevealTiming } from "../chat/reveal_timing";
@@ -157,6 +194,125 @@ describe("app chat", () => {
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
     expect(host.querySelector(".node-title")?.textContent).toBe("Strait shut");
     expect(host.textContent).toContain("strait shut");
+    act(() => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
+  it("opens the side panel on the newest case and keeps that card open", async () => {
+    const case_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const gate = snapshot_gate();
+    let chain_loads = 0;
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+      post_message: async () => ({
+        turn: {
+          turn_id: "t_1",
+          conversation_id: "1",
+          status: "queued",
+          from_message: "m_user",
+        },
+        received_message: {
+          kind: "markdown",
+          message_id: "m_user",
+          role: "user",
+          text: "hello",
+          created_timestamp: "2026-09-30T00:00:00+00:00",
+        },
+      }),
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: () => gate.snapshots(),
+    };
+    const chain_port: ChainPort = {
+      get_chains: async () => {
+        chain_loads += 1;
+        return [
+          {
+            case_id,
+            situations: [
+              {
+                situation_id: now_id,
+                version: 1,
+                created_timestamp: "2026-10-01T00:00:00+00:00",
+                kind: "start",
+                title: "Strait shut",
+                desc: "strait shut",
+                remained_drivers: [],
+              },
+            ],
+            links: [],
+          },
+        ];
+      },
+    };
+    const { host, root } = render(
+      <App
+        chain_port={chain_port}
+        chat_port={chat_port}
+        conversation_id="1"
+        timing={quick_timing}
+      />,
+    );
+    const input = host.querySelector("textarea");
+    await act(async () => {
+      if (input instanceof HTMLTextAreaElement) {
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          "value",
+        )?.set;
+        setter?.call(input, "open the strait");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    await act(async () => {
+      host
+        .querySelector("form")
+        ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    const linked = page(
+      [],
+      [{ kind: "linked_conversation", conversation_id: "2" }],
+    );
+    const newest = page(
+      [],
+      [
+        {
+          kind: "causal_chain_case",
+          case_id,
+          from_message_id: "m_user",
+        },
+      ],
+    );
+    await act(async () => {
+      gate.push(linked);
+      await Promise.resolve();
+    });
+    expect(host.querySelector(".chain-canvas")).toBeNull();
+    await act(async () => {
+      gate.push(newest);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(host.querySelector(".chain-canvas")).not.toBeNull();
+    const card = host.querySelector(".node-card");
+    await act(async () => {
+      card?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(host.querySelector(".node-card.is-open")).not.toBeNull();
+    const loads_while_open = chain_loads;
+    await act(async () => {
+      gate.push(newest);
+      await Promise.resolve();
+    });
+    expect(host.querySelector(".node-card.is-open")).not.toBeNull();
+    expect(chain_loads).toBe(loads_while_open);
     act(() => {
       root.unmount();
     });
