@@ -6,6 +6,7 @@ py_library(
     name = "models",
     srcs = [
         "conversation_messages_response.py",
+        "peripheral_interaction.py",
         "conversation_response.py",
         "post_message_response.py",
         "text_input_state.py",

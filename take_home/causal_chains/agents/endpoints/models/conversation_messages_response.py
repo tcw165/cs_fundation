@@ -1,5 +1,8 @@
 from pydantic import BaseModel, Field
 
+from take_home.causal_chains.agents.endpoints.models.peripheral_interaction import (
+    PeripheralInteraction,
+)
 from take_home.causal_chains.agents.endpoints.models.turn_descriptor import TurnDescriptor
 from take_home.causal_chains.agents.endpoints.models.user_interaction_state import (
     UserInteractionState,
@@ -17,4 +20,8 @@ class ConversationMessagesResponse(BaseModel):
     turn: TurnDescriptor | None = Field(
         default=None,
         description="Turns processing and queued. Absent when none are in flight.",
+    )
+    peripheral_interactions: list[PeripheralInteraction] = Field(
+        default_factory=list,
+        description="Idempotent objects beside the chat. The same id replaces the same slot.",
     )
