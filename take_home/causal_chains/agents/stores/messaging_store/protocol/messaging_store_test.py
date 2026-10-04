@@ -45,6 +45,12 @@ class _Both:
     ) -> list[Conversation]:
         return []
 
+    async def get_conversation(
+        self,
+        conversation_id: str,
+    ) -> Conversation | None:
+        return None
+
     async def search_messages(
         self,
         conversation_id: str,
