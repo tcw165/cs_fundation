@@ -19,10 +19,18 @@ def test_situation_fields():
     situation = Situation(
         situation_id=NOW_ID,
         version=1,
+        title="Strait shut.",
         desc="Strait shut.",
     )
     assert situation.version == 1
+    assert situation.title == "Strait shut."
     assert situation.desc == "Strait shut."
+    properties = Situation.model_json_schema()["properties"]
+    assert properties["title"]["description"] == "A short and readable description within 100 words."
+    assert (
+        properties["desc"]["description"]
+        == "Detailed statements in this situation (much longer than title)."
+    )
 
 
 def test_situation_json_is_not_a_terminal_situation():
@@ -61,6 +69,7 @@ def test_start_situation_carries_the_factors():
     start = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="Strait shut.",
         desc="Strait shut.",
         potential_factors=["blockade", "rejected deal"],
     )
@@ -72,6 +81,7 @@ def test_terminal_situation_carries_the_ask():
     terminal = TerminalSituation(
         situation_id=DEAL_ID,
         version=1,
+        title="Republicans win the House while Democrats take the Senate.",
         desc="Republicans win the House while Democrats take the Senate.",
         original_ask="Republicans win the House but Democrats take the senate during the Midterm.",
     )
@@ -87,6 +97,7 @@ def test_path_return_is_a_list_or_one_terminal():
             {
                 "situation_id": str(NOW_ID),
                 "version": 1,
+                "title": "now",
                 "desc": "now",
             }
         ]
@@ -98,6 +109,7 @@ def test_path_return_is_a_list_or_one_terminal():
         {
             "situation_id": str(DEAL_ID),
             "version": 1,
+            "title": "the end",
             "desc": "the end",
             "original_ask": "the ask",
         }
@@ -110,6 +122,7 @@ def test_path_return_is_a_list_or_one_terminal():
                 {
                     "situation_id": str(DEAL_ID),
                     "version": 1,
+                    "title": "the end",
                     "desc": "the end",
                     "original_ask": "the ask",
                 }
@@ -122,12 +135,14 @@ def test_second_start_rejected():
         StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         ),
         StartSituation(
             situation_id=DEAL_ID,
             version=1,
+            title="deal",
             desc="deal",
             potential_factors=["talks"],
         ),

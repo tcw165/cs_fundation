@@ -25,6 +25,7 @@ def _start() -> StartSituation:
     return StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="Strait shut.",
         desc="Strait shut.",
         potential_factors=["blockade"],
     )
@@ -34,6 +35,7 @@ def _mid(situation_id: UUID = DEAL_ID, desc: str = "Talks open.") -> Situation:
     return Situation(
         situation_id=situation_id,
         version=1,
+        title=desc,
         desc=desc,
     )
 
@@ -88,6 +90,7 @@ def test_chain_so_far_rejects_a_start_or_a_terminal_hop():
     terminal = TerminalSituation(
         situation_id=END_ID,
         version=1,
+        title="The strait opens.",
         desc="The strait opens.",
         original_ask="the strait opens",
     )

@@ -131,16 +131,17 @@ def test_get_case_returns_none_when_missing():
 def test_merge_situation_writes_node_fields():
     driver = _Driver([])
     client = Neo4jClient(driver)
-    client.merge_situation(NOW_ID, 1, "now", CLEAR_ID, "start", ["blockade"], "")
+    client.merge_situation(NOW_ID, 1, "Strait shut", "now", CLEAR_ID, "start", ["blockade"], "")
     query, params = driver.calls[0]
     assert "MERGE (s:Situation {situation_id: $situation_id, version: $version})" in query
     assert "ON CREATE SET s.desc = $desc" in query
     assert "s.kind = $kind" in query
-    assert "\nSET s." not in query
+    assert "SET s.title = $title" in query
     assert "MERGE (s)-[:BELONGS_TO]->(c)" in query
     assert params == {
         "situation_id": str(NOW_ID),
         "version": 1,
+        "title": "Strait shut",
         "desc": "now",
         "case_id": str(CLEAR_ID),
         "kind": "start",
@@ -183,6 +184,7 @@ def test_list_situations_reads_versioned_rows():
                 {
                     "situation_id": str(NOW_ID),
                     "version": 1,
+                    "title": "Strait shut",
                     "desc": "now",
                     "kind": "start",
                     "potential_factors": ["blockade"],
@@ -193,7 +195,7 @@ def test_list_situations_reads_versioned_rows():
         )
     )
     assert client.list_situations() == [
-        (NOW_ID, 1, "now", "start", ["blockade"], "", CLEAR_ID),
+        (NOW_ID, 1, "Strait shut", "now", "start", ["blockade"], "", CLEAR_ID),
     ]
     assert "MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)" in client._driver.calls[0][0]
 
@@ -205,12 +207,15 @@ def test_list_leaf_situations_walks_from_the_start():
                 {
                     "situation_id": str(RESUMES_ID),
                     "version": 1,
+                    "title": "leaf",
                     "desc": "leaf",
                 }
             ]
         )
     )
-    assert client.list_leaf_situations(CLEAR_ID, NOW_ID, 1) == [(RESUMES_ID, 1, "leaf")]
+    assert client.list_leaf_situations(CLEAR_ID, NOW_ID, 1) == [
+        (RESUMES_ID, 1, "leaf", "leaf")
+    ]
     query, params = client._driver.calls[0]
     assert "kind = 'situation'" in query
     assert "NOT (leaf)-[:LEADS_TO]->()" in query
@@ -244,6 +249,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
                 {
                     "start_situation_id": str(NOW_ID),
                     "start_version": 1,
+                    "start_title": "Strait shut",
                     "start_desc": "now",
                     "potential_factors": ["blockade"],
                     "hops": [],
@@ -253,7 +259,7 @@ def test_lookup_chain_so_far_reads_the_open_line():
         )
     )
     assert client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1) == (
-        (NOW_ID, 1, "now", ["blockade"]),
+        (NOW_ID, 1, "Strait shut", "now", ["blockade"]),
         [],
         [],
     )
@@ -277,12 +283,14 @@ def test_lookup_chain_so_far_reads_one_hop():
                 {
                     "start_situation_id": str(NOW_ID),
                     "start_version": 1,
+                    "start_title": "Strait shut",
                     "start_desc": "now",
                     "potential_factors": ["blockade"],
                     "hops": [
                         {
                             "situation_id": str(RESUMES_ID),
                             "version": 1,
+                            "title": "Talks open",
                             "desc": "talks open",
                         }
                     ],
@@ -306,7 +314,7 @@ def test_lookup_chain_so_far_reads_one_hop():
     )
     start_row, hops, links = client.lookup_chain_so_far(CLEAR_ID, NOW_ID, 1)
     assert start_row[0] == NOW_ID
-    assert hops == [(RESUMES_ID, 1, "talks open")]
+    assert hops == [(RESUMES_ID, 1, "Talks open", "talks open")]
     assert links[0][0] == NOW_ID
     assert links[0][2] == RESUMES_ID
     assert links[0][4] == Decimal("0.5000")

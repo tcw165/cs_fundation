@@ -40,23 +40,25 @@ def _case(case_id: UUID) -> Case:
 class _FakeGraphDb:
     def __init__(self) -> None:
         self.case_calls: list[tuple[UUID, str, str, str]] = []
-        self.situation_calls: list[tuple[UUID, int, str, UUID, str, list[str], str]] = []
+        self.situation_calls: list[
+            tuple[UUID, int, str, str, UUID, str, list[str], str]
+        ] = []
         self.link_calls: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
         self._situations: dict[
             tuple[UUID, int],
-            tuple[UUID, int, str, str, list[str], str, UUID],
+            tuple[UUID, int, str, str, str, list[str], str, UUID],
         ] = {}
         self._links: list[
             tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]
         ] = []
         self._cases: dict[UUID, tuple[str, str, str]] = {}
-        self.leaf_rows: list[tuple[UUID, int, str]] = []
+        self.leaf_rows: list[tuple[UUID, int, str, str]] = []
         self.reaches = False
         self.chain_row: tuple[
-            tuple[UUID, int, str, list[str]],
-            list[tuple[UUID, int, str]],
+            tuple[UUID, int, str, str, list[str]],
+            list[tuple[UUID, int, str, str]],
             list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
         ] | None = None
 
@@ -84,7 +86,7 @@ class _FakeGraphDb:
         case_id: UUID,
         start_situation_id: UUID,
         start_version: int,
-    ) -> list[tuple[UUID, int, str]]:
+    ) -> list[tuple[UUID, int, str, str]]:
         return list(self.leaf_rows)
 
     def reaches_terminal(
@@ -103,8 +105,8 @@ class _FakeGraphDb:
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, list[str]],
-        list[tuple[UUID, int, str]],
+        tuple[UUID, int, str, str, list[str]],
+        list[tuple[UUID, int, str, str]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
     ] | None:
         return self.chain_row
@@ -113,6 +115,7 @@ class _FakeGraphDb:
         self,
         situation_id: UUID,
         version: int,
+        title: str,
         desc: str,
         case_id: UUID,
         kind: str,
@@ -120,11 +123,21 @@ class _FakeGraphDb:
         original_ask: str,
     ) -> None:
         self.situation_calls.append(
-            (situation_id, version, desc, case_id, kind, potential_factors, original_ask)
+            (
+                situation_id,
+                version,
+                title,
+                desc,
+                case_id,
+                kind,
+                potential_factors,
+                original_ask,
+            )
         )
         self._situations[(situation_id, version)] = (
             situation_id,
             version,
+            title,
             desc,
             kind,
             potential_factors,
@@ -154,7 +167,7 @@ class _FakeGraphDb:
 
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
         return list(self._situations.values())
 
     def list_leads_to(
@@ -175,10 +188,11 @@ def test_add_situation_and_link_situations_record_calls():
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         await store.add_case(case)
         await store.add_situation(case, now)
         await store.link_situations(
@@ -201,9 +215,9 @@ def test_add_situation_and_link_situations_record_calls():
         (CASE_ID, "1", CREATED.isoformat(), CREATED.isoformat())
     ]
     assert graph_db.situation_calls == [
-        (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
-        (NOW_ID, 1, "now", CASE_ID, "start", [], ""),
-        (DEAL_ID, 1, "deal", CASE_ID, "situation", [], ""),
+        (NOW_ID, 1, "now", "now", CASE_ID, "start", [], ""),
+        (NOW_ID, 1, "now", "now", CASE_ID, "start", [], ""),
+        (DEAL_ID, 1, "deal", "deal", CASE_ID, "situation", [], ""),
     ]
     assert graph_db.link_calls == [
         (
@@ -237,20 +251,23 @@ def test_get_chains_returns_one_chain_per_root():
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=[],
         )
         other = StartSituation(
             situation_id=OTHER_ROOT_ID,
             version=1,
+            title="other",
             desc="other",
             potential_factors=[],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
-        leaf = Situation(situation_id=LEAF_ID, version=1, desc="leaf")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
+        leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
         orphan = Situation(
             situation_id=UUID("55555555-5555-4555-8555-555555555555"),
             version=1,
+            title="orphan",
             desc="orphan",
         )
         case = _case(CASE_ID)
@@ -267,17 +284,19 @@ def test_get_chains_returns_one_chain_per_root():
     now = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="now",
         desc="now",
         potential_factors=[],
     )
     other = StartSituation(
         situation_id=OTHER_ROOT_ID,
         version=1,
+        title="other",
         desc="other",
         potential_factors=[],
     )
-    deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
-    leaf = Situation(situation_id=LEAF_ID, version=1, desc="leaf")
+    deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
+    leaf = Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")
     assert chains == [
         CausalChain(
             situations=[now, deal, leaf],
@@ -301,16 +320,18 @@ def test_get_chains_keeps_each_case_separate():
         now = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         )
         elsewhere = StartSituation(
             situation_id=OTHER_ROOT_ID,
             version=1,
+            title="elsewhere",
             desc="elsewhere",
             potential_factors=["talks"],
         )
-        deal = Situation(situation_id=DEAL_ID, version=1, desc="deal")
+        deal = Situation(situation_id=DEAL_ID, version=1, title="deal", desc="deal")
         await store.add_situation(case, now)
         await store.add_situation(other_case, elsewhere)
         await store.link_situations(case, now, deal, _link(now, deal))
@@ -333,11 +354,12 @@ def test_get_case_and_leaf_lookup():
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         )
         await store.add_case(case)
-        graph_db.leaf_rows = [(LEAF_ID, 1, "leaf")]
+        graph_db.leaf_rows = [(LEAF_ID, 1, "leaf", "leaf")]
         found = await store.get_case(CASE_ID)
         leaves = await store.lookup_leaf_situations(case, start)
         missing = None
@@ -349,7 +371,7 @@ def test_get_case_and_leaf_lookup():
 
     found, leaves, missing = asyncio.run(exercise())
     assert found == _case(CASE_ID)
-    assert leaves == [Situation(situation_id=LEAF_ID, version=1, desc="leaf")]
+    assert leaves == [Situation(situation_id=LEAF_ID, version=1, title="leaf", desc="leaf")]
     assert missing == "case is missing"
 
 
@@ -361,12 +383,14 @@ def test_reaches_terminal_reads_the_graph():
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         )
         terminal = TerminalSituation(
             situation_id=DEAL_ID,
             version=1,
+            title="the end",
             desc="the end",
             original_ask="the ask",
         )
@@ -384,18 +408,19 @@ def test_lookup_chain_so_far_reads_the_open_line():
         start = StartSituation(
             situation_id=NOW_ID,
             version=1,
+            title="now",
             desc="now",
             potential_factors=["blockade"],
         )
         graph_db.chain_row = (
-            (NOW_ID, 1, "now", ["blockade"]),
+            (NOW_ID, 1, "now", "now", ["blockade"]),
             [],
             [],
         )
         empty = await store.lookup_chain_so_far(case, start)
         graph_db.chain_row = (
-            (NOW_ID, 1, "now", ["blockade"]),
-            [(DEAL_ID, 1, "talks open")],
+            (NOW_ID, 1, "now", "now", ["blockade"]),
+            [(DEAL_ID, 1, "talks", "talks open")],
             [
                 (
                     NOW_ID,

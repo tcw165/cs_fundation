@@ -52,6 +52,7 @@ ON CREATE SET s.desc = $desc,
     s.kind = $kind,
     s.potential_factors = $potential_factors,
     s.original_ask = $original_ask
+SET s.title = $title
 REMOVE s.is_root
 MERGE (s)-[:BELONGS_TO]->(c)
 """
@@ -77,6 +78,7 @@ WHERE current.kind <> 'terminal'
   AND EXISTS {{ MATCH (current)-[:BELONGS_TO]->(:Case {{case_id: $case_id}}) }}
 RETURN start.situation_id AS start_situation_id,
     start.version AS start_version,
+    start.title AS start_title,
     start.desc AS start_desc,
     start.potential_factors AS potential_factors,
     CASE
@@ -84,6 +86,7 @@ RETURN start.situation_id AS start_situation_id,
         ELSE [n IN nodes(path)[1..] | {{
             situation_id: n.situation_id,
             version: n.version,
+            title: n.title,
             desc: n.desc
         }}]
     END AS hops,
@@ -108,6 +111,7 @@ WHERE leaf.kind = 'situation'
   AND EXISTS { MATCH (leaf)-[:BELONGS_TO]->(:Case {case_id: $case_id}) }
 RETURN leaf.situation_id AS situation_id,
     leaf.version AS version,
+    leaf.title AS title,
     leaf.desc AS desc
 """
 
@@ -127,6 +131,7 @@ LIST_SITUATIONS = """
 MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)
 RETURN s.situation_id AS situation_id,
     s.version AS version,
+    s.title AS title,
     s.desc AS desc,
     s.kind AS kind,
     s.potential_factors AS potential_factors,
@@ -167,16 +172,17 @@ def _strings(value: object) -> list[str]:
 
 def _hop_rows(
     value: object,
-) -> list[tuple[UUID, int, str]]:
+) -> list[tuple[UUID, int, str, str]]:
     if not isinstance(value, list):
         return []
-    rows: list[tuple[UUID, int, str]] = []
+    rows: list[tuple[UUID, int, str, str]] = []
     for item in value:
         if isinstance(item, dict):
             rows.append(
                 (
                     UUID(str(item["situation_id"])),
                     int(item["version"]),
+                    str(item["title"]),
                     str(item["desc"]),
                 )
             )
@@ -303,6 +309,7 @@ class Neo4jClient(GraphDb):
         self,
         situation_id: UUID,
         version: int,
+        title: str,
         desc: str,
         case_id: UUID,
         kind: str,
@@ -314,6 +321,7 @@ class Neo4jClient(GraphDb):
                 MERGE_SITUATION,
                 situation_id=str(situation_id),
                 version=version,
+                title=title,
                 desc=desc,
                 case_id=str(case_id),
                 kind=kind,
@@ -350,16 +358,17 @@ class Neo4jClient(GraphDb):
     @override
     def list_situations(
         self,
-    ) -> list[tuple[UUID, int, str, str, list[str], str, UUID]]:
+    ) -> list[tuple[UUID, int, str, str, str, list[str], str, UUID]]:
         with self._driver.session() as session:
             records = list(session.run(LIST_SITUATIONS))
-        rows: list[tuple[UUID, int, str, str, list[str], str, UUID]] = []
+        rows: list[tuple[UUID, int, str, str, str, list[str], str, UUID]] = []
         for record in records:
             original_ask = record["original_ask"]
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
+                    str(record["title"]),
                     str(record["desc"]),
                     str(record["kind"]),
                     _strings(record["potential_factors"]),
@@ -375,7 +384,7 @@ class Neo4jClient(GraphDb):
         case_id: UUID,
         start_situation_id: UUID,
         start_version: int,
-    ) -> list[tuple[UUID, int, str]]:
+    ) -> list[tuple[UUID, int, str, str]]:
         with self._driver.session() as session:
             records = list(
                 session.run(
@@ -385,12 +394,13 @@ class Neo4jClient(GraphDb):
                     start_version=start_version,
                 )
             )
-        rows: list[tuple[UUID, int, str]] = []
+        rows: list[tuple[UUID, int, str, str]] = []
         for record in records:
             rows.append(
                 (
                     UUID(str(record["situation_id"])),
                     int(record["version"]),
+                    str(record["title"]),
                     str(record["desc"]),
                 )
             )
@@ -425,8 +435,8 @@ class Neo4jClient(GraphDb):
         start_situation_id: UUID,
         start_version: int,
     ) -> tuple[
-        tuple[UUID, int, str, list[str]],
-        list[tuple[UUID, int, str]],
+        tuple[UUID, int, str, str, list[str]],
+        list[tuple[UUID, int, str, str]],
         list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, Decimal]]]],
     ] | None:
         with self._driver.session() as session:
@@ -442,6 +452,7 @@ class Neo4jClient(GraphDb):
             (
                 UUID(str(record["start_situation_id"])),
                 int(record["start_version"]),
+                str(record["start_title"]),
                 str(record["start_desc"]),
                 _strings(record["potential_factors"]),
             ),

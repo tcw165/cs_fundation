@@ -29,6 +29,7 @@ def test_get_causal_chains_returns_every_root_chain():
     root = StartSituation(
         situation_id=NOW_ID,
         version=1,
+        title="now",
         desc="now",
         potential_factors=[],
     )

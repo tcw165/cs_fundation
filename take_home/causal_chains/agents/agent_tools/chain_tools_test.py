@@ -141,6 +141,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
         context,
         {
             "case": case_payload,
+            "title": "Strait shut",
             "desc": "strait shut",
             "potential_factors": ["blockade"],
         },
@@ -148,13 +149,14 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     deal = _invoke(
         add_situation,
         context,
-        {"case": case_payload, "desc": "a deal this week"},
+        {"case": case_payload, "title": "A deal", "desc": "a deal this week"},
     )
     terminal = _invoke(
         add_terminal_situation,
         context,
         {
             "case": case_payload,
+            "title": "Ships clear",
             "desc": "ships clear",
             "original_ask": "the strait opens",
         },
@@ -166,13 +168,13 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
             "case": case_payload,
             "from_situation": now.model_dump(
                 mode="json",
-                include={"situation_id", "version", "desc"},
+                include={"situation_id", "version", "title", "desc"},
             ),
             "to_situation": deal.model_dump(mode="json"),
             "inputs": [{"name": "deal_odds", "value": "0.08"}],
         },
     )
-    leaf = Situation(situation_id=UUID(int=1), version=1, desc="leaf")
+    leaf = Situation(situation_id=UUID(int=1), version=1, title="leaf", desc="leaf")
     store.leaves = [leaf]
     leaves = _invoke(
         lookup_leaf_situations,
@@ -191,6 +193,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     linked_now = Situation(
         situation_id=now.situation_id,
         version=now.version,
+        title=now.title,
         desc=now.desc,
     )
     assert store.cases == [case]
@@ -220,7 +223,7 @@ def test_tools_write_a_case_a_start_a_terminal_and_a_link():
     )
     assert isinstance(empty_line, ChainSoFar)
     assert empty_line.hops == []
-    mid = Situation(situation_id=deal.situation_id, version=deal.version, desc=deal.desc)
+    mid = Situation(situation_id=deal.situation_id, version=deal.version, title=deal.title, desc=deal.desc)
     store.line = ChainSoFar(
         start=now,
         hops=[LinkedHop(situation=mid, link=link)],
