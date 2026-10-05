@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 
-import type { ReactElement } from "react";
+import { useEffect, type ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 
+import { prepend_fork_comment } from "./composer_comment";
 import type {
   ChatPort,
   ConversationMessagesResponse,
@@ -87,6 +88,14 @@ function Harness({ chat_port }: { chat_port: ChatPort }) {
   return <Thread session={session} on_open_link={() => undefined} />;
 }
 
+function Seeded({ chat_port, text }: { chat_port: ChatPort; text: string }) {
+  const session = use_chat_session(chat_port, "1", fast_timing);
+  useEffect(() => {
+    session.set_draft(text);
+  }, [session.set_draft, text]);
+  return <Thread session={session} on_open_link={() => undefined} />;
+}
+
 async function send(host: HTMLElement, text: string) {
   const input = host.querySelector("textarea");
   await act(async () => {
@@ -108,6 +117,77 @@ async function send(host: HTMLElement, text: string) {
 }
 
 describe("thread composer", () => {
+  it("shows a leading comment as a chip and deletes it with one backspace", async () => {
+    const situation_id = "e5e7887d-e05d-4743-91f2-8930e106731c";
+    let posted = "";
+    const chat_port: ChatPort = {
+      stop_turn: async ({ turn_id }) => ({
+        turn_id,
+        conversation_id: "1",
+        status: "cancelled",
+        from_message: "m_user",
+      }),
+      post_message: async ({ text }) => {
+        posted = text;
+        return {
+          turn: {
+            turn_id: "t_1",
+            conversation_id: "1",
+            status: "queued",
+            from_message: "m_user",
+          },
+          received_message: {
+            kind: "markdown",
+            message_id: "m_user",
+            role: "user",
+            text,
+            created_timestamp: "2026-09-30T00:00:00+00:00",
+          },
+        };
+      },
+      list_messages: async () => ({ messages: [], next_cursor: null }),
+      subscribe_turn: async function* () {},
+    };
+    const { host, root } = render(
+      <Seeded chat_port={chat_port} text={prepend_fork_comment("keep going", situation_id)} />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.querySelector(".composer-chip")?.textContent).toBe(
+      `Fork the causal chain from situation ID: ${situation_id}`,
+    );
+    expect(host.querySelector("textarea")?.value).toBe("keep going");
+    const input = host.querySelector("textarea");
+    await act(async () => {
+      if (input instanceof HTMLTextAreaElement) {
+        input.focus();
+        input.setSelectionRange(0, 0);
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+      }
+    });
+    expect(host.querySelector(".composer-chip")).toBeNull();
+    expect(host.querySelector("textarea")?.value).toBe("keep going");
+    await act(async () => {
+      root.unmount();
+    });
+    const again = render(
+      <Seeded chat_port={chat_port} text={prepend_fork_comment("", situation_id)} />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await send(again.host, "and then");
+    expect(posted).toBe(
+      `<comment>\nFork the causal chain from situation ID: ${situation_id}\n<comment/>\nand then`,
+    );
+    act(() => {
+      again.root.unmount();
+    });
+    again.host.remove();
+    host.remove();
+  });
+
   it("shows Stop and the thinking indicator without a composer label", async () => {
     const chat_port: ChatPort = {
       stop_turn: async ({ turn_id }) => ({
