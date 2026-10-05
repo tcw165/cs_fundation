@@ -287,6 +287,7 @@ function SituationCard({
         className="node-card"
         style={style}
         data-situation-id={node.situation_id}
+        data-x={node.x}
         data-y={node.y}
         data-open="false"
       >
@@ -309,6 +310,7 @@ function SituationCard({
       onScroll={(event) => reveal_overlay_scrollbar(event.currentTarget)}
       style={style}
       data-situation-id={node.situation_id}
+      data-x={node.x}
       data-y={node.y}
       data-open="true"
     >
