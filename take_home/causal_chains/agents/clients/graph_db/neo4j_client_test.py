@@ -283,6 +283,64 @@ def test_list_leaf_situations_walks_from_the_start():
     }
 
 
+def test_lookup_situation_reads_the_parent_and_terminal():
+    parent_id = UUID("22222222-2222-4222-8222-222222222222")
+    terminal_id = UUID("33333333-3333-4333-8333-333333333333")
+    client = Neo4jClient(
+        _Driver(
+            [
+                {
+                    "current_situation_id": str(RESUMES_ID),
+                    "current_version": 1,
+                    "current_created_timestamp": "2026-10-01T00:00:00+00:00",
+                    "current_title": "Talks open",
+                    "current_desc": "talks",
+                    "current_remained_drivers": ["deal"],
+                    "current_kind": "situation",
+                    "parent_situation_id": str(parent_id),
+                    "parent_version": 1,
+                    "parent_created_timestamp": "2026-10-01T00:00:00+00:00",
+                    "parent_title": "Strait shut",
+                    "parent_desc": "now",
+                    "parent_remained_drivers": ["deal", "blockade"],
+                    "parent_kind": "start",
+                    "terminal_situation_id": str(terminal_id),
+                    "terminal_version": 1,
+                    "terminal_created_timestamp": "2026-10-01T00:00:00+00:00",
+                    "terminal_title": "Open",
+                    "terminal_desc": "future",
+                    "terminal_remained_drivers": [],
+                    "terminal_kind": "terminal",
+                }
+            ]
+        )
+    )
+    assert client.lookup_situation(RESUMES_ID) == (
+        (RESUMES_ID, 1, "2026-10-01T00:00:00+00:00", "Talks open", "talks", ["deal"], "situation"),
+        (
+            parent_id,
+            1,
+            "2026-10-01T00:00:00+00:00",
+            "Strait shut",
+            "now",
+            ["deal", "blockade"],
+            "start",
+        ),
+        (terminal_id, 1, "2026-10-01T00:00:00+00:00", "Open", "future", [], "terminal"),
+    )
+    query, params = client._driver.calls[0]
+    assert "LEADS_TO" in query
+    assert "kind: 'terminal'" in query
+    assert "size(parents) = 1" in query
+    assert "size(terminals) = 1" in query
+    assert params == {"situation_id": str(RESUMES_ID)}
+
+
+def test_lookup_situation_is_missing_when_the_row_is_missing():
+    client = Neo4jClient(_Driver([]))
+    assert client.lookup_situation(RESUMES_ID) is None
+
+
 def test_reaches_terminal_walks_to_the_terminal():
     client = Neo4jClient(_Driver([{"reaches": True}]))
     assert client.reaches_terminal(CLEAR_ID, NOW_ID, 1, RESUMES_ID, 1) is True
