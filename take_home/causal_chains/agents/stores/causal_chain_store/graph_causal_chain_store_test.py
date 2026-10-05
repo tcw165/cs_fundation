@@ -60,6 +60,11 @@ class _FakeGraphDb:
             list[tuple[UUID, int, str, str, str, list[str]]],
             list[tuple[UUID, int, UUID, int, Decimal, list[tuple[str, str, float]]]],
         ] | None = None
+        self.situation_row: tuple[
+            tuple[UUID, int, str, str, str, list[str], str],
+            tuple[UUID, int, str, str, str, list[str], str],
+            tuple[UUID, int, str, str, str, list[str], str],
+        ] | None = None
 
     def merge_case(
         self,
@@ -128,6 +133,16 @@ class _FakeGraphDb:
         terminal_version: int,
     ) -> bool:
         return self.reaches
+
+    def lookup_situation(
+        self,
+        situation_id: UUID,
+    ) -> tuple[
+        tuple[UUID, int, str, str, str, list[str], str],
+        tuple[UUID, int, str, str, str, list[str], str],
+        tuple[UUID, int, str, str, str, list[str], str],
+    ] | None:
+        return self.situation_row
 
     def lookup_chain_so_far(
         self,
@@ -457,6 +472,35 @@ def test_reaches_terminal_reads_the_graph():
         return await store.reaches_terminal(case, start, terminal)
 
     assert asyncio.run(exercise()) is True
+
+
+def test_lookup_situation_reads_the_parent_and_terminal():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        graph_db.situation_row = (
+            (DEAL_ID, 1, CREATED.isoformat(), "talks", "talks", ["deal"], "situation"),
+            (NOW_ID, 1, CREATED.isoformat(), "now", "now", ["deal"], "start"),
+            (LEAF_ID, 1, CREATED.isoformat(), "end", "the end", [], "terminal"),
+        )
+        found = await store.lookup_situation(DEAL_ID)
+        graph_db.situation_row = None
+        missing = None
+        try:
+            await store.lookup_situation(DEAL_ID)
+        except ValueError as error:
+            missing = str(error)
+        return found, missing
+
+    found, missing = asyncio.run(exercise())
+    current, parent, terminal = found
+    assert current.situation_id == DEAL_ID
+    assert current.kind == "situation"
+    assert parent.situation_id == NOW_ID
+    assert parent.kind == "start"
+    assert terminal.situation_id == LEAF_ID
+    assert terminal.kind == "terminal"
+    assert missing == "situation is missing"
 
 
 def test_lookup_chain_so_far_reads_the_open_line():
