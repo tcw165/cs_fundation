@@ -1,21 +1,4 @@
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-causal_chains}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-causal_chains}
-      POSTGRES_DB: ${POSTGRES_DB:-causal_chains}
-    ports:
-      - "5432:5432"
-    volumes:
-      - causal_chains_pg:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-causal_chains} -d ${POSTGRES_DB:-causal_chains}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   agents:
     build:
       context: ../..
@@ -138,5 +121,4 @@ services:
           --item '{"PK":{"S":"CONV#1"},"SK":{"S":"METADATA"},"user_uuid":{"S":"user-1"},"conversation_user_uuid":{"S":"user-1"},"conversation_id":{"S":"1"},"status":{"S":"OPEN"},"created_at":{"S":"2026-09-30T00:00:00+00:00"},"schema_version":{"N":"1"},"conversation_json":{"M":{"id":{"S":"1"},"user_uuid":{"S":"user-1"},"title":{"S":""},"status":{"S":"OPEN"},"followup_questions":{"L":[]},"entry_context":{"M":{"kind":{"S":"my_blog"},"source_url":{"S":""},"source_ip":{"S":""}}},"created_at":{"S":"2026-09-30T00:00:00+00:00"}}}}'
 
 volumes:
-  causal_chains_pg:
   causal_chains_neo4j:
