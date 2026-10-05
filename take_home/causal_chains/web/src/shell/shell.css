@@ -18,7 +18,7 @@
 }
 
 .shell.is-open .stage {
-  grid-template-columns: minmax(420px, 1fr) minmax(380px, 480px);
+  grid-template-columns: minmax(420px, 588px) minmax(380px, 1fr);
 }
 
 .chat-column {
