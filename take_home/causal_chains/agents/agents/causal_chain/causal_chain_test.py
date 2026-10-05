@@ -31,10 +31,6 @@ def test_causal_chain_prompt_and_tools():
         "Write the story of how the current situation evolves to the asked situation "
         "only after that path exists."
     ) in prompt
-    assert (
-        "The direction starts with the case id, then the open line, then the one driver to change. "
-        "That driver comes from the current situation's drivers from the start still left to change."
-    ) in prompt
     assert "Create a case." in prompt
     assert "Save the future on that same case." in prompt
     assert "Write a short title for the future." in prompt
@@ -50,18 +46,14 @@ def test_causal_chain_prompt_and_tools():
         == "What is true in the future, in your own words, including the current time."
     )
     assert "Do not write the story until the last step." in prompt
-    assert "Do not write the story during this repeat." in prompt
-    assert "the only answer is that story" in prompt
+    assert "Do not stop because a path from the start to that future already exists." in prompt
     assert (
         "If the message does not state a hypothetical future, answer in one message "
         "that you only imagine causal chains for hypothetical questions, then stop. "
         "Do not create a case. Do not call a tool. Do not describe any other ability."
     ) in prompt
-    assert (
-        "For a message that does not state a hypothetical future, that one message "
-        "only says you imagine causal chains for hypothetical questions, and you stop."
-    ) in prompt
     assert "A preamble is not an answer." in prompt
+    assert "Do not stop after that message. Continue the task." in prompt
     assert (
         "Every message is one paragraph followed by `\\n\\n`. "
         "That includes a preamble, the final answer, and any other text."
@@ -80,6 +72,14 @@ def test_causal_chain_prompt_and_tools():
     assert "path-builder" not in before_examples
     assert "now-scout" in examples
     assert "path-builder" in examples
+    assert "## When build a new causal chain" in examples
+    assert "## When fork a chain enclosed by the shared start and end" in examples
+    assert "Typically a chain" not in prompt
+    assert "Follow the example for when fork a chain enclosed by the shared start and end." in (
+        before_examples
+    )
+    assert "Follow the example for when build a new causal chain." in before_examples
+    assert "Do not stop because a path from the start to that future already exists." in examples
     assert (
         "step 1:\n"
         "- Call the now-scout agent with that case and the future, so the start is saved on that case.\n\n"
