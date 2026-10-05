@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChainCanvas } from "../chain/chain_canvas";
 import type { ChainPort } from "../chain/chain_port";
 import { folded_panel, panel_from_link, type PanelState } from "../chain/panel_state";
+import { prepend_fork_comment } from "../chat/composer_comment";
 import { Thread } from "../chat/thread";
 import type { ChatPort } from "../chat/chat_port";
 import type { RevealTiming } from "../chat/reveal_timing";
@@ -90,7 +91,13 @@ export function App({
       <AppShell
         panel={
           panel.open && panel.focus !== null ? (
-            <ChainCanvas focus={panel.focus} chain_port={chain_port} />
+            <ChainCanvas
+              focus={panel.focus}
+              chain_port={chain_port}
+              on_fork={(situation_id) => {
+                session.set_draft(prepend_fork_comment(session.draft, situation_id));
+              }}
+            />
           ) : null
         }
       >
