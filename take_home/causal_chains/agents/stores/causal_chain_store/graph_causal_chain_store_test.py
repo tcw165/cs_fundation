@@ -414,6 +414,38 @@ def test_get_chains_keeps_each_case_separate():
     assert chains[1].links == []
 
 
+def test_get_chains_follows_a_link_onto_another_case():
+    async def exercise():
+        graph_db = _FakeGraphDb()
+        store = GraphCausalChainStore(graph_db)
+        created = CREATED.isoformat()
+        graph_db.merge_situation(NOW_ID, 1, created, "now", "now", [], CASE_ID, "start")
+        graph_db.merge_situation(DEAL_ID, 1, created, "deal", "deal", [], CASE_ID, "situation")
+        graph_db.merge_situation(
+            LEAF_ID,
+            1,
+            created,
+            "fork",
+            "fork",
+            [],
+            OTHER_CASE_ID,
+            "situation",
+        )
+        graph_db.merge_leads_to(NOW_ID, 1, DEAL_ID, 1, Decimal("1"), [])
+        graph_db.merge_leads_to(DEAL_ID, 1, LEAF_ID, 1, Decimal("1"), [])
+        return await store.get_chains()
+
+    chains = asyncio.run(exercise())
+    assert len(chains) == 1
+    assert chains[0].case_id == CASE_ID
+    assert {situation.situation_id for situation in chains[0].situations} == {
+        NOW_ID,
+        DEAL_ID,
+        LEAF_ID,
+    }
+    assert len(chains[0].links) == 2
+
+
 def test_get_case_and_leaf_lookup():
     async def exercise():
         graph_db = _FakeGraphDb()

@@ -51,30 +51,6 @@ def _situation_from_graph(
     )
 
 
-def chains_for(
-    situations: list[Situation],
-    links: list[LeadsTo],
-) -> list[CausalChain]:
-    unique: dict[tuple[UUID, int], Situation] = {}
-    for situation in situations:
-        unique.setdefault(
-            _key(situation.situation_id, situation.version),
-            situation,
-        )
-    outgoing: dict[tuple[UUID, int], list[LeadsTo]] = {}
-    for link in links:
-        outgoing.setdefault(
-            _key(link.from_situation_id, link.from_version),
-            [],
-        ).append(link)
-    chains: list[CausalChain] = []
-    for situation in unique.values():
-        if situation.kind != "start":
-            continue
-        chains.append(_chain_from(situation, unique, outgoing))
-    return chains
-
-
 def _chain_from(
     root: Situation,
     unique: dict[tuple[UUID, int], Situation],
@@ -389,20 +365,31 @@ class GraphCausalChainStore(CausalChainStore):
                 inputs,
             ) in self._graph_db.list_leads_to()
         ]
+        unique = {
+            _key(situation.situation_id, situation.version): situation
+            for situations in grouped.values()
+            for situation in situations
+        }
+        outgoing: dict[tuple[UUID, int], list[LeadsTo]] = {}
+        for link in links:
+            outgoing.setdefault(
+                _key(link.from_situation_id, link.from_version),
+                [],
+            ).append(link)
         chains: list[CausalChain] = []
+        seen_roots: set[tuple[UUID, tuple[UUID, int]]] = set()
         for case_id, case_situations in grouped.items():
-            keys = {
-                _key(situation.situation_id, situation.version)
-                for situation in case_situations
-            }
-            case_links = [
-                link
-                for link in links
-                if _key(link.from_situation_id, link.from_version) in keys
-                and _key(link.to_situation_id, link.to_version) in keys
-            ]
-            chains.extend(
-                chain.model_copy(update={"case_id": case_id})
-                for chain in chains_for(case_situations, case_links)
-            )
+            for situation in case_situations:
+                if situation.kind != "start":
+                    continue
+                root_key = _key(situation.situation_id, situation.version)
+                marker = (case_id, root_key)
+                if marker in seen_roots:
+                    continue
+                seen_roots.add(marker)
+                chains.append(
+                    _chain_from(situation, unique, outgoing).model_copy(
+                        update={"case_id": case_id}
+                    )
+                )
         return chains
