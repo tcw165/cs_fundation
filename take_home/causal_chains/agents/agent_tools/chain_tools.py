@@ -79,6 +79,21 @@ async def get_case(
 
 
 @function_tool
+async def lookup_situation(
+    ctx: RunContextWrapper[RunContext],
+    situation_id: Annotated[
+        UUID,
+        "The current situation id from the fork comment. The new path leaves its parent.",
+    ],
+) -> tuple[Situation, Situation, Situation]:
+    """Load the current situation, the parent that leads to it, and the terminal on its case.
+
+    Returns that situation, its parent, and the terminal.
+    """
+    return await _require_store(ctx).lookup_situation(situation_id)
+
+
+@function_tool
 async def add_start_situation(
     ctx: RunContextWrapper[RunContext],
     case: Annotated[Case, "The case this start belongs to."],

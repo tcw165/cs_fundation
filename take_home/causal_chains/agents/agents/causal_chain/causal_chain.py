@@ -11,6 +11,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_terminal_situation,
     get_case,
     lookup_chain_so_far,
+    lookup_situation,
     reaches_terminal,
 )
 from take_home.causal_chains.agents.agent_tools.widgets import show_deeplink_widget
@@ -57,6 +58,7 @@ causal_chain = Agent[RunContext](
         add_terminal_situation,
         reaches_terminal,
         lookup_chain_so_far,
+        lookup_situation,
         path_builder.as_tool(
             tool_name="path_builder",
             tool_description=(

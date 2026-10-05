@@ -18,6 +18,7 @@ from take_home.causal_chains.agents.agent_tools.chain_tools import (
     add_terminal_situation,
     get_case,
     link_situations,
+    lookup_situation,
     lookup_chain_so_far,
     lookup_leaf_situations,
     reaches_terminal,
@@ -100,6 +101,27 @@ class _Store:
     ) -> bool:
         return self.reaches
 
+    async def lookup_situation(
+        self,
+        situation_id: UUID,
+    ) -> tuple[Situation, Situation, Situation]:
+        current = Situation(
+            situation_id=situation_id,
+            version=1,
+            created_timestamp=CREATED,
+            kind="situation",
+            title="current",
+            desc="current",
+            remained_drivers=[],
+        )
+        parent = current.model_copy(
+            update={"situation_id": UUID(int=2), "kind": "start", "title": "parent"},
+        )
+        terminal = current.model_copy(
+            update={"situation_id": UUID(int=3), "kind": "terminal", "title": "terminal"},
+        )
+        return current, parent, terminal
+
     async def lookup_chain_so_far(
         self,
         case: Case,
@@ -134,6 +156,34 @@ def _invoke(
         )
 
     return asyncio.run(exercise())
+
+
+def test_lookup_situation_returns_the_parent_and_terminal():
+    store = _Store()
+    context = RunContext(
+        conversation_id="1",
+        clock=_FixedClock(),
+        turn_id="t_1",
+        clients=RunClients(causal_chain_store=store),
+        conversation_history=(),
+    )
+    current_id = UUID("11111111-1111-4111-8111-111111111111")
+    found = _invoke(lookup_situation, context, {"situation_id": str(current_id)})
+    assert isinstance(found, tuple)
+    current, parent, terminal = found
+    assert isinstance(current, Situation)
+    assert current.situation_id == current_id
+    assert isinstance(parent, Situation)
+    assert parent.kind == "start"
+    assert isinstance(terminal, Situation)
+    assert terminal.kind == "terminal"
+    assert (
+        "Returns that situation, its parent, and the terminal."
+        in lookup_situation.description
+    )
+    assert "current situation id from the fork comment" in (
+        lookup_situation.params_json_schema["properties"]["situation_id"]["description"]
+    )
 
 
 def test_add_case_remembers_the_latest_user_message():

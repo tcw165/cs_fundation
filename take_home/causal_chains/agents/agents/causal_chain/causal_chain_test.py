@@ -80,6 +80,8 @@ def test_causal_chain_prompt_and_tools():
     )
     assert "Follow the example for when build a new causal chain." in before_examples
     assert "Do not stop because a path from the start to that future already exists." in examples
+    assert "fork from the parent of that situation." in before_examples
+    assert "Pass the parent as the current situation and the terminal as the future." in examples
     assert (
         "step 1:\n"
         "- Call the now-scout agent with that case and the future, so the start is saved on that case.\n\n"
@@ -106,6 +108,7 @@ def test_causal_chain_prompt_and_tools():
         "add_terminal_situation",
         "lookup_leaf_situations",
         "lookup_chain_so_far",
+        "lookup_situation",
         "reaches_terminal",
         "link_situations",
         "show_deeplink_widget",
@@ -119,6 +122,7 @@ def test_causal_chain_prompt_and_tools():
         "add_terminal_situation",
         "reaches_terminal",
         "lookup_chain_so_far",
+        "lookup_situation",
         "path_builder",
         "deeplinks_finder",
         "show_deeplink_widget",
