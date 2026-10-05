@@ -201,11 +201,13 @@ export function Thread({
               </div>
             ) : null;
           if (entry.kind === "user") {
+            const { comment, rest } = split_leading_comment(entry.text);
             return (
               <div key={entry.id}>
                 {separator}
                 <div className="message message-user">
-                  <p>{entry.text}</p>
+                  {comment !== null ? <span className="composer-chip">{comment}</span> : null}
+                  {rest !== "" ? <p>{rest}</p> : null}
                   {time}
                 </div>
               </div>

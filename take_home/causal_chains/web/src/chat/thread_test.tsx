@@ -181,6 +181,10 @@ describe("thread composer", () => {
     expect(posted).toBe(
       `<comment>\nFork the causal chain from situation ID: ${situation_id}\n<comment/>\nand then`,
     );
+    expect(again.host.querySelector(".message-user .composer-chip")?.textContent).toBe(
+      `Fork the causal chain from situation ID: ${situation_id}`,
+    );
+    expect(again.host.querySelector(".message-user p")?.textContent).toBe("and then");
     act(() => {
       again.root.unmount();
     });
