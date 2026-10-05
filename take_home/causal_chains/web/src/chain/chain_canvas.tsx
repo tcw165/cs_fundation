@@ -11,6 +11,7 @@ import {
   type LaidEdge,
   type LaidNode,
 } from "./layout";
+import { ForkIcon } from "../shell/icons";
 import { likelihood_label } from "./likelihood";
 import { layout_overview } from "./overview";
 import type { FocusTarget } from "./panel_state";
@@ -271,21 +272,27 @@ function SituationCard({
       <strong className="node-title">{situation.title}</strong>
     </>
   );
+  const fork = kind === "step" ? <ForkButton /> : null;
   if (!node.expanded) {
     return (
-      <button
-        type="button"
+      <div
         className="node-card"
         style={style}
         data-situation-id={node.situation_id}
         data-y={node.y}
         data-open="false"
-        aria-expanded={false}
-        onClick={on_toggle}
       >
-        {header}
-        {incoming_p !== null ? <span className="node-p">{incoming_p}</span> : null}
-      </button>
+        <button
+          type="button"
+          className="node-face"
+          aria-expanded={false}
+          onClick={on_toggle}
+        >
+          {header}
+          {incoming_p !== null ? <span className="node-p">{incoming_p}</span> : null}
+        </button>
+        {fork}
+      </div>
     );
   }
   return (
@@ -300,6 +307,7 @@ function SituationCard({
       <button type="button" className="node-toggle" aria-expanded onClick={on_toggle}>
         {header}
       </button>
+      {fork}
       <div className="node-detail">
         <p>{situation.desc}</p>
         <dl className="node-meta">
@@ -314,6 +322,19 @@ function SituationCard({
         </dl>
       </div>
     </article>
+  );
+}
+
+function ForkButton() {
+  return (
+    <button
+      type="button"
+      className="node-fork"
+      aria-label="Fork from this situation"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <ForkIcon />
+    </button>
   );
 }
 

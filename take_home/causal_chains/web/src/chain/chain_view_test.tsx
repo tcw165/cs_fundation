@@ -88,6 +88,19 @@ describe("chain canvas", () => {
       "true",
     );
     expect(host.querySelector(".node-title")?.textContent).toBe("Strait shut");
+    expect(
+      host.querySelector(`[data-situation-id="${now_id}"] .node-fork`),
+    ).toBeNull();
+    const fork = host.querySelector(
+      `[data-situation-id="${next_id}"] button[aria-label="Fork from this situation"]`,
+    );
+    expect(fork).not.toBeNull();
+    await act(async () => {
+      fork?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(host.querySelector(`[data-situation-id="${next_id}"]`)?.getAttribute("data-open")).toBe(
+      "false",
+    );
     expect(host.textContent).toContain(
       "strait shut for a long stretch of text that should remain readable",
     );
