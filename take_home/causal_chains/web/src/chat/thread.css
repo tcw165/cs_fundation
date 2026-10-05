@@ -150,8 +150,29 @@
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02), var(--shadow);
 }
 
+.composer-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.composer-chip {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 5px 10px;
+  border-radius: 12px;
+  background: rgba(125, 255, 228, 0.12);
+  color: var(--teal);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .composer-input {
   flex: 1;
+  width: 100%;
   align-self: stretch;
   resize: none;
   min-height: 84px;

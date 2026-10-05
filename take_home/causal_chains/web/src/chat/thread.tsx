@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { MicIcon, SendIcon, StopIcon } from "../shell/icons";
 import { bind_overlay_scroll } from "../theme/overlay_scroll";
+import { join_comment, split_leading_comment } from "./composer_comment";
 import { format_message_time, message_marks, type MessageMark } from "./message_time";
 import { MessageView } from "./message_view";
 import type { TranscriptEntry } from "./reveal_state";
@@ -63,6 +64,9 @@ export function Thread({
   on_open_link: (link: string, title?: string) => void;
 }) {
   const { state, draft, set_draft, send, finish, timing, user_interaction_state, stop } = session;
+  const { comment, rest } = split_leading_comment(draft);
+  const input_ref = useRef<HTMLTextAreaElement | null>(null);
+  const shown_comment = useRef<string | null>(null);
   const show_thinking = user_interaction_state.thinking_state !== null;
   const show_stop =
     user_interaction_state.text_input_state === "SEND_ENABLED_WITH_STOP_BUTTON";
@@ -77,6 +81,13 @@ export function Thread({
   const composer_ref = useRef<HTMLFormElement | null>(null);
   const follow_ref = useRef(true);
   const live = state.running || state.phase === "animating";
+  useEffect(() => {
+    if (comment !== null && shown_comment.current !== comment) {
+      input_ref.current?.focus();
+      input_ref.current?.setSelectionRange(0, 0);
+    }
+    shown_comment.current = comment;
+  }, [comment]);
   useEffect(() => {
     if (state.running) {
       follow_ref.current = true;
@@ -237,23 +248,37 @@ export function Thread({
         }}
       >
         {user_interaction_state.text_input_state === "HIDDEN" ? null : (
-          <textarea
-            className="composer-input"
-            aria-label="Message"
-            placeholder={user_interaction_state.text_input_placeholder}
-            disabled={user_interaction_state.text_input_state === "DISABLED"}
-            rows={3}
-            value={draft}
-            onChange={(event) => set_draft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                if (!show_stop) {
-                  void send(draft);
+          <div className="composer-field">
+            {comment !== null ? <span className="composer-chip">{comment}</span> : null}
+            <textarea
+              ref={input_ref}
+              className="composer-input"
+              aria-label="Message"
+              placeholder={user_interaction_state.text_input_placeholder}
+              disabled={user_interaction_state.text_input_state === "DISABLED"}
+              rows={3}
+              value={rest}
+              onChange={(event) => set_draft(join_comment(comment, event.target.value))}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Backspace" &&
+                  comment !== null &&
+                  event.currentTarget.selectionStart === 0 &&
+                  event.currentTarget.selectionEnd === 0
+                ) {
+                  event.preventDefault();
+                  set_draft(rest);
+                  return;
                 }
-              }
-            }}
-          />
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (!show_stop) {
+                    void send(draft);
+                  }
+                }
+              }}
+            />
+          </div>
         )}
         <div className="composer-tools">
           <span className="composer-mic" aria-hidden="true">
