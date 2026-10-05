@@ -13,12 +13,12 @@ flowchart LR
   browser["Browser\nchat and chain panel"]
   api["Agents API"]
   ddb["DynamoDB\nmessages and turns"]
-  graph["Neo4j\nsituations and links"]
+  neo4j["Neo4j\nsituations and links"]
   browser -->|"post message"| api
   api -->|"save chat"| ddb
-  api -->|"save chain"| graph
+  api -->|"save chain"| neo4j
   browser -->|"read chain"| api
-  api -->|"load chain"| graph
+  api -->|"load chain"| neo4j
 ```
 
 ## One turn
@@ -38,10 +38,10 @@ flowchart TD
   chain --> reaches[Reaches terminal]
   chain --> deeplink[Deeplink card]
   path --> pricer[Pricer]
-  scout --> graph[(Neo4j)]
-  path --> graph
-  fork --> graph
-  reaches --> graph
+  scout --> neo4j[(Neo4j)]
+  path --> neo4j
+  fork --> neo4j
+  reaches --> neo4j
 ```
 
 Now scout and the path builder save situations and links. Fork lookup and reaches terminal read them. The pricer names the inputs on one link. The deeplink is a card in the chat, not a node in the graph.
