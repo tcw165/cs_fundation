@@ -6,6 +6,7 @@ export const NODE_HEIGHT_OPEN = 340;
 export const EDGE_GAP = 128;
 export const EDGE_CARD_HEIGHT = 248;
 export const LAYOUT_PAD = 8;
+export const COLUMN_GAP = 56;
 
 export type GraphSelection =
   | {
@@ -95,24 +96,98 @@ export function toggle_selection(
   return next;
 }
 
+export function situation_layers(chain: CausalChain): ChainSituation[][] {
+  const by_key = new Map(
+    chain.situations.map((situation) => [
+      situation_key(situation.situation_id, situation.version),
+      situation,
+    ]),
+  );
+  const incoming = new Map<string, string[]>();
+  const outgoing = new Map<string, string[]>();
+  for (const situation of chain.situations) {
+    const key = situation_key(situation.situation_id, situation.version);
+    incoming.set(key, []);
+    outgoing.set(key, []);
+  }
+  for (const link of chain.links) {
+    const from = situation_key(link.from_situation_id, link.from_version);
+    const to = situation_key(link.to_situation_id, link.to_version);
+    if (!by_key.has(from) || !by_key.has(to)) {
+      continue;
+    }
+    outgoing.get(from)?.push(to);
+    incoming.get(to)?.push(from);
+  }
+
+  const rank = new Map<string, number>();
+  const remaining = new Map<string, number>();
+  const queue: string[] = [];
+  for (const [key, parents] of incoming) {
+    remaining.set(key, parents.length);
+    if (parents.length === 0) {
+      rank.set(key, 0);
+      queue.push(key);
+    }
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const key = queue[head];
+    head += 1;
+    const here = rank.get(key) ?? 0;
+    for (const next of outgoing.get(key) ?? []) {
+      rank.set(next, Math.max(rank.get(next) ?? 0, here + 1));
+      const left = (remaining.get(next) ?? 1) - 1;
+      remaining.set(next, left);
+      if (left === 0) {
+        queue.push(next);
+      }
+    }
+  }
+  for (const situation of chain.situations) {
+    const key = situation_key(situation.situation_id, situation.version);
+    if (!rank.has(key)) {
+      rank.set(key, 0);
+    }
+  }
+
+  const depth = Math.max(0, ...rank.values());
+  const layers: ChainSituation[][] = Array.from({ length: depth + 1 }, () => []);
+  for (const situation of chain.situations) {
+    const key = situation_key(situation.situation_id, situation.version);
+    layers[rank.get(key) ?? 0]?.push(situation);
+  }
+  sweep_layers(layers, incoming, outgoing);
+  return layers.filter((layer) => layer.length > 0);
+}
+
 export function layout_chain(chain: CausalChain, selection: GraphSelection | null): ChainLayout {
-  const ordered = ordered_situations(chain);
+  const layers = situation_layers(chain);
+  const widest = layers.reduce(
+    (max, layer) => Math.max(max, row_width(layer.length)),
+    NODE_WIDTH,
+  );
   const nodes: LaidNode[] = [];
   let cursor = LAYOUT_PAD;
-  for (const situation of ordered) {
-    const expanded = is_situation_selected(selection, situation);
-    const height = expanded ? NODE_HEIGHT_OPEN : NODE_HEIGHT;
-    nodes.push({
-      key: situation_key(situation.situation_id, situation.version),
-      situation_id: situation.situation_id,
-      version: situation.version,
-      x: LAYOUT_PAD,
-      y: cursor,
-      width: NODE_WIDTH,
-      height,
-      expanded,
+  for (const layer of layers) {
+    const offset = LAYOUT_PAD + (widest - row_width(layer.length)) / 2;
+    let row_height = 0;
+    layer.forEach((situation, index) => {
+      const expanded = is_situation_selected(selection, situation);
+      const height = expanded ? NODE_HEIGHT_OPEN : NODE_HEIGHT;
+      row_height = Math.max(row_height, height);
+      nodes.push({
+        key: situation_key(situation.situation_id, situation.version),
+        situation_id: situation.situation_id,
+        version: situation.version,
+        x: offset + index * (NODE_WIDTH + COLUMN_GAP),
+        y: cursor,
+        width: NODE_WIDTH,
+        height,
+        expanded,
+      });
     });
-    cursor += height + EDGE_GAP;
+    cursor += row_height + EDGE_GAP;
   }
 
   const by_key = new Map(nodes.map((node) => [node.key, node]));
@@ -146,7 +221,7 @@ export function layout_chain(chain: CausalChain, selection: GraphSelection | nul
   if (open_edge !== undefined) {
     const from = by_key.get(open_edge.from_key);
     const to = by_key.get(open_edge.to_key);
-    if (from !== undefined && to !== undefined && to.y >= from.y) {
+    if (from !== undefined && to !== undefined && to.y > from.y) {
       const gap = to.y - (from.y + from.height);
       const needed = EDGE_CARD_HEIGHT + 28;
       const extra = Math.max(0, needed - gap);
@@ -178,12 +253,96 @@ export function layout_chain(chain: CausalChain, selection: GraphSelection | nul
   }
 
   const bottom = nodes.reduce((max, node) => Math.max(max, node.y + node.height), LAYOUT_PAD);
+  const right = nodes.reduce((max, node) => Math.max(max, node.x + node.width), LAYOUT_PAD);
   return {
     nodes,
     edges,
-    width: NODE_WIDTH + LAYOUT_PAD * 2,
+    width: right + LAYOUT_PAD,
     height: bottom + LAYOUT_PAD,
   };
+}
+
+function row_width(count: number): number {
+  if (count <= 0) {
+    return 0;
+  }
+  return count * NODE_WIDTH + (count - 1) * COLUMN_GAP;
+}
+
+function sweep_layers(
+  layers: ChainSituation[][],
+  incoming: Map<string, string[]>,
+  outgoing: Map<string, string[]>,
+): void {
+  for (let pass = 0; pass < 4; pass += 1) {
+    for (let depth = 1; depth < layers.length; depth += 1) {
+      const previous = layers[depth - 1] ?? [];
+      const layer = layers[depth];
+      if (layer === undefined) {
+        continue;
+      }
+      layers[depth] = [...layer].sort((left, right) =>
+        compare_by_anchor(left, right, layer, previous, incoming),
+      );
+    }
+    for (let depth = layers.length - 2; depth >= 0; depth -= 1) {
+      const next = layers[depth + 1] ?? [];
+      const layer = layers[depth];
+      if (layer === undefined) {
+        continue;
+      }
+      layers[depth] = [...layer].sort((left, right) =>
+        compare_by_anchor(left, right, layer, next, outgoing),
+      );
+    }
+  }
+}
+
+function compare_by_anchor(
+  left: ChainSituation,
+  right: ChainSituation,
+  layer: ChainSituation[],
+  adjacent: ChainSituation[],
+  links: Map<string, string[]>,
+): number {
+  const left_key = situation_key(left.situation_id, left.version);
+  const right_key = situation_key(right.situation_id, right.version);
+  const left_anchor = median_anchor(links.get(left_key) ?? [], adjacent, index_of(layer, left_key));
+  const right_anchor = median_anchor(
+    links.get(right_key) ?? [],
+    adjacent,
+    index_of(layer, right_key),
+  );
+  if (left_anchor !== right_anchor) {
+    return left_anchor - right_anchor;
+  }
+  if (left_key < right_key) {
+    return -1;
+  }
+  if (left_key > right_key) {
+    return 1;
+  }
+  return 0;
+}
+
+function median_anchor(keys: string[], layer: ChainSituation[], fallback: number): number {
+  const indexes = keys
+    .map((key) => index_of(layer, key))
+    .filter((index) => index >= 0)
+    .sort((left, right) => left - right);
+  if (indexes.length === 0) {
+    return fallback;
+  }
+  const mid = (indexes.length - 1) / 2;
+  const lower = indexes[Math.floor(mid)] ?? fallback;
+  const upper = indexes[Math.ceil(mid)] ?? lower;
+  return (lower + upper) / 2;
+}
+
+function index_of(layer: ChainSituation[], key: string): number {
+  return layer.findIndex(
+    (situation) => situation_key(situation.situation_id, situation.version) === key,
+  );
 }
 
 export function ordered_situations(chain: CausalChain): ChainSituation[] {

@@ -81,4 +81,36 @@ describe("layout_chain", () => {
     expect(edge?.expanded).toBe(true);
     expect(open_step && closed_step ? open_step.y : 0).toBeGreaterThan(closed_step?.y ?? 0);
   });
+
+  it("places a fork side by side and the shared terminal below both", () => {
+    const branched: CausalChain = {
+      situations: [
+        { ...chain.situations[0], situation_id: "start", title: "Start" },
+        { ...chain.situations[1], situation_id: "left", title: "Left" },
+        { ...chain.situations[1], situation_id: "right", title: "Right" },
+        { ...chain.situations[2], situation_id: "end", title: "End" },
+      ],
+      links: [
+        { ...chain.links[0], to_situation_id: "left" },
+        { ...chain.links[0], to_situation_id: "right" },
+        { ...chain.links[1], from_situation_id: "left" },
+        { ...chain.links[1], from_situation_id: "right" },
+      ],
+    };
+    const layout = layout_chain(branched, null);
+    const start = layout.nodes.find((node) => node.situation_id === "start");
+    const left = layout.nodes.find((node) => node.situation_id === "left");
+    const right = layout.nodes.find((node) => node.situation_id === "right");
+    const end = layout.nodes.find((node) => node.situation_id === "end");
+    const linear = layout_chain(chain, null);
+    expect(new Set(linear.nodes.map((node) => node.x)).size).toBe(1);
+    expect(left?.y).toBe(right?.y);
+    expect(left && right ? left.x : 0).toBeLessThan(right?.x ?? 0);
+    expect(start && left ? start.y : 0).toBeLessThan(left?.y ?? 0);
+    expect(end && left ? end.y : 0).toBeGreaterThan(left?.y ?? 0);
+    expect(start && left && right ? start.x : 0).toBeGreaterThan(left?.x ?? 0);
+    expect(start && left && right ? start.x : 1).toBeLessThan(right?.x ?? 0);
+    expect(layout.width).toBeGreaterThan(linear.width);
+    expect(layout.edges).toHaveLength(4);
+  });
 });
