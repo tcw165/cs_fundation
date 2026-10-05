@@ -146,6 +146,21 @@ class GraphCausalChainStore(CausalChainStore):
         )
 
     @override
+    async def lookup_situation(
+        self,
+        situation_id: UUID,
+    ) -> tuple[Situation, Situation, Situation]:
+        found = self._graph_db.lookup_situation(situation_id)
+        if found is None:
+            raise ValueError("situation is missing")
+        current, parent, terminal = found
+        return (
+            _situation_from_graph(*current),
+            _situation_from_graph(*parent),
+            _situation_from_graph(*terminal),
+        )
+
+    @override
     async def list_latest_cases(
         self,
         conversation_id: str,

@@ -44,6 +44,27 @@ class _Both:
             updated_timestamp=CREATED,
         )
 
+    async def lookup_situation(
+        self,
+        situation_id: UUID,
+    ) -> tuple[Situation, Situation, Situation]:
+        situation = Situation(
+            situation_id=situation_id,
+            version=1,
+            created_timestamp=CREATED,
+            kind="situation",
+            title="current",
+            desc="current",
+            remained_drivers=[],
+        )
+        parent = situation.model_copy(
+            update={"situation_id": DEAL_ID, "kind": "start", "title": "parent"},
+        )
+        terminal = situation.model_copy(
+            update={"situation_id": NOW_ID, "kind": "terminal", "title": "terminal"},
+        )
+        return situation, parent, terminal
+
     async def list_latest_cases(
         self,
         conversation_id: str,
