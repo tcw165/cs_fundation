@@ -1,5 +1,1 @@
-filegroup(
-    name = "db",
-    srcs = ["init.sql"],
-    visibility = ["//visibility:public"],
-)
+# //take_home/causal_chains/db
