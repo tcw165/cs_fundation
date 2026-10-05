@@ -36,7 +36,9 @@ function place(node: HTMLElement, thumb: HTMLDivElement): boolean {
   }
   thumb.style.height = `${box.height}px`;
   thumb.style.top = `${node.scrollTop + box.top}px`;
-  thumb.style.right = `${INSET}px`;
+  thumb.style.right = "auto";
+  const thumb_width = thumb.offsetWidth || 5;
+  thumb.style.left = `${node.scrollLeft + node.clientWidth - thumb_width - INSET}px`;
   return true;
 }
 
