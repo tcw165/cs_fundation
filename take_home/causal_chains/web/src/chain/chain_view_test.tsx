@@ -77,7 +77,10 @@ describe("chain canvas", () => {
       },
     ]);
     const chain_port: ChainPort = { get_chains };
-    const { host, root } = render(<ChainCanvas focus={focus} chain_port={chain_port} />);
+    const on_fork = vi.fn();
+    const { host, root } = render(
+      <ChainCanvas focus={focus} chain_port={chain_port} on_fork={on_fork} />,
+    );
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
     await act(async () => {
       await Promise.resolve();
@@ -98,6 +101,7 @@ describe("chain canvas", () => {
     await act(async () => {
       fork?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
+    expect(on_fork).toHaveBeenCalledWith(next_id);
     expect(host.querySelector(`[data-situation-id="${next_id}"]`)?.getAttribute("data-open")).toBe(
       "false",
     );

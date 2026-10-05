@@ -23,9 +23,11 @@ export const chain_poll_ms = 2000;
 export function ChainCanvas({
   focus,
   chain_port,
+  on_fork,
 }: {
   focus: FocusTarget;
   chain_port: ChainPort;
+  on_fork?: (situation_id: string) => void;
 }) {
   const [chains, set_chains] = useState<CausalChain[]>([]);
   const [chain, set_chain] = useState<CausalChain | null>(null);
@@ -171,6 +173,7 @@ export function ChainCanvas({
                   node={node}
                   situation={situation}
                   incoming_p={incoming_probability(chain, node)}
+                  on_fork={on_fork}
                   on_toggle={() =>
                     set_selection((current) =>
                       toggle_selection(current, {
@@ -252,11 +255,13 @@ function SituationCard({
   node,
   situation,
   incoming_p,
+  on_fork,
   on_toggle,
 }: {
   node: LaidNode;
   situation: ChainSituation;
   incoming_p: string | null;
+  on_fork?: (situation_id: string) => void;
   on_toggle: () => void;
 }) {
   const kind = situation_kind(situation);
@@ -272,7 +277,10 @@ function SituationCard({
       <strong className="node-title">{situation.title}</strong>
     </>
   );
-  const fork = kind === "step" ? <ForkButton /> : null;
+  const fork =
+    kind === "step" ? (
+      <ForkButton on_fork={() => on_fork?.(situation.situation_id)} />
+    ) : null;
   if (!node.expanded) {
     return (
       <div
@@ -325,13 +333,16 @@ function SituationCard({
   );
 }
 
-function ForkButton() {
+function ForkButton({ on_fork }: { on_fork: () => void }) {
   return (
     <button
       type="button"
       className="node-fork"
       aria-label="Fork from this situation"
-      onClick={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        on_fork();
+      }}
     >
       <ForkIcon />
     </button>
