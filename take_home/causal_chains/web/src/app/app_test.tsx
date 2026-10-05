@@ -301,7 +301,7 @@ describe("app chat", () => {
       await Promise.resolve();
     });
     expect(host.querySelector(".chain-canvas")).not.toBeNull();
-    const card = host.querySelector(".node-card");
+    const card = host.querySelector(".node-face");
     await act(async () => {
       card?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
