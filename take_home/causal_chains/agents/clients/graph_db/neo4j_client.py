@@ -146,6 +146,38 @@ SET r.p = $p,
     r.to_version = $to_version
 """
 
+LOOKUP_SITUATION = """
+MATCH (current:Situation {situation_id: $situation_id})
+MATCH (current)-[:BELONGS_TO]->(c:Case)
+OPTIONAL MATCH (parent:Situation)-[:LEADS_TO]->(current)
+WHERE (parent)-[:BELONGS_TO]->(c)
+OPTIONAL MATCH (terminal:Situation {kind: 'terminal'})-[:BELONGS_TO]->(c)
+WITH current, collect(DISTINCT parent) AS parents, collect(DISTINCT terminal) AS terminals
+WHERE size(parents) = 1 AND size(terminals) = 1
+WITH current, parents[0] AS parent, terminals[0] AS terminal
+RETURN current.situation_id AS current_situation_id,
+    current.version AS current_version,
+    current.created_timestamp AS current_created_timestamp,
+    current.title AS current_title,
+    current.desc AS current_desc,
+    current.remained_drivers AS current_remained_drivers,
+    current.kind AS current_kind,
+    parent.situation_id AS parent_situation_id,
+    parent.version AS parent_version,
+    parent.created_timestamp AS parent_created_timestamp,
+    parent.title AS parent_title,
+    parent.desc AS parent_desc,
+    parent.remained_drivers AS parent_remained_drivers,
+    parent.kind AS parent_kind,
+    terminal.situation_id AS terminal_situation_id,
+    terminal.version AS terminal_version,
+    terminal.created_timestamp AS terminal_created_timestamp,
+    terminal.title AS terminal_title,
+    terminal.desc AS terminal_desc,
+    terminal.remained_drivers AS terminal_remained_drivers,
+    terminal.kind AS terminal_kind
+"""
+
 LIST_SITUATIONS = """
 MATCH (s:Situation)-[:BELONGS_TO]->(c:Case)
 RETURN s.situation_id AS situation_id,
@@ -196,6 +228,34 @@ def _timestamp(value: object) -> str:
     if text == "":
         return _MISSING_TIMESTAMP
     return text
+
+
+def _named_situation(
+    record: Mapping[str, object],
+    prefix: str,
+) -> tuple[UUID, int, str, str, str, list[str], str] | None:
+    situation_id = record.get(f"{prefix}_situation_id")
+    version = record.get(f"{prefix}_version")
+    title = record.get(f"{prefix}_title")
+    desc = record.get(f"{prefix}_desc")
+    kind = record.get(f"{prefix}_kind")
+    if (
+        situation_id is None
+        or version is None
+        or title is None
+        or desc is None
+        or kind is None
+    ):
+        return None
+    return (
+        UUID(str(situation_id)),
+        int(version),
+        _timestamp(record.get(f"{prefix}_created_timestamp")),
+        str(title),
+        str(desc),
+        _strings(record.get(f"{prefix}_remained_drivers")),
+        str(kind),
+    )
 
 
 def _hop_rows(
@@ -347,6 +407,29 @@ class Neo4jClient(GraphDb):
             str(created_timestamp),
             str(updated_timestamp),
         )
+
+    @override
+    def lookup_situation(
+        self,
+        situation_id: UUID,
+    ) -> tuple[
+        tuple[UUID, int, str, str, str, list[str], str],
+        tuple[UUID, int, str, str, str, list[str], str],
+        tuple[UUID, int, str, str, str, list[str], str],
+    ] | None:
+        with self._driver.session() as session:
+            record = session.run(
+                LOOKUP_SITUATION,
+                situation_id=str(situation_id),
+            ).single()
+        if record is None:
+            return None
+        current = _named_situation(record, "current")
+        parent = _named_situation(record, "parent")
+        terminal = _named_situation(record, "terminal")
+        if current is None or parent is None or terminal is None:
+            return None
+        return current, parent, terminal
 
     @override
     def list_latest_cases(
